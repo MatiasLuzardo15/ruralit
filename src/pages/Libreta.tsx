@@ -1,0 +1,250 @@
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { Search, ChevronDown, Download, MoreHorizontal, Pencil, Trash2, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import db from '../db/database';
+import type { Movimiento, Categoria, TipoMovimiento } from '../types';
+import { formatMonto, formatFechaCorta, formatMesLabel } from '../utils/helpers';
+import { ModalRegistrar } from '../components/ModalRegistrar';
+import { TopBar } from '../components/TopBar';
+import { showToast } from '../components/Toast';
+import { useMonedas } from '../utils/useMoneda';
+
+/* ─── Context menu ⋮ ─────────────────────────────────────── */
+interface CtxMenuProps { onEditar: () => void; onEliminar: () => void; onClose: () => void; }
+
+function ContextMenu({ onEditar, onEliminar, onClose }: CtxMenuProps) {
+    const ref = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const fn = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
+        document.addEventListener('mousedown', fn);
+        return () => document.removeEventListener('mousedown', fn);
+    }, [onClose]);
+
+    return (
+        <div ref={ref} style={{ position: 'absolute', right: '40px', top: '50%', transform: 'translateY(-50%)', background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '12px', boxShadow: 'var(--shadow-lg)', padding: '6px', zIndex: 100, display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '140px' }}>
+            <button onClick={(e) => { e.stopPropagation(); onEditar(); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--t2)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.1s' }} onMouseOver={e => e.currentTarget.style.background = 'var(--gray-50)'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}><Pencil size={14} /> Editar</button>
+            <button onClick={(e) => { e.stopPropagation(); onEliminar(); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--red-soft)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.1s' }} onMouseOver={e => e.currentTarget.style.background = 'var(--red-light)'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}><Trash2 size={14} /> Eliminar</button>
+        </div>
+    );
+}
+
+/* ─── Libreta ─────────────────────────────────────────────── */
+export function Libreta() {
+    const [anio, setAnio] = useState(new Date().getFullYear());
+    const [mes, setMes] = useState(new Date().getMonth());
+    const [movimientos, setMov] = useState<Movimiento[]>([]);
+    
+    // Filtros
+    const [busqueda, setBusy] = useState('');
+    const [filtroTipo, setFiltroTipo] = useState('todos');
+    const [filtroCat, setFiltroCat] = useState('todas');
+    
+    const [movEditar, setMovEd] = useState<Movimiento | undefined>();
+    const [tipoModal, setTipo] = useState<TipoMovimiento | null>(null);
+    const [key, setKey] = useState(0);
+    const [ctxOpen, setCtxOpen] = useState<number | null>(null);
+    const { moneda } = useMonedas();
+
+    const categorias = useLiveQuery(() => db.categorias.toArray(), []) ?? [];
+    const catMap = new Map<number, Categoria>(categorias.map(c => [c.id!, c]));
+
+    const cargar = useCallback(async () => {
+        const ini = new Date(anio, mes, 1).toISOString().split('T')[0];
+        const fin = new Date(anio, mes + 1, 0).toISOString().split('T')[0];
+        const data = await db.movimientos.where('fecha').between(ini, fin, true, true).toArray();
+        setMov(data.filter(m => (m.moneda || 'ARS') === moneda).sort((a, b) => b.fecha.localeCompare(a.fecha)));
+    }, [anio, mes, key, moneda]);
+
+    useEffect(() => { void cargar(); }, [cargar]);
+
+    const filtrados = movimientos.filter(mov => {
+        if (filtroTipo !== 'todos' && mov.tipo !== filtroTipo) return false;
+        if (filtroCat !== 'todas' && String(mov.categoriaId) !== filtroCat) return false;
+
+        if (!busqueda.trim()) return true;
+        const q = busqueda.toLowerCase().trim();
+        const cat = catMap.get(mov.categoriaId);
+        return cat?.nombre.toLowerCase().includes(q) || mov.nota?.toLowerCase().includes(q) || String(mov.monto).includes(q);
+    });
+
+    const entradas = filtrados.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + m.monto, 0);
+    const salidas = filtrados.filter(m => m.tipo === 'gasto').reduce((s, m) => s + m.monto, 0);
+
+    const cerrar = () => { setTipo(null); setMovEd(undefined); };
+
+    const eliminar = async (mov: Movimiento) => {
+        if (mov.id !== undefined) {
+            await db.movimientos.delete(mov.id);
+            showToast('Movimiento eliminado');
+            setKey(k => k + 1);
+        }
+    };
+
+    const navMes = (d: -1 | 1) => {
+        let m = mes + d; let a = anio;
+        if (m < 0) { m = 11; a--; }
+        if (m > 11) { m = 0; a++; }
+        setMes(m); setAnio(a);
+    };
+
+    const topbarActions = (
+        <div style={{ display: 'flex', alignItems: 'center', background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '14px', overflow: 'hidden', boxShadow: 'var(--shadow-xs)', height: '42px' }}>
+            <button style={{ padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--t2)' }} onClick={() => navMes(-1)}><ChevronLeft size={16} /></button>
+            <span style={{ fontSize: '13px', fontWeight: 700, minWidth: '110px', textAlign: 'center', color: 'var(--t1)' }}>{formatMesLabel(anio, mes)}</span>
+            <button style={{ padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--t2)' }} onClick={() => navMes(1)}><ChevronRight size={16} /></button>
+        </div>
+    );
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', paddingBottom: '40px' }}>
+            <TopBar 
+                title="Libreta de Movimientos" 
+                heading="Reporte General"
+                subtitle="Visualizá y modificá todo el historial"
+                actions={topbarActions}
+            />
+
+            <div className="page-content" style={{ maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
+                
+                {/* ── BIG FLOATING CARD ── */}
+                <div style={{ background: 'var(--white)', borderRadius: '32px', padding: '40px', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+
+                    {/* CABECERA DE RESUMEN (Métricas Grandes) */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
+                        <div>
+                            <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Ingresos Totales</p>
+                            <p style={{ fontSize: '36px', fontWeight: 800, color: 'var(--green-main)', letterSpacing: '-1.5px', fontFamily: 'var(--font-mono)' }}>{formatMonto(entradas, moneda)}</p>
+                        </div>
+                        <div style={{ paddingLeft: '24px', borderLeft: '1px solid var(--border-sm)' }}>
+                            <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Gastos Totales</p>
+                            <p style={{ fontSize: '36px', fontWeight: 800, color: 'var(--red-soft)', letterSpacing: '-1.5px', fontFamily: 'var(--font-mono)' }}>{formatMonto(salidas, moneda)}</p>
+                        </div>
+                    </div>
+
+                    {/* SISTEMA DE FILTROS MODERNOS */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: 'var(--white)', marginTop: '8px' }}>
+                        <div style={{ position: 'relative' }}>
+                            <label style={{ position: 'absolute', top: '-8px', left: '12px', background: 'var(--white)', padding: '0 4px', fontSize: '11px', fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase' }}>Búsqueda Rápida</label>
+                            <Search size={16} strokeWidth={2.5} style={{ position: 'absolute', top: '16px', left: '16px', color: 'var(--t3)' }} />
+                            <input type="text" placeholder="Leche, ración..." value={busqueda} onChange={e => setBusy(e.target.value)} style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', background: 'transparent' }} />
+                        </div>
+                        
+                        <div style={{ position: 'relative' }}>
+                            <label style={{ position: 'absolute', top: '-8px', left: '12px', background: 'var(--white)', padding: '0 4px', fontSize: '11px', fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase' }}>Flujo Monetario</label>
+                            <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)} style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', appearance: 'none', background: 'transparent', cursor: 'pointer' }}>
+                                <option value="todos">Ventas y Compras</option>
+                                <option value="ingreso">Solo Ingresos / Ventas</option>
+                                <option value="gasto">Solo Gastos / Compras</option>
+                            </select>
+                            <ChevronDown size={16} style={{ position: 'absolute', top: '16px', right: '16px', color: 'var(--t3)', pointerEvents: 'none' }} />
+                        </div>
+
+                        <div style={{ position: 'relative' }}>
+                            <label style={{ position: 'absolute', top: '-8px', left: '12px', background: 'var(--white)', padding: '0 4px', fontSize: '11px', fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase' }}>Clasificación</label>
+                            <select value={filtroCat} onChange={e => setFiltroCat(e.target.value)} style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', appearance: 'none', background: 'transparent', cursor: 'pointer' }}>
+                                <option value="todas">Cualquier Categoría</option>
+                                {categorias.filter(c => filtroTipo === 'todos' || c.tipo === filtroTipo).map(c => (
+                                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                                ))}
+                            </select>
+                            <ChevronDown size={16} style={{ position: 'absolute', top: '16px', right: '16px', color: 'var(--t3)', pointerEvents: 'none' }} />
+                        </div>
+                    </div>
+
+                    {/* EXPORT ROW */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-sm)', paddingBottom: '16px' }}>
+                        <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--t2)', display: 'flex', alignItems: 'center', gap: '8px' }}><Filter size={16} /> Mostrando {filtrados.length} resultados</p>
+                        <button onClick={() => showToast('Iniciando exportación...')} style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t1)', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'transparent', border: 'none', borderBottom: '1px solid var(--t1)', paddingBottom: '2px' }}><Download size={14} /> EXPORT REPORT</button>
+                    </div>
+
+                    {/* DATA GRID ESTILO INVENTORY 360 */}
+                    {filtrados.length === 0 ? (
+                        <div style={{ padding: '64px 24px', textAlign: 'center' }}>
+                            <div style={{ background: 'var(--gray-100)', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                                <Search size={24} color="var(--t3)" />
+                            </div>
+                            <p style={{ fontWeight: 700, fontSize: '18px', color: 'var(--t1)', marginBottom: '8px' }}>El reporte está vacío</p>
+                            <p style={{ color: 'var(--t3)', fontSize: '15px', fontWeight: 500 }}>Modifica los filtros o inicia un nuevo registro.</p>
+                        </div>
+                    ) : (
+                        <div style={{ overflowX: 'auto', margin: '0 -16px', padding: '0 16px' }}>
+                            <table style={{ width: '100%', minWidth: '800px', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                <thead>
+                                    <tr>
+                                        <th style={{ padding: '0 16px 16px', color: 'var(--t3)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border)' }}>Clasificación</th>
+                                        <th style={{ padding: '0 16px 16px', color: 'var(--t3)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border)' }}>Nota / Detalle</th>
+                                        <th style={{ padding: '0 16px 16px', color: 'var(--t3)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border)' }}>Fecha de Registro</th>
+                                        <th style={{ padding: '0 16px 16px', color: 'var(--t3)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>Monto Operación</th>
+                                        <th style={{ width: '40px', borderBottom: '1px solid var(--border)' }}></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filtrados.map((mov, i) => {
+                                        const cat = catMap.get(mov.categoriaId);
+                                        const ing = mov.tipo === 'ingreso';
+                                        const isCtxOpen = ctxOpen === mov.id;
+                                        return (
+                                            <tr key={mov.id} onClick={() => !isCtxOpen && setCtxOpen(null)} style={{ borderBottom: i === filtrados.length -1 ? 'none' : '1px solid var(--border-sm)', transition: 'background 0.1s', cursor: 'default' }} onMouseOver={e=>e.currentTarget.style.background='var(--bg)'} onMouseOut={e=>e.currentTarget.style.background='transparent'}>
+                                                
+                                                <td style={{ padding: '20px 16px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                                        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: ing ? 'var(--green-light)' : 'var(--red-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
+                                                            {cat?.icono ?? '📦'}
+                                                        </div>
+                                                        <div>
+                                                            <p style={{ fontWeight: 600, fontSize: '14px', color: 'var(--t1)' }}>{cat?.nombre ?? 'General'}</p>
+                                                            <p style={{ fontSize: '12px', color: 'var(--t3)', marginTop: '2px', fontWeight: 500 }}>{ing ? 'Venta' : 'Compra'}</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                
+                                                <td style={{ padding: '20px 16px', color: 'var(--t2)', fontSize: '14px' }}>
+                                                    {mov.nota ? mov.nota : <span style={{ color: 'var(--t3)' }}>Sin observaciones</span>}
+                                                </td>
+                                                
+                                                <td style={{ padding: '20px 16px', color: 'var(--t2)', fontSize: '14px', fontWeight: 500 }}>
+                                                    {formatFechaCorta(mov.fecha)}
+                                                </td>
+                                                
+                                                <td style={{ padding: '20px 16px', textAlign: 'right' }}>
+                                                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '15px', color: ing ? 'var(--green-main)' : 'var(--t1)', letterSpacing: '-0.5px' }}>
+                                                        {ing ? '' : '-'}{formatMonto(mov.monto, mov.moneda)}
+                                                    </span>
+                                                </td>
+
+                                                {/* ⋮ Menú */}
+                                                <td style={{ padding: '20px 16px', position: 'relative', textAlign: 'right' }} onClick={e => e.stopPropagation()}>
+                                                    <button onClick={() => setCtxOpen(isCtxOpen ? null : (mov.id ?? null))} style={{ padding: '6px', borderRadius: '8px', color: 'var(--t2)', background: 'transparent', border: 'none', cursor: 'pointer' }} onMouseOver={e=>e.currentTarget.style.background='var(--gray-100)'} onMouseOut={e=>e.currentTarget.style.background='transparent'}>
+                                                        <MoreHorizontal size={18} />
+                                                    </button>
+                                                    
+                                                    {isCtxOpen && (
+                                                        <ContextMenu
+                                                            onClose={() => setCtxOpen(null)}
+                                                            onEditar={() => { setMovEd(mov); setTipo(mov.tipo); setCtxOpen(null); }}
+                                                            onEliminar={() => { setCtxOpen(null); void eliminar(mov); }}
+                                                        />
+                                                    )}
+                                                </td>
+                                                
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {tipoModal && (
+                <ModalRegistrar
+                    tipoInicial={tipoModal}
+                    onClose={cerrar}
+                    movimientoEditar={movEditar}
+                    onGuardado={() => setKey(k => k + 1)}
+                />
+            )}
+        </div>
+    );
+}
