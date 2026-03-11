@@ -37,7 +37,7 @@ export function Inicio() {
         [key]
     ) ?? [];
 
-    const mesActual = mesActualRaw.filter(m => (m.moneda || 'ARS') === moneda);
+    const mesActual = mesActualRaw.filter(m => (m.moneda || 'UYU') === moneda);
 
     const entradas = mesActual.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + m.monto, 0);
     const salidas = mesActual.filter(m => m.tipo === 'gasto').reduce((s, m) => s + m.monto, 0);
@@ -46,7 +46,7 @@ export function Inicio() {
 
     const cargarUltimos = useCallback(async () => {
         const d = await db.movimientos.orderBy('creado_en').reverse().limit(100).toArray();
-        setUltimos(d.filter(m => (m.moneda || 'ARS') === moneda).slice(0, 6));
+        setUltimos(d.filter(m => (m.moneda || 'UYU') === moneda).slice(0, 6));
     }, [key, moneda]);
 
     useEffect(() => { void cargarUltimos(); }, [cargarUltimos]);
@@ -165,63 +165,65 @@ export function Inicio() {
                 <div style={{ marginBottom: 32 }}>
                     <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--t1)', letterSpacing: '-0.5px', marginBottom: 20 }}>Balance Mensual <span style={{ color: 'var(--t3)', fontSize: 14, fontWeight: 600 }}>({mesLabel})</span></h2>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
-                        {/* CARD: SALDO TOTAL */}
-                        <div className="premium-card">
-                            <p className="premium-legend" style={{ marginBottom: 12, textTransform: 'uppercase' }}>Cierre Actual</p>
-                            <h4 className="premium-amount" style={{ fontSize: 42, color: saldo < 0 ? 'var(--red-soft)' : 'var(--charcoal)', marginBottom: 4 }}>
-                                {saldo >= 0 ? '+' : ''}{formatMonto(saldo, moneda)}
-                            </h4>
-                            <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: saldo >= 0 ? 'var(--green-main)' : 'var(--red-soft)' }}></div>
-                                <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--t2)' }}>{mensajeEstado}</p>
+                    <div className="premium-card" style={{ padding: '0', overflow: 'hidden' }}>
+                        <div className="balance-grid">
+                            {/* SALDO TOTAL */}
+                            <div className="res-mobile-stack balance-item-main">
+                                <p className="premium-legend" style={{ marginBottom: 12, textTransform: 'uppercase', fontSize: '10px' }}>Cierre Actual</p>
+                                <h4 className="premium-amount" style={{ fontSize: 36, color: saldo < 0 ? 'var(--red-soft)' : 'var(--charcoal)', marginBottom: 4, lineHeight: 1 }}>
+                                    {saldo >= 0 ? '+' : ''}{formatMonto(saldo, moneda)}
+                                </h4>
+                                <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: saldo >= 0 ? 'var(--green-main)' : 'var(--red-soft)', flexShrink: 0 }}></div>
+                                    <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--t2)', lineHeight: 1.3 }}>{mensajeEstado}</p>
+                                </div>
+                            </div>
+
+                            {/* INGRESOS */}
+                            <div className="res-mobile-stack metric-divider balance-item-income">
+                                <p className="premium-legend" style={{ marginBottom: 12, textTransform: 'uppercase', color: 'var(--green-main)', fontSize: '10px' }}>Entradas</p>
+                                <h4 className="premium-amount" style={{ fontSize: 28, marginBottom: 4 }}>
+                                    {formatMonto(entradas, moneda)}
+                                </h4>
+                                <div style={{ marginTop: 8 }}>
+                                    {catMayorIngreso ? (
+                                        <p style={{ fontSize: 12, color: 'var(--t3)', fontWeight: 500 }}>Principal: <strong style={{ color: 'var(--t1)' }}>{catMayorIngreso}</strong></p>
+                                    ) : (
+                                        <p style={{ fontSize: 12, color: 'var(--t3)', fontWeight: 500 }}>Sin ventas</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* GASTOS */}
+                            <div className="res-mobile-stack metric-divider">
+                                <p className="premium-legend" style={{ marginBottom: 12, textTransform: 'uppercase', color: 'var(--red-soft)', fontSize: '10px' }}>Salidas</p>
+                                <h4 className="premium-amount" style={{ fontSize: 28, marginBottom: 4 }}>
+                                    {formatMonto(salidas, moneda)}
+                                </h4>
+                                <div style={{ marginTop: 8 }}>
+                                    {catMayorGasto ? (
+                                        <p style={{ fontSize: 12, color: 'var(--t3)', fontWeight: 500 }}>Mayor: <strong style={{ color: 'var(--t1)' }}>{catMayorGasto}</strong></p>
+                                    ) : (
+                                        <p style={{ fontSize: 12, color: 'var(--t3)', fontWeight: 500 }}>Sin gastos</p>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
-                        {/* CARD: INGRESOS */}
-                        <div className="premium-card" style={{ background: 'var(--sage-bg)' }}>
-                            <p className="premium-legend" style={{ marginBottom: 12, textTransform: 'uppercase', color: 'var(--green-main)' }}>Entradas Totales</p>
-                            <h4 className="premium-amount" style={{ fontSize: 32 }}>
-                                {formatMonto(entradas, moneda)}
-                            </h4>
-                            <div style={{ marginTop: 16 }}>
-                                {catMayorIngreso ? (
-                                    <p style={{ fontSize: 13, color: 'var(--t3)', fontWeight: 500 }}>Venta principal: <strong style={{ color: 'var(--t1)' }}>{catMayorIngreso}</strong></p>
-                                ) : (
-                                    <p style={{ fontSize: 13, color: 'var(--t3)', fontWeight: 500 }}>Sin ventas registradas</p>
-                                )}
+                        {/* BARRA DE FLUJO INTEGRADA */}
+                        <div style={{ padding: '16px 32px 24px', background: 'rgba(0,0,0,0.01)', borderTop: '1px solid var(--border-sm)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                                <h3 style={{ fontSize: 12, fontWeight: 700, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: '0.2px' }}>Distribución de Flujo</h3>
+                                <div style={{ display: 'flex', gap: 16 }}>
+                                    <span className="premium-legend" style={{ color: 'var(--green-main)', fontWeight: 700 }}>{100 - Math.round(pctGastos)}% Ingreso</span>
+                                    <span className="premium-legend" style={{ color: 'var(--red-soft)', fontWeight: 700 }}>{Math.round(pctGastos)}% Gasto</span>
+                                </div>
+                            </div>
+                            <div className="premium-pill-bar" style={{ height: '8px' }}>
+                                <div className="premium-pill-fill-in" style={{ width: `${100 - pctGastos}%`, background: 'var(--green-main)', opacity: 0.8 }}></div>
+                                <div className="premium-pill-fill-out" style={{ width: `${pctGastos}%`, background: 'var(--red-soft)', opacity: 0.8 }}></div>
                             </div>
                         </div>
-
-                        {/* CARD: GASTOS */}
-                        <div className="premium-card" style={{ background: 'var(--terracotta-bg)' }}>
-                            <p className="premium-legend" style={{ marginBottom: 12, textTransform: 'uppercase', color: 'var(--terracotta-soft)' }}>Salidas Totales</p>
-                            <h4 className="premium-amount" style={{ fontSize: 32 }}>
-                                {formatMonto(salidas, moneda)}
-                            </h4>
-                            <div style={{ marginTop: 16 }}>
-                                {catMayorGasto ? (
-                                    <p style={{ fontSize: 13, color: 'var(--t3)', fontWeight: 500 }}>Gasto mayor: <strong style={{ color: 'var(--t1)' }}>{catMayorGasto}</strong></p>
-                                ) : (
-                                    <p style={{ fontSize: 13, color: 'var(--t3)', fontWeight: 500 }}>Sin gastos registrados</p>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* ── COMPARATIVA DE FLUJO ── */}
-                <div style={{ marginBottom: 40 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--t2)' }}>Distribución de Flujo</h3>
-                        <div style={{ display: 'flex', gap: 20 }}>
-                            <span className="premium-legend" style={{ color: 'var(--green-main)' }}>Ingreso {100 - Math.round(pctGastos)}%</span>
-                            <span className="premium-legend" style={{ color: 'var(--red-soft)' }}>Gasto {Math.round(pctGastos)}%</span>
-                        </div>
-                    </div>
-                    <div className="premium-pill-bar">
-                        <div className="premium-pill-fill-in" style={{ width: `${100 - pctGastos}%` }}></div>
-                        <div className="premium-pill-fill-out" style={{ width: `${pctGastos}%` }}></div>
                     </div>
                 </div>
 
@@ -239,26 +241,53 @@ export function Inicio() {
 
                     return (
                         <div style={{ marginBottom: 40 }}>
-                            <div className="premium-card" style={{ border: '1px dashed rgba(0,0,0,0.1)', background: 'var(--bg)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                                    <div style={{ width: 32, height: 32, borderRadius: 8, background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                                        <TrendingUp size={16} color="var(--green-main)" />
+                            <div className="premium-card" style={{ border: '1px solid var(--border)', background: 'var(--bg)', padding: '32px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+                                    <div style={{ width: 40, height: 40, borderRadius: 12, background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                                        <TrendingUp size={20} color="var(--green-main)" />
                                     </div>
-                                    <h3 style={{ fontSize: 15, fontWeight: 800, color: 'var(--t1)' }}>Proyección a cierre de mes</h3>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                                     <div>
-                                        <p style={{ fontSize: 13, color: 'var(--t3)', marginBottom: 4 }}>Resultado proyectado</p>
-                                        <h4 className="premium-amount" style={{ fontSize: 24, color: projN < 0 ? 'var(--red-soft)' : 'var(--green-main)' }}>
-                                            {projN >= 0 ? '+' : ''}{formatMonto(projN, moneda)}
-                                        </h4>
+                                        <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--t1)', marginBottom: 2 }}>A este ritmo...</h3>
+                                        <p style={{ fontSize: 12, color: 'var(--t3)', fontWeight: 500 }}>Estimación basada en tus últimos {dayToday} días</p>
                                     </div>
-                                    <div style={{ textAlign: 'right' }}>
-                                        <p style={{ fontSize: 11, color: 'var(--t3)', fontWeight: 600 }}>Basado en {dayToday} días</p>
-                                        <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
-                                            <span style={{ fontSize: 12, color: 'var(--t2)' }}>↑ {formatMonto(projE, moneda)}</span>
-                                            <span style={{ fontSize: 12, color: 'var(--t2)' }}>↓ {formatMonto(projS, moneda)}</span>
+                                </div>
+
+                                <div className="res-flex-between">
+                                    <div className="res-flex-item-main">
+                                        <p style={{ fontSize: 13, color: 'var(--t2)', fontWeight: 600, marginBottom: 8 }}>Te quedarían libres aproximadamente:</p>
+                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+                                            <h4 className="premium-amount" style={{ fontSize: 42, color: projN < 0 ? 'var(--red-soft)' : 'var(--green-main)', letterSpacing: '-1.5px', marginBottom: 0 }}>
+                                                {formatMonto(Math.abs(projN), moneda)}
+                                            </h4>
+                                            <span style={{ fontSize: 14, fontWeight: 700, color: projN < 0 ? 'var(--red-soft)' : 'var(--green-main)', textTransform: 'uppercase' }}>
+                                                {projN >= 0 ? 'a favor' : 'en contra'}
+                                            </span>
                                         </div>
+                                        <div style={{ marginTop: 16, padding: '12px 16px', background: projN >= 0 ? 'rgba(46, 125, 50, 0.04)' : 'rgba(201, 74, 74, 0.04)', borderRadius: '12px', border: projN >= 0 ? '1px solid rgba(46, 125, 50, 0.1)' : '1px solid rgba(201, 74, 74, 0.1)', maxWidth: '440px' }}>
+                                            <p style={{ fontSize: 13, color: 'var(--t2)', fontWeight: 600, lineHeight: 1.5 }}>
+                                                {projN >= 0 
+                                                    ? "¡Buen trabajo! Si no hay imprevistos, el mes cerrará con saldo positivo."
+                                                    : "Ojo: a este paso podrías cerrar el mes en negativo. Revisá tus gastos previstos."}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="res-flex-item-side" style={{ background: 'white', padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-xs)' }}>
+                                        <p style={{ fontSize: 11, color: 'var(--t3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 4 }}>Detalle del Cálculo</p>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span style={{ fontSize: 12, color: 'var(--t2)', fontWeight: 500 }}>Ventas proyectadas</span>
+                                                <span style={{ fontSize: 14, color: 'var(--green-main)', fontWeight: 800 }}>{formatMonto(projE, moneda)}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span style={{ fontSize: 12, color: 'var(--t2)', fontWeight: 500 }}>Gastos proyectados</span>
+                                                <span style={{ fontSize: 14, color: 'var(--red-soft)', fontWeight: 800 }}>{formatMonto(projS, moneda)}</span>
+                                            </div>
+                                        </div>
+                                        <div style={{ height: '1px', background: 'var(--border-sm)', margin: '4px 0' }}></div>
+                                        <p style={{ fontSize: 11, color: 'var(--t3)', fontStyle: 'italic', textAlign: 'center' }}>
+                                            Basado en {dayToday} d / faltan {daysInM - dayToday} d
+                                        </p>
                                     </div>
                                 </div>
                             </div>

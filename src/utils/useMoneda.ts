@@ -5,10 +5,10 @@ import { Moneda } from '../types';
 
 export function useMonedas() {
     const monedasConfig = useLiveQuery(() => db.config.get('monedasActivas'), []);
-    const monedasActivas = (monedasConfig?.valor as Moneda[]) ?? ['ARS'];
+    const monedasActivas = (monedasConfig?.valor as Moneda[]) ?? ['UYU'];
 
     const [moneda, setMoneda] = useState<Moneda>(() => {
-        return (localStorage.getItem('ruralia_moneda_view') as Moneda) || 'ARS';
+        return (localStorage.getItem('ruralia_moneda_view') as Moneda) || 'UYU';
     });
 
     useEffect(() => {

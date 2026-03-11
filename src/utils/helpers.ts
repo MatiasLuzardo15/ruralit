@@ -19,9 +19,9 @@ export const MONEDAS = {
     EUR: { simbolo: '€', label: 'Euro', flag: '🇪🇺' },
 } as const;
 
-export const formatMonto = (monto: number, moneda = 'ARS'): string => {
-    const m = MONEDAS[moneda as keyof typeof MONEDAS] ?? MONEDAS.ARS;
-    return `${m.simbolo} ${Number(monto).toLocaleString('es-AR')}`;
+export const formatMonto = (monto: number, moneda = 'UYU'): string => {
+    const m = MONEDAS[moneda as keyof typeof MONEDAS] ?? MONEDAS.UYU;
+    return `${m.simbolo} ${Number(monto).toLocaleString('es-UY')}`;
 };
 
 export const formatFecha = (fecha: string | Date): string => {

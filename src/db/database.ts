@@ -75,7 +75,7 @@ db.on('ready', async () => {
 
         await db.config.bulkPut([
             { clave: 'nombreEstablecimiento', valor: nameToUse },
-            { clave: 'moneda', valor: 'ARS' },
+            { clave: 'moneda', valor: 'UYU' },
         ]);
     }
 });

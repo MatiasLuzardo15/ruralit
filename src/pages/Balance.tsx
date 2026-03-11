@@ -177,8 +177,8 @@ export function Balance() {
 
     // ── Render Mensual ───────────────────────────────────────
     const renderMensual = () => {
-        const movsMesMoneda = movsMes.filter(m => (m.moneda || 'ARS') === moneda);
-        const movsPrevMoneda = movsPrev.filter(m => (m.moneda || 'ARS') === moneda);
+        const movsMesMoneda = movsMes.filter(m => (m.moneda || 'UYU') === moneda);
+        const movsPrevMoneda = movsPrev.filter(m => (m.moneda || 'UYU') === moneda);
         const balMoneda = calcularBalance(movsMesMoneda);
         const balPrevMoneda = calcularBalance(movsPrevMoneda);
         
@@ -232,8 +232,8 @@ export function Balance() {
                             
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px' }}>
                                 {monedasActivas.map((mnd, idx) => {
-                                    const mvs = movsMes.filter(m => (m.moneda || 'ARS') === mnd);
-                                    const pv = movsPrev.filter(m => (m.moneda || 'ARS') === mnd);
+                                    const mvs = movsMes.filter(m => (m.moneda || 'UYU') === mnd);
+                                    const pv = movsPrev.filter(m => (m.moneda || 'UYU') === mnd);
                                     const b = calcularBalance(mvs);
                                     const bP = calcularBalance(pv);
                                     const dp = b.neto - bP.neto;
@@ -494,7 +494,7 @@ export function Balance() {
 
     // ── Render Anual ───────────────────────────────────────
     const renderAnual = () => {
-        const aMovesMoneda = movsAnio.filter(m => (m.moneda || 'ARS') === moneda);
+        const aMovesMoneda = movsAnio.filter(m => (m.moneda || 'UYU') === moneda);
 
         const balAnual = calcularBalance(aMovesMoneda);
         const margenAnual = balAnual.ingresos > 0 ? ((balAnual.neto / balAnual.ingresos) * 100).toFixed(1) : '0.0';
@@ -549,7 +549,7 @@ export function Balance() {
                         </p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             {monedasActivas.map((mnd, idx) => {
-                                const mvAn = movsAnio.filter(m => (m.moneda || 'ARS') === mnd);
+                                const mvAn = movsAnio.filter(m => (m.moneda || 'UYU') === mnd);
                                 const bld = calcularBalance(mvAn);
                                 return (
                                     <div key={mnd} style={{ borderBottom: idx < monedasActivas.length - 1 ? '1px solid var(--border-sm)' : 'none', paddingBottom: idx < monedasActivas.length - 1 ? '12px' : '0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

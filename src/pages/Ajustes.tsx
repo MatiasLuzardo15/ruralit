@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Pencil, Trash2, Check, X, Settings2, Building2, Coins, LayoutGrid, AlertCircle } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, Settings2, Building2, Coins, LayoutGrid, AlertCircle, ChevronRight, ArrowLeft, User, HelpCircle } from 'lucide-react';
 import type { Categoria, TipoMovimiento, Moneda } from '../types';
 import db from '../db/database';
 import { showToast } from '../components/Toast';
@@ -131,13 +131,24 @@ export function Ajustes() {
     const [cats, setCats] = useState<Categoria[]>([]);
     const [nombreEstab, setNombre] = useState('');
     const [nombreUsuario, setNombreUsuario] = useState('');
-    const [monedasActivas, setMonedasActivas] = useState<Moneda[]>(['ARS']);
+    const [monedasActivas, setMonedasActivas] = useState<Moneda[]>(['UYU']);
     const [activeTab, setActiveTab] = useState<TabKey>('establecimiento');
     
     // Modals state
     const [showCatModal, setShowCatModal] = useState<'add' | 'edit' | false>(false);
     const [editCatData, setEditCatData] = useState<Categoria | undefined>();
     const [showCurModal, setShowCurModal] = useState(false);
+
+    // Mobile Navigation state
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    const [mobileView, setMobileView] = useState<'menu' | 'detail'>('menu');
+    const [mobileDetailType, setMobileDetailType] = useState<string | null>(null);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const cargar = async () => {
         setCats(await db.categorias.orderBy('nombre').toArray());
@@ -432,18 +443,160 @@ export function Ajustes() {
         return null;
     };
 
+    const renderMobileMenu = () => {
+        const groups = [
+            {
+                title: 'CUENTA',
+                items: [
+                    { id: 'perfil', label: 'Información del Perfil', icon: User, tab: 'establecimiento' as TabKey },
+                    { id: 'cambio', label: 'Cambio de Establecimiento', icon: Building2, tab: 'establecimiento' as TabKey }
+                ]
+            },
+            {
+                title: 'PREFERENCIAS',
+                items: [
+                    { id: 'divisas', label: 'Monedas y Divisas', icon: Coins, tab: 'divisas' as TabKey },
+                    { id: 'entradas', label: 'Categorías de Entradas', icon: LayoutGrid, tab: 'entradas' as TabKey },
+                    { id: 'salidas', label: 'Categorías de Salidas', icon: LayoutGrid, tab: 'salidas' as TabKey }
+                ]
+            },
+            {
+                title: 'SOPORTE',
+                items: [
+                    { id: 'sistema', label: 'Sistema', icon: Settings2, tab: 'sistema' as TabKey },
+                    { id: 'ayuda', label: 'Centro de Ayuda', icon: HelpCircle, tab: 'sistema' as TabKey }
+                ]
+            }
+        ];
+
+        return (
+            <div style={{ padding: '0 24px 100px', background: 'var(--beige-bg)', minHeight: '100vh' }}>
+                <div style={{ padding: '40px 0 20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <h1 style={{ fontSize: '32px', fontWeight: 900, color: 'var(--t1)', letterSpacing: '-1px' }}>Ajustes Generales</h1>
+                </div>
+
+                {groups.map(group => (
+                    <div key={group.title} style={{ marginBottom: '32px' }}>
+                        <h2 style={{ fontSize: '11px', fontWeight: 800, color: 'var(--t3)', letterSpacing: '0.8px', marginBottom: '16px', paddingLeft: '8px' }}>{group.title}</h2>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            {group.items.map((item, idx) => (
+                                <div key={item.id}>
+                                    <button 
+                                        onClick={() => {
+                                            setActiveTab(item.tab);
+                                            setMobileDetailType(item.id);
+                                            setMobileView('detail');
+                                        }}
+                                        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 8px', border: 'none', background: 'transparent', cursor: 'pointer' }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                            <item.icon size={20} color="var(--t1)" strokeWidth={1.5} />
+                                            <span style={{ fontSize: '15px', fontWeight: 500, color: 'var(--t1)' }}>{item.label}</span>
+                                        </div>
+                                        <ChevronRight size={18} color="rgba(0,0,0,0.15)" strokeWidth={2.5} />
+                                    </button>
+                                    {idx < group.items.length - 1 && (
+                                        <div style={{ height: '1px', background: 'rgba(0,0,0,0.04)', margin: '0 8px' }}></div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+
+                <div style={{ marginTop: '20px', padding: '0 8px' }}>
+                    <button 
+                        onClick={guardarNombre}
+                        style={{ width: '100%', padding: '18px', borderRadius: '40px', background: 'white', color: 'black', border: '2px solid black', fontSize: '15px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                        Guardar Cambios
+                    </button>
+                    <p style={{ textAlign: 'center', fontSize: '12px', color: 'var(--t3)', marginTop: '20px', fontWeight: 600 }}>Ruralit v5.2.0 • Agro Edition</p>
+                </div>
+            </div>
+        );
+    };
+
+    if (isMobile && mobileView === 'menu') {
+        return (
+            <div style={{ background: 'var(--beige-bg)', minHeight: '100vh' }}>
+                {renderMobileMenu()}
+                {/* Modals */}
+                {showCatModal && <CatModal mode={showCatModal} initData={editCatData as CatForm} onClose={() => setShowCatModal(false)} onSave={handleSaveCat} />}
+                {showCurModal && <CurrencyModal current={monedasActivas} onClose={() => setShowCurModal(false)} onSave={handleSaveCur} />}
+            </div>
+        );
+    }
+
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', paddingBottom: '40px' }}>
-            <TopBar 
-                title="" 
-                heading="Ajustes Generales" 
-                subtitle="Gestión de preferencias del sistema"
-                hideCurrencyToggle={true}
-            />
-            <div className="page-content" style={{ margin: '0 auto', width: '100%', paddingTop: '0' }}>
-                <div className="settings-card" style={{ paddingTop: '16px' }}>
-                    {renderNav()}
-                    {renderContent()}
+        <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', paddingBottom: '40px', background: isMobile ? 'var(--beige-bg)' : 'transparent' }}>
+            {isMobile ? (
+                <div style={{ padding: '24px 24px 0', display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--beige-bg)' }}>
+                    <button onClick={() => setMobileView('menu')} style={{ background: 'white', borderRadius: '50%', padding: '8px', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ArrowLeft size={18} color="var(--t1)" />
+                    </button>
+                    <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--t1)' }}>
+                        {mobileDetailType === 'perfil' ? 'Perfil' : 
+                         mobileDetailType === 'cambio' ? 'Establecimientos' :
+                         mobileDetailType === 'divisas' ? 'Monedas' :
+                         activeTab === 'entradas' ? 'Categorías' :
+                         activeTab === 'salidas' ? 'Categorías' : 'Ajustes'}
+                    </h2>
+                </div>
+            ) : (
+                <TopBar 
+                    title="" 
+                    heading="Ajustes Generales" 
+                    subtitle="Gestión de preferencias del sistema"
+                    hideCurrencyToggle={true}
+                />
+            )}
+            
+            <div className="page-content" style={{ margin: '0 auto', width: '100%', paddingTop: isMobile ? '16px' : '0' }}>
+                <div className={isMobile ? "" : "settings-card"} style={{ paddingTop: isMobile ? '0' : '16px' }}>
+                    {!isMobile && renderNav()}
+                    <div style={{ padding: isMobile ? '0 8px' : '0' }}>
+                        {/* If mobile, we might want to filter what we show within establishment tab */}
+                        {isMobile && activeTab === 'establecimiento' ? (
+                            mobileDetailType === 'perfil' ? (
+                                <div className="settings-grid-row" style={{ gridTemplateColumns: '1fr', border: 'none' }}>
+                                    <div className="settings-row-info">
+                                        <h3>Información del Perfil</h3>
+                                        <p>Actualiza tu nombre y comercio.</p>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
+                                        <input type="text" value={nombreUsuario} onChange={e => setNombreUsuario(e.target.value)} placeholder="Tu Nombre" style={{ padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px' }} />
+                                        <input type="text" value={nombreEstab} onChange={e => setNombre(e.target.value)} placeholder="Nombre Comercial" style={{ padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px' }} />
+                                        <button className="btn-primary" onClick={guardarNombre} style={{ marginTop: '12px', padding: '16px', borderRadius: '14px' }}>Actualizar Perfil</button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="settings-grid-row" style={{ gridTemplateColumns: '1fr', border: 'none' }}>
+                                    <div className="settings-row-info">
+                                        <h3>Establecimiento Activo</h3>
+                                        <p>Cambia o crea uno nuevo.</p>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        {estabsList.map(est => (
+                                            <div 
+                                                key={est.id} 
+                                                onClick={() => cambiarEstablecimiento(est.id)}
+                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', borderRadius: '16px', border: est.id === activeEstId ? '2px solid var(--green-main)' : '1px solid var(--border)', background: 'white' }}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    <Building2 size={20} color={est.id === activeEstId ? 'var(--green-main)' : 'var(--t3)'} />
+                                                    <span style={{ fontWeight: 700, color: 'var(--t1)' }}>{est.nombre}</span>
+                                                </div>
+                                                {est.id === activeEstId && <Check size={16} color="var(--green-main)" />}
+                                            </div>
+                                        ))}
+                                        <button onClick={crearNuevoEstablecimiento} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '16px', borderRadius: '16px', border: '1px dashed var(--t3)', background: 'transparent', color: 'var(--t3)', fontWeight: 600, justifyContent: 'center' }}>
+                                            <Plus size={16} /> Nuevo Establecimiento
+                                        </button>
+                                    </div>
+                                </div>
+                            )
+                        ) : renderContent()}
+                    </div>
                 </div>
             </div>
 

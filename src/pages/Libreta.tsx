@@ -52,7 +52,7 @@ export function Libreta() {
         const ini = new Date(anio, mes, 1).toISOString().split('T')[0];
         const fin = new Date(anio, mes + 1, 0).toISOString().split('T')[0];
         const data = await db.movimientos.where('fecha').between(ini, fin, true, true).toArray();
-        setMov(data.filter(m => (m.moneda || 'ARS') === moneda).sort((a, b) => b.fecha.localeCompare(a.fecha)));
+        setMov(data.filter(m => (m.moneda || 'UYU') === moneda).sort((a, b) => b.fecha.localeCompare(a.fecha)));
     }, [anio, mes, key, moneda]);
 
     useEffect(() => { void cargar(); }, [cargar]);
