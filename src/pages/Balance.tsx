@@ -207,12 +207,17 @@ export function Balance() {
         const sItems = buildCatItems('gasto', movsMesMoneda);
 
         const CurrencyTabs = () => (
-            <div style={{ display: 'flex', gap: '4px', background: '#F1F1F1', padding: '4px', borderRadius: '12px', width: 'fit-content' }}>
+            <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-input)', padding: '4px', borderRadius: '12px', width: 'fit-content' }}>
                 {monedasActivas.map(mnd => (
                     <button 
                         key={mnd} 
                         onClick={() => changeMoneda(mnd)}
-                        style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', background: mnd === moneda ? '#FFFFFF' : 'transparent', color: mnd === moneda ? 'var(--t1)' : '#888888', fontWeight: mnd === moneda ? 600 : 500, fontSize: '13px', cursor: 'pointer', boxShadow: mnd === moneda ? '0 2px 8px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px' }}
+                        style={{ padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px',
+                            background: mnd === moneda ? 'var(--white)' : 'transparent',
+                            color: mnd === moneda ? 'var(--t1)' : 'var(--t3)',
+                            fontWeight: mnd === moneda ? 700 : 500,
+                            border: mnd === moneda ? '1px solid var(--green-main)' : '1px solid transparent'
+                        }}
                     >
                         {mnd === 'USD' ? '🇺🇸' : mnd === 'UYU' ? '🇺🇾' : '🇦🇷'} {mnd}
                     </button>
@@ -269,13 +274,13 @@ export function Balance() {
                                     <AreaChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
                                         <defs>
                                             <linearGradient id="colorIngreso" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="var(--green-main)" stopOpacity={0.2} />
+                                                <stop offset="5%" stopColor="var(--green-main)" stopOpacity={0.3} />
                                                 <stop offset="95%" stopColor="var(--green-main)" stopOpacity={0} />
                                             </linearGradient>
                                         </defs>
-                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#A3A3A3', fontWeight: 400 }} dy={10} minTickGap={20} />
-                                        <Tooltip formatter={(value: any) => formatMonto(value, moneda)} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: 'var(--shadow-md)', fontSize: '13px', fontWeight: 600, padding: '12px 16px' }} labelStyle={{ color: 'var(--t3)', marginBottom: '8px', fontSize: '12px', fontWeight: 500 }} />
-                                        <Area type="monotone" dataKey="Ingresos" stroke="var(--green-main)" strokeWidth={3} fillOpacity={1} fill="url(#colorIngreso)" />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--t3)', fontWeight: 400 }} dy={10} minTickGap={20} />
+                                        <Tooltip formatter={(value: any) => formatMonto(value, moneda)} contentStyle={{ background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', fontSize: '13px', fontWeight: 600, padding: '12px 16px' }} labelStyle={{ color: 'var(--t3)', marginBottom: '8px', fontSize: '12px', fontWeight: 500 }} />
+                                        <Area type="monotone" dataKey="Ingresos" stroke="var(--green-main)" strokeWidth={3} fillOpacity={1} fill="url(#colorIngreso)" dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
                                     </AreaChart>
                                 </ResponsiveContainer>
                             </div>
@@ -284,11 +289,11 @@ export function Balance() {
                         {/* Secondary Stats */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px', minWidth: '180px' }}>
                             <div>
-                                <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Ingresos Totales</h3>
+                                <h3 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Ingresos Totales</h3>
                                 <p style={{ fontSize: '32px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)', letterSpacing: '-1.5px' }}>{formatMonto(balMoneda.ingresos, moneda)}</p>
                             </div>
                             <div>
-                                <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Gastos Totales</h3>
+                                <h3 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Gastos Totales</h3>
                                 <p style={{ fontSize: '32px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)', letterSpacing: '-1.5px' }}>{formatMonto(balMoneda.gastos, moneda)}</p>
                                 <p style={{ fontSize: '12px', color: '#999999', marginTop: '8px', fontWeight: 500 }}>
                                     {balMoneda.ingresos > 0 ? `${((balMoneda.gastos / balMoneda.ingresos) * 100).toFixed(1)}% de salidas en base a ingresos` : 'Sin gastos'}
@@ -375,13 +380,13 @@ export function Balance() {
                                     {/* Columna Izquierda: Mensajes Insight */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                         {insights.slice(0, 3).map((insight, i) => (
-                                            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', background: '#FFFFFF', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', borderLeft: `4px solid ${insight.type === 'warning' ? '#F57C00' : insight.type === 'success' ? '#388E3C' : '#1976D2'}`, boxShadow: 'var(--shadow-xs)' }}>
+                                            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', background: 'rgba(255, 255, 255, 0.03)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', borderLeft: `4px solid ${insight.type === 'warning' ? '#F57C00' : insight.type === 'success' ? '#388E3C' : '#1976D2'}`, boxShadow: 'var(--shadow-xs)' }}>
                                                 <div style={{ marginTop: '2px', flexShrink: 0 }}>
                                                     {insight.type === 'warning' && <AlertTriangle size={16} color="#F57C00" strokeWidth={2} />}
                                                     {insight.type === 'success' && <CheckCircle size={16} color="#388E3C" strokeWidth={2} />}
                                                     {insight.type === 'info' && <Info size={16} color="#1976D2" strokeWidth={2} />}
                                                 </div>
-                                                <p style={{ fontSize: '13px', color: 'var(--t2)', lineHeight: 1.5, fontWeight: 500 }}>
+                                                <p style={{ fontSize: '13px', color: 'var(--t1)', lineHeight: 1.5, fontWeight: 500 }}>
                                                     {insight.text}
                                                 </p>
                                             </div>
@@ -389,20 +394,20 @@ export function Balance() {
                                         
                                         {/* Espacio para proyección o resumen de cierre */}
                                         {dayToday >= 5 && dayToday < daysInMonth ? (
-                                            <div style={{ background: '#F8F9FA', padding: '16px', borderRadius: '16px', border: '1px dashed #DEE2E6', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                <p style={{ fontSize: '13px', color: '#495057', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                    <Calendar size={16} color="#6C757D" /> Proyección a fin de mes
+                                            <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '16px', borderRadius: '16px', border: '1px dashed var(--border)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                <p style={{ fontSize: '13px', color: 'var(--t2)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <Calendar size={16} color="var(--t3)" /> Proyección a fin de mes
                                                 </p>
-                                                <p style={{ fontSize: '13px', color: '#495057', lineHeight: 1.5 }}>
+                                                <p style={{ fontSize: '13px', color: 'var(--t1)', lineHeight: 1.5 }}>
                                                     Faltan <strong>{daysInMonth - dayToday} días</strong>. A este ritmo, el mes cerraría con egresos aprox. de <strong style={{color:'var(--red-soft)', fontFamily:'var(--font-mono)'}}>{formatMonto((balMoneda.gastos / dayToday) * daysInMonth, moneda)}</strong>.
                                                 </p>
                                             </div>
                                         ) : dayToday === daysInMonth ? (
-                                            <div style={{ background: '#e8faee', padding: '16px', borderRadius: '16px', border: '1px dashed #c8eccf', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                <p style={{ fontSize: '13px', color: '#0d6728', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                    <Calendar size={16} color="#0d6728" /> Mes trancado y cerrado
+                                            <div style={{ background: 'rgba(102, 187, 106, 0.05)', padding: '16px', borderRadius: '16px', border: '1px dashed var(--green-main)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                <p style={{ fontSize: '13px', color: 'var(--green-main)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <Calendar size={16} color="var(--green-main)" /> Mes trancado y cerrado
                                                 </p>
-                                                <p style={{ fontSize: '13px', color: '#0d6728', lineHeight: 1.5 }}>
+                                                <p style={{ fontSize: '13px', color: 'var(--green-main)', lineHeight: 1.5 }}>
                                                     Usa este historial para planificar la operativa de la próxima rotación de manera más eficiente.
                                                 </p>
                                             </div>
@@ -519,12 +524,17 @@ export function Balance() {
         const sItemsAnual = buildCatItems('gasto', aMovesMoneda);
 
         const CurrencyTabs = () => (
-            <div style={{ display: 'flex', gap: '8px', background: 'var(--bg)', padding: '4px', borderRadius: '12px', width: 'fit-content' }}>
+            <div style={{ display: 'flex', gap: '8px', background: 'var(--bg-input)', padding: '4px', borderRadius: '12px', width: 'fit-content' }}>
                 {monedasActivas.map(mnd => (
                     <button 
                         key={mnd} 
                         onClick={() => changeMoneda(mnd)}
-                        style={{ padding: '6px 16px', borderRadius: '8px', border: 'none', background: mnd === moneda ? 'var(--white)' : 'transparent', color: mnd === moneda ? 'var(--t1)' : 'var(--t3)', fontWeight: mnd === moneda ? 700 : 500, fontSize: '13px', cursor: 'pointer', boxShadow: mnd === moneda ? 'var(--shadow-xs)' : 'none', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px' }}
+                        style={{ padding: '6px 16px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px',
+                            background: mnd === moneda ? 'var(--white)' : 'transparent',
+                            color: mnd === moneda ? 'var(--t1)' : 'var(--t3)',
+                            fontWeight: mnd === moneda ? 700 : 500,
+                            border: mnd === moneda ? '1px solid var(--green-main)' : '1px solid transparent'
+                        }}
                     >
                         {mnd === 'USD' ? '🇺🇸' : mnd === 'UYU' ? '🇺🇾' : '🇦🇷'} {mnd}
                     </button>

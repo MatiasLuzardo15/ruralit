@@ -122,16 +122,16 @@ export function Libreta() {
                     </div>
 
                     {/* SISTEMA DE FILTROS MODERNOS */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: 'var(--white)', marginTop: '8px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: 'var(--bg-card)', marginTop: '8px' }}>
                         <div style={{ position: 'relative' }}>
-                            <label style={{ position: 'absolute', top: '-8px', left: '12px', background: 'var(--white)', padding: '0 4px', fontSize: '11px', fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase' }}>Búsqueda Rápida</label>
+                            <label style={{ position: 'absolute', top: '-8px', left: '12px', background: 'var(--bg-card)', padding: '0 4px', fontSize: '11px', fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase' }}>Búsqueda Rápida</label>
                             <Search size={16} strokeWidth={2.5} style={{ position: 'absolute', top: '16px', left: '16px', color: 'var(--t3)' }} />
-                            <input type="text" placeholder="Leche, ración..." value={busqueda} onChange={e => setBusy(e.target.value)} style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', background: 'transparent' }} />
+                            <input type="text" placeholder="Leche, ración..." value={busqueda} onChange={e => setBusy(e.target.value)} style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', background: 'var(--bg-input)', color: 'var(--t1)' }} />
                         </div>
                         
                         <div style={{ position: 'relative' }}>
-                            <label style={{ position: 'absolute', top: '-8px', left: '12px', background: 'var(--white)', padding: '0 4px', fontSize: '11px', fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase' }}>Flujo Monetario</label>
-                            <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)} style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', appearance: 'none', background: 'transparent', cursor: 'pointer' }}>
+                            <label style={{ position: 'absolute', top: '-8px', left: '12px', background: 'var(--bg-card)', padding: '0 4px', fontSize: '11px', fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase' }}>Flujo Monetario</label>
+                            <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)} style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', appearance: 'none', background: 'var(--bg-input)', color: 'var(--t1)', cursor: 'pointer' }}>
                                 <option value="todos">Ventas y Compras</option>
                                 <option value="ingreso">Solo Ingresos / Ventas</option>
                                 <option value="gasto">Solo Gastos / Compras</option>
@@ -140,8 +140,8 @@ export function Libreta() {
                         </div>
 
                         <div style={{ position: 'relative' }}>
-                            <label style={{ position: 'absolute', top: '-8px', left: '12px', background: 'var(--white)', padding: '0 4px', fontSize: '11px', fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase' }}>Clasificación</label>
-                            <select value={filtroCat} onChange={e => setFiltroCat(e.target.value)} style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', appearance: 'none', background: 'transparent', cursor: 'pointer' }}>
+                            <label style={{ position: 'absolute', top: '-8px', left: '12px', background: 'var(--bg-card)', padding: '0 4px', fontSize: '11px', fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase' }}>Clasificación</label>
+                            <select value={filtroCat} onChange={e => setFiltroCat(e.target.value)} style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', appearance: 'none', background: 'var(--bg-input)', color: 'var(--t1)', cursor: 'pointer' }}>
                                 <option value="todas">Cualquier Categoría</option>
                                 {categorias.filter(c => filtroTipo === 'todos' || c.tipo === filtroTipo).map(c => (
                                     <option key={c.id} value={c.id}>{c.nombre}</option>
@@ -154,7 +154,7 @@ export function Libreta() {
                     {/* EXPORT ROW */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-sm)', paddingBottom: '16px' }}>
                         <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--t2)', display: 'flex', alignItems: 'center', gap: '8px' }}><Filter size={16} /> Mostrando {filtrados.length} resultados</p>
-                        <button onClick={() => showToast('Iniciando exportación...')} style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t1)', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'transparent', border: 'none', borderBottom: '1px solid var(--t1)', paddingBottom: '2px' }}><Download size={14} /> EXPORT REPORT</button>
+                        <button onClick={() => showToast('Iniciando exportación...')} style={{ fontSize: '12px', fontWeight: 700, color: 'var(--t1)', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '10px', padding: '8px 16px', transition: 'all 0.2s', boxShadow: 'var(--shadow-xs)' }}><Download size={14} /> EXPORT REPORT</button>
                     </div>
 
                     {/* DATA GRID ESTILO INVENTORY 360 */}

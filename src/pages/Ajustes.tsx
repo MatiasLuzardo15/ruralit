@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Pencil, Trash2, Check, X, Settings2, Building2, Coins, LayoutGrid, AlertCircle, ChevronRight, ArrowLeft, User, HelpCircle } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, Settings2, Building2, Coins, LayoutGrid, AlertCircle, ChevronRight, ArrowLeft, User, HelpCircle, Moon, Sun } from 'lucide-react';
 import type { Categoria, TipoMovimiento, Moneda } from '../types';
 import db from '../db/database';
 import { showToast } from '../components/Toast';
@@ -49,7 +49,7 @@ function CatModal({ mode, initData, onClose, onSave }: { mode: 'add' | 'edit', i
                     
                     <div>
                         <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t2)', marginBottom: '8px', display: 'block' }}>Nombre</label>
-                        <input type="text" value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Ej: Vaca, Soja, Tractor" style={{ width: '100%', padding: '14px 16px', borderRadius: '16px', border: '1px solid var(--border)', fontSize: '15px', outline: 'none', transition: 'border 0.2s' }} />
+                        <input type="text" value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Ej: Vaca, Soja, Tractor" style={{ width: '100%', padding: '14px 16px', borderRadius: '16px', border: '1px solid var(--border)', fontSize: '15px', outline: 'none', transition: 'border 0.2s', background: 'var(--white)', color: 'var(--t1)' }} />
                     </div>
 
                     <div>
@@ -158,6 +158,12 @@ export function Ajustes() {
         if (u) setNombreUsuario(u.valor as string);
         const m = await db.config.get('monedasActivas');
         if (m && Array.isArray(m.valor)) setMonedasActivas(m.valor as Moneda[]);
+        const t = await db.config.get('tema');
+        if (t?.valor === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'light');
+        }
     };
 
     useEffect(() => { void cargar(); }, []);
@@ -228,6 +234,14 @@ export function Ajustes() {
         window.location.reload();
     };
 
+    const toggleTema = async () => {
+        const current = document.documentElement.getAttribute('data-theme') || 'light';
+        const nuevo = current === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', nuevo);
+        await db.config.put({ clave: 'tema', valor: nuevo });
+        showToast(`Modo ${nuevo === 'dark' ? 'oscuro' : 'claro'} activado`);
+    };
+
     const renderNav = () => {
         const NAV_ITEMS: { id: TabKey, label: string }[] = [
             { id: 'establecimiento', label: 'Establecimiento' },
@@ -289,8 +303,8 @@ export function Ajustes() {
                             <p>Actualiza la información pública de tu cuenta.</p>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', width: '100%' }}>
-                            <input type="text" value={nombreUsuario} onChange={e => setNombreUsuario(e.target.value)} placeholder="Tu Nombre (Ej: Matías)" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', background: 'var(--white)' }} />
-                            <input type="text" value={nombreEstab} onChange={e => setNombre(e.target.value)} placeholder="Nombre Comercial (Ej: La Esmeralda)" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', background: 'var(--white)' }} />
+                            <input type="text" value={nombreUsuario} onChange={e => setNombreUsuario(e.target.value)} placeholder="Tu Nombre (Ej: Matías)" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', background: 'var(--white)', color: 'var(--t1)' }} />
+                            <input type="text" value={nombreEstab} onChange={e => setNombre(e.target.value)} placeholder="Nombre Comercial (Ej: La Esmeralda)" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', background: 'var(--white)', color: 'var(--t1)' }} />
                         </div>
                     </div>
 
@@ -423,10 +437,29 @@ export function Ajustes() {
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <div className="settings-grid-row">
                         <div className="settings-row-info">
+                            <h3>Apariencia</h3>
+                            <p>Elegí el estilo visual que más te guste.</p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button 
+                                onClick={toggleTema}
+                                style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 24px', borderRadius: '16px', background: 'var(--white)', border: '1px solid var(--border)', cursor: 'pointer', fontWeight: 700, color: 'var(--t1)' }}
+                            >
+                                {typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark' ? (
+                                    <><Sun size={18} /> Cambiar a Modo Claro</>
+                                ) : (
+                                    <><Moon size={18} /> Cambiar a Modo Oscuro</>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="settings-grid-row">
+                        <div className="settings-row-info">
                             <h3>Configuración del Sistema</h3>
                             <p>Gestión avanzada y próximas funcionalidades del núcleo.</p>
                         </div>
-                        <div style={{ background: 'var(--bg)', borderRadius: '16px', padding: '24px', border: '1px solid var(--border-sm)' }}>
+                        <div style={{ background: 'var(--bg)', borderRadius: '16px', padding: '24px', border: '1px solid var(--border-sm)', width: '100%' }}>
                             <h4 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--t1)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}><Settings2 size={16} /> RoadMap de Desarrollo</h4>
                             <p style={{ fontSize: '14px', color: 'var(--t3)', lineHeight: 1.6, marginBottom: '12px' }}>Ruralit utiliza el motor IndexedDB para ofrecer una experiencia offline fluida.</p>
                             <ul style={{ fontSize: '13px', color: 'var(--t3)', paddingLeft: '20px', lineHeight: 1.8 }}>
@@ -463,6 +496,7 @@ export function Ajustes() {
             {
                 title: 'SOPORTE',
                 items: [
+                    { id: 'tema', label: 'Modo Oscuro / Claro', icon: Moon, action: toggleTema },
                     { id: 'sistema', label: 'Sistema', icon: Settings2, tab: 'sistema' as TabKey },
                     { id: 'ayuda', label: 'Centro de Ayuda', icon: HelpCircle, tab: 'sistema' as TabKey }
                 ]
@@ -483,20 +517,28 @@ export function Ajustes() {
                                 <div key={item.id}>
                                     <button 
                                         onClick={() => {
-                                            setActiveTab(item.tab);
-                                            setMobileDetailType(item.id);
-                                            setMobileView('detail');
+                                            if (item.action) {
+                                                item.action();
+                                            } else {
+                                                setActiveTab(item.tab!);
+                                                setMobileDetailType(item.id);
+                                                setMobileView('detail');
+                                            }
                                         }}
                                         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 8px', border: 'none', background: 'transparent', cursor: 'pointer' }}
                                     >
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                            <item.icon size={20} color="var(--t1)" strokeWidth={1.5} />
+                                            {item.id === 'tema' ? (
+                                                document.documentElement.getAttribute('data-theme') === 'dark' ? <Sun size={20} color="var(--t1)" /> : <Moon size={20} color="var(--t1)" />
+                                            ) : (
+                                                <item.icon size={20} color="var(--t1)" strokeWidth={1.5} />
+                                            )}
                                             <span style={{ fontSize: '15px', fontWeight: 500, color: 'var(--t1)' }}>{item.label}</span>
                                         </div>
-                                        <ChevronRight size={18} color="rgba(0,0,0,0.15)" strokeWidth={2.5} />
+                                        {item.id !== 'tema' && <ChevronRight size={18} color="var(--t3)" strokeWidth={2.5} />}
                                     </button>
                                     {idx < group.items.length - 1 && (
-                                        <div style={{ height: '1px', background: 'rgba(0,0,0,0.04)', margin: '0 8px' }}></div>
+                                        <div style={{ height: '1px', background: 'var(--border-rgba)', margin: '0 8px' }}></div>
                                     )}
                                 </div>
                             ))}
@@ -507,7 +549,7 @@ export function Ajustes() {
                 <div style={{ marginTop: '20px', padding: '0 8px' }}>
                     <button 
                         onClick={guardarNombre}
-                        style={{ width: '100%', padding: '18px', borderRadius: '40px', background: 'white', color: 'black', border: '2px solid black', fontSize: '15px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                        style={{ width: '100%', padding: '18px', borderRadius: '40px', background: 'var(--bg-card)', color: 'var(--t1)', border: '2px solid var(--t1)', fontSize: '15px', fontWeight: 700, cursor: 'pointer', boxShadow: 'var(--shadow-sm)' }}>
                         Guardar Cambios
                     </button>
                     <p style={{ textAlign: 'center', fontSize: '12px', color: 'var(--t3)', marginTop: '20px', fontWeight: 600 }}>Ruralit v5.2.0 • Agro Edition</p>
@@ -531,7 +573,7 @@ export function Ajustes() {
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', paddingBottom: '40px', background: isMobile ? 'var(--beige-bg)' : 'transparent' }}>
             {isMobile ? (
                 <div style={{ padding: '24px 24px 0', display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--beige-bg)' }}>
-                    <button onClick={() => setMobileView('menu')} style={{ background: 'white', borderRadius: '50%', padding: '8px', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <button onClick={() => setMobileView('menu')} style={{ background: 'var(--bg-card)', borderRadius: '50%', padding: '8px', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <ArrowLeft size={18} color="var(--t1)" />
                     </button>
                     <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--t1)' }}>
@@ -564,8 +606,8 @@ export function Ajustes() {
                                         <p>Actualiza tu nombre y comercio.</p>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
-                                        <input type="text" value={nombreUsuario} onChange={e => setNombreUsuario(e.target.value)} placeholder="Tu Nombre" style={{ padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px' }} />
-                                        <input type="text" value={nombreEstab} onChange={e => setNombre(e.target.value)} placeholder="Nombre Comercial" style={{ padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px' }} />
+                                        <input type="text" value={nombreUsuario} onChange={e => setNombreUsuario(e.target.value)} placeholder="Tu Nombre" style={{ padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px', background: 'var(--white)', color: 'var(--t1)' }} />
+                                        <input type="text" value={nombreEstab} onChange={e => setNombre(e.target.value)} placeholder="Nombre Comercial" style={{ padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px', background: 'var(--white)', color: 'var(--t1)' }} />
                                         <button className="btn-primary" onClick={guardarNombre} style={{ marginTop: '12px', padding: '16px', borderRadius: '14px' }}>Actualizar Perfil</button>
                                     </div>
                                 </div>

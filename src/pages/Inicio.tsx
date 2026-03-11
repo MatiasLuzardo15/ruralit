@@ -128,35 +128,35 @@ export function Inicio() {
                 {/* ── SECCIÓN DE REGISTRO RÁPIDO ── */}
                 <div style={{ marginBottom: 24 }}>
                     <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>Anotación Directa</h3>
-                    
-                    <form onSubmit={handleRegistroRapido} className="premium-input-group" style={{ marginBottom: 16 }}>
-                        <Search size={16} color="var(--t3)" style={{ marginRight: 12 }} />
+
+                    <form onSubmit={handleRegistroRapido} className="premium-input-group" style={{ marginBottom: 16, background: 'var(--bg-input)', border: '1px solid var(--border-sm)', boxShadow: 'var(--shadow-inset-input)' }}>
+                        <Search size={16} color="var(--t-muted)" style={{ marginRight: 12 }} />
                         <input
                             type="text"
                             placeholder='¿Qué pasó hoy? Ej: "gasté 2000 en gasoil"'
                             value={textoRapido}
                             onChange={(e) => setTextoRapido(e.target.value)}
                             className="premium-input"
+                            style={{ color: 'var(--t1)' }}
                         />
-                        <button type="submit" className="premium-btn-anotar">
-                            <Send size={15} style={{ marginRight: 6 }} />
-                            Anotar
+                        <button type="submit" className="premium-btn-anotar" style={{ background: '#74A78F', border: 'none', color: '#FFFFFF', padding: '10px 14px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                            <Send size={18} strokeWidth={2.5} />
                         </button>
                     </form>
 
-                    {/* BOTONES DE ACCIÓN PREPONDERANTES */}
+                    {/* BOTONES DE ACCIÓN PREPONDERANTES (ESTILO ACTION CARDS) */}
                     <div className="premium-actions-row">
-                        <button onClick={() => setTipo('ingreso')} className="premium-action-btn premium-action-btn--in">
-                            <div className="premium-action-icon-wrap">
-                                <Plus size={20} />
+                        <button onClick={() => setTipo('ingreso')} className="action-card-premium action-card-premium--in">
+                            <div className="action-card-icon-circle action-card-icon-circle--in">
+                                <Plus size={22} strokeWidth={2.5} />
                             </div>
-                            <span>Nueva Entrada</span>
+                            <span className="action-card-text">Nueva Entrada</span>
                         </button>
-                        <button onClick={() => setTipo('gasto')} className="premium-action-btn premium-action-btn--out">
-                            <div className="premium-action-icon-wrap">
-                                <Minus size={20} />
+                        <button onClick={() => setTipo('gasto')} className="action-card-premium action-card-premium--out">
+                            <div className="action-card-icon-circle action-card-icon-circle--out">
+                                <Minus size={22} strokeWidth={2.5} />
                             </div>
-                            <span>Nueva Salida</span>
+                            <span className="action-card-text">Nueva Salida</span>
                         </button>
                     </div>
                 </div>
@@ -211,7 +211,7 @@ export function Inicio() {
                         </div>
 
                         {/* BARRA DE FLUJO INTEGRADA */}
-                        <div style={{ padding: '16px 32px 24px', background: 'rgba(0,0,0,0.01)', borderTop: '1px solid var(--border-sm)' }}>
+                        <div style={{ padding: '16px 32px 24px', background: 'transparent', borderTop: '1px solid var(--border-sm)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                                 <h3 style={{ fontSize: 12, fontWeight: 700, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: '0.2px' }}>Distribución de Flujo</h3>
                                 <div style={{ display: 'flex', gap: 16 }}>
@@ -219,9 +219,9 @@ export function Inicio() {
                                     <span className="premium-legend" style={{ color: 'var(--red-soft)', fontWeight: 700 }}>{Math.round(pctGastos)}% Gasto</span>
                                 </div>
                             </div>
-                            <div className="premium-pill-bar" style={{ height: '8px' }}>
-                                <div className="premium-pill-fill-in" style={{ width: `${100 - pctGastos}%`, background: 'var(--green-main)', opacity: 0.8 }}></div>
-                                <div className="premium-pill-fill-out" style={{ width: `${pctGastos}%`, background: 'var(--red-soft)', opacity: 0.8 }}></div>
+                            <div className="premium-pill-bar" style={{ height: '8px', background: 'var(--bg-input)' }}>
+                                <div className="premium-pill-fill-in" style={{ width: `${100 - pctGastos}%`, background: 'var(--green-main)', boxShadow: '0 0 10px rgba(116, 167, 143, 0.3)' }}></div>
+                                <div className="premium-pill-fill-out" style={{ width: `${pctGastos}%`, background: 'var(--red-soft)', boxShadow: '0 0 10px rgba(214, 140, 122, 0.3)' }}></div>
                             </div>
                         </div>
                     </div>
@@ -241,53 +241,59 @@ export function Inicio() {
 
                     return (
                         <div style={{ marginBottom: 40 }}>
-                            <div className="premium-card" style={{ border: '1px solid var(--border)', background: 'var(--bg)', padding: '32px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-                                    <div style={{ width: 40, height: 40, borderRadius: 12, background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-                                        <TrendingUp size={20} color="var(--green-main)" />
+                            <div className="premium-card" style={{ border: '1px solid var(--border-rgba)', background: 'var(--bg-card)', padding: '24px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                                    <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--green-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-rgba)' }}>
+                                        <TrendingUp size={16} color="var(--green-main)" />
                                     </div>
                                     <div>
-                                        <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--t1)', marginBottom: 2 }}>A este ritmo...</h3>
-                                        <p style={{ fontSize: 12, color: 'var(--t3)', fontWeight: 500 }}>Estimación basada en tus últimos {dayToday} días</p>
+                                        <h3 style={{ fontSize: 15, fontWeight: 800, color: 'var(--t1)', marginBottom: 0 }}>A este ritmo...</h3>
+                                        <p style={{ fontSize: 11, color: 'var(--t3)', fontWeight: 500 }}>Basado en {dayToday} días</p>
                                     </div>
                                 </div>
-
-                                <div className="res-flex-between">
-                                    <div className="res-flex-item-main">
-                                        <p style={{ fontSize: 13, color: 'var(--t2)', fontWeight: 600, marginBottom: 8 }}>Te quedarían libres aproximadamente:</p>
-                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-                                            <h4 className="premium-amount" style={{ fontSize: 42, color: projN < 0 ? 'var(--red-soft)' : 'var(--green-main)', letterSpacing: '-1.5px', marginBottom: 0 }}>
+                                <div className="res-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '32px', alignItems: 'stretch' }}>
+                                    {/* LADO IZQUIERDO: FOCO PRINCIPAL */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '16px' }}>
+                                        <p style={{ fontSize: 13, color: 'var(--t3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Proyección fin de mes</p>
+                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap' }}>
+                                            <h4 className="premium-amount" style={{ fontSize: 34, color: projN < 0 ? 'var(--red-soft)' : 'var(--green-main)', letterSpacing: '-1.5px', marginBottom: 0, lineHeight: 1 }}>
                                                 {formatMonto(Math.abs(projN), moneda)}
                                             </h4>
-                                            <span style={{ fontSize: 14, fontWeight: 700, color: projN < 0 ? 'var(--red-soft)' : 'var(--green-main)', textTransform: 'uppercase' }}>
+                                            <span style={{ fontSize: 13, fontWeight: 800, color: projN < 0 ? 'var(--red-soft)' : 'var(--green-main)', textTransform: 'uppercase' }}>
                                                 {projN >= 0 ? 'a favor' : 'en contra'}
                                             </span>
                                         </div>
-                                        <div style={{ marginTop: 16, padding: '12px 16px', background: projN >= 0 ? 'rgba(46, 125, 50, 0.04)' : 'rgba(201, 74, 74, 0.04)', borderRadius: '12px', border: projN >= 0 ? '1px solid rgba(46, 125, 50, 0.1)' : '1px solid rgba(201, 74, 74, 0.1)', maxWidth: '440px' }}>
-                                            <p style={{ fontSize: 13, color: 'var(--t2)', fontWeight: 600, lineHeight: 1.5 }}>
-                                                {projN >= 0 
-                                                    ? "¡Buen trabajo! Si no hay imprevistos, el mes cerrará con saldo positivo."
-                                                    : "Ojo: a este paso podrías cerrar el mes en negativo. Revisá tus gastos previstos."}
+                                        <div style={{ padding: '14px 18px', background: projN >= 0 ? 'var(--green-light)' : 'var(--red-light)', borderRadius: '14px', border: '1px solid var(--border-rgba)' }}>
+                                            <p style={{ fontSize: 13, color: 'var(--t2)', fontWeight: 500, lineHeight: 1.5, margin: 0 }}>
+                                                {projN >= 0
+                                                    ? "Vas por buen camino. Si mantenés este ritmo cerrarás el mes con saldo positivo."
+                                                    : "Atención: si la tendencia continúa podrías cerrar el mes en negativo."}
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div className="res-flex-item-side" style={{ background: 'white', padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-xs)' }}>
-                                        <p style={{ fontSize: 11, color: 'var(--t3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 4 }}>Detalle del Cálculo</p>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    {/* LADO DERECHO: DESGLOSE TÉCNICO (CÁLCULO) */}
+                                    <div style={{ background: 'var(--bg-input)', padding: '28px', borderRadius: '18px', display: 'flex', flexDirection: 'column', border: '1px solid var(--border-rgba)', height: '100%', justifyContent: 'center' }}>
+                                        <p style={{ fontSize: 10, color: 'var(--t3)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 20 }}>Cálculo Proyectado</p>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <span style={{ fontSize: 12, color: 'var(--t2)', fontWeight: 500 }}>Ventas proyectadas</span>
-                                                <span style={{ fontSize: 14, color: 'var(--green-main)', fontWeight: 800 }}>{formatMonto(projE, moneda)}</span>
+                                                <span style={{ fontSize: 11, color: 'var(--t3)', fontWeight: 600 }}>Saldo Actual</span>
+                                                <span style={{ fontSize: 14, color: 'var(--green-main)', fontWeight: 800 }}>{formatMonto(saldo, moneda)}</span>
                                             </div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <span style={{ fontSize: 12, color: 'var(--t2)', fontWeight: 500 }}>Gastos proyectados</span>
-                                                <span style={{ fontSize: 14, color: 'var(--red-soft)', fontWeight: 800 }}>{formatMonto(projS, moneda)}</span>
+                                                <span style={{ fontSize: 11, color: 'var(--t3)', fontWeight: 600 }}>Cobros Estimados</span>
+                                                <span style={{ fontSize: 14, color: 'var(--t1)', fontWeight: 800 }}>{formatMonto(Math.max(0, projE - entradas), moneda)}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span style={{ fontSize: 11, color: 'var(--t3)', fontWeight: 600 }}>Pagos Estimados</span>
+                                                <span style={{ fontSize: 14, color: 'var(--red-soft)', fontWeight: 800 }}>{formatMonto(Math.max(0, projS - salidas), moneda)}</span>
                                             </div>
                                         </div>
-                                        <div style={{ height: '1px', background: 'var(--border-sm)', margin: '4px 0' }}></div>
-                                        <p style={{ fontSize: 11, color: 'var(--t3)', fontStyle: 'italic', textAlign: 'center' }}>
-                                            Basado en {dayToday} d / faltan {daysInM - dayToday} d
-                                        </p>
+                                        <div style={{ borderTop: '1px solid var(--border-sm)', marginTop: 20, paddingTop: 16 }}>
+                                            <p style={{ fontSize: 10, color: 'var(--t3)', fontStyle: 'italic', textAlign: 'center', margin: 0 }}>
+                                                Basado en los {dayToday} días transcurridos
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

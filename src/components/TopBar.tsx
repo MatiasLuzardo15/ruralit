@@ -16,16 +16,16 @@ export function TopBar({ title, heading, badge, subtitle, actions, hideCurrencyT
     const { moneda, monedasActivas, changeMoneda } = useMonedas();
 
     const currencyToggle = (!hideCurrencyToggle && monedasActivas.length > 1) ? (
-        <div style={{ background: 'var(--bg)', borderRadius: '12px', border: '1px solid var(--border)', display: 'flex', padding: '4px', height: '42px', alignItems: 'center' }}>
+        <div style={{ background: 'var(--bg-input)', borderRadius: '12px', border: '1px solid var(--border)', display: 'flex', padding: '4px', height: '42px', alignItems: 'center' }}>
             {monedasActivas.map(m => (
                 <button 
                     key={m} 
                     onClick={() => changeMoneda(m)} 
                     style={{ 
-                        padding: '6px 12px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                        padding: '6px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
                         background: m === moneda ? 'var(--white)' : 'transparent',
                         color: m === moneda ? 'var(--t1)' : 'var(--t3)',
-                        boxShadow: m === moneda ? 'var(--shadow-sm)' : 'none',
+                        border: m === moneda ? '1px solid var(--green-main)' : '1px solid transparent',
                         display: 'flex', alignItems: 'center', gap: '6px', height: '100%'
                     }}>
                     <span>{MONEDAS[m].flag}</span> <span className="desktop-only">{m}</span>
@@ -69,7 +69,7 @@ export function TopBar({ title, heading, badge, subtitle, actions, hideCurrencyT
                     {subtitle && (
                         <p style={{ 
                             fontSize: '13px', 
-                            color: 'var(--gray-500)', 
+                            color: 'var(--t3)', 
                             fontWeight: 500,
                             margin: 0,
                             WebkitFontSmoothing: 'auto'

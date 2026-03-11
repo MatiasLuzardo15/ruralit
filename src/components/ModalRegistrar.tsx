@@ -48,7 +48,7 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
 
     const ing = tipoInicial === 'ingreso';
     const esEdit = !!movimientoEditar;
-    const colorPrimario = ing ? 'var(--green-main)' : 'var(--t1)';
+    const colorPrimario = ing ? 'var(--green-main)' : 'var(--red-soft)';
 
     useEffect(() => {
         db.categorias.where('tipo').equals(tipoInicial).toArray().then(setCats);
