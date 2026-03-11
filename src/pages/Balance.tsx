@@ -5,7 +5,7 @@ import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContai
 import { ChevronLeft, ChevronRight, ChevronDown, X, BarChart2, TrendingUp, TrendingDown, Divide, AlertTriangle, CheckCircle, Info, Calendar } from 'lucide-react';
 import db from '../db/database';
 import type { Movimiento, Categoria, TipoMovimiento } from '../types';
-import { formatMonto, formatMesLabel, calcularBalance, formatFechaCorta } from '../utils/helpers';
+import { formatMonto, formatMesLabel, calcularBalance, formatFechaCorta, getTrimestreInfo } from '../utils/helpers';
 import { TopBar } from '../components/TopBar';
 import { ModalRegistrar } from '../components/ModalRegistrar';
 import { useMonedas } from '../utils/useMoneda';
@@ -25,18 +25,18 @@ function HorzBars({ items, palette, onCatClick }: { items: CatItem[]; palette: s
             {items.slice(0, 5).map((item, i) => {
                 const bgClr = palette[i % palette.length];
                 return (
-                    <div key={item.cat.id ?? i} onClick={() => onCatClick(item.cat)} style={{ cursor: 'pointer', padding: '16px 20px', borderRadius: '24px', transition: 'background 0.2s', display: 'flex', flexDirection: 'column', gap: '14px' }} onMouseOver={e => e.currentTarget.style.background = 'var(--bg)'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                    <div key={item.cat.id ?? i} onClick={() => onCatClick(item.cat)} style={{ cursor: 'pointer', padding: '12px 16px', borderRadius: '16px', transition: 'background 0.2s', display: 'flex', flexDirection: 'column', gap: '10px' }} onMouseOver={e => e.currentTarget.style.background = 'var(--bg)'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: bgClr, flexShrink: 0 }} />
-                                <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--t1)' }}>{item.cat.nombre}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: bgClr, flexShrink: 0 }} />
+                                <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--t1)' }}>{item.cat.nombre}</span>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-                                <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)', letterSpacing: '-0.5px' }}>{formatMonto(item.monto, moneda)}</span>
-                                <span style={{ fontSize: '13px', color: 'var(--t3)', fontWeight: 600, minWidth: '40px', textAlign: 'right' }}>{item.pct.toFixed(1)}%</span>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                                <span style={{ fontSize: '15px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)', letterSpacing: '-0.3px' }}>{formatMonto(item.monto, moneda)}</span>
+                                <span style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 600, minWidth: '38px', textAlign: 'right' }}>{item.pct.toFixed(0)}%</span>
                             </div>
                         </div>
-                        <div style={{ height: '6px', background: 'var(--gray-100)', borderRadius: '6px', width: '100%', overflow: 'hidden' }}>
+                        <div style={{ height: '5px', background: 'var(--gray-100)', borderRadius: '6px', width: '100%', overflow: 'hidden' }}>
                             <div style={{ width: `${item.pct}%`, height: '100%', background: bgClr, borderRadius: '6px' }} />
                         </div>
                     </div>
@@ -80,28 +80,302 @@ function CatDetailModal({ cat, movs, onClose, onEdit }: { cat: Categoria; movs: 
     );
 }
 
+// ── Feedback Header Component (Smart Summary) ──────────────
+function FeedbackHeader({ bal, type, periodLabel, moneda, itemsE, itemsS }: { bal: any, type: string, periodLabel: string, moneda: string, itemsE: CatItem[], itemsS: CatItem[] }) {
+    const margin = bal.ingresos > 0 ? (bal.neto / bal.ingresos) * 100 : (bal.gastos > 0 ? -100 : 0);
+    const concentration = itemsS.length > 0 ? itemsS[0].pct : 0;
+    
+    let status = 'neutral';
+    if (bal.ingresos > 0) {
+        if (margin > 35) status = 'excelente';
+        else if (margin > 4) status = 'estable';
+        else if (margin > -15) status = 'ajustado';
+        else status = 'critico';
+    } else if (bal.gastos > 0) {
+        status = 'inversion';
+    } else {
+        status = 'vacio';
+    }
+
+    const messages: Record<string, string[]> = {
+        excelente: [
+            `Rendimiento sobresaliente (${margin.toFixed(0)}%). El establecimiento en ${periodLabel} supera los índices estándar de rentabilidad.`,
+            `Salud financiera robusta. La gestión de ${periodLabel} refleja una gran capacidad de generación de valor.`,
+            `Excedente de caja extraordinario (${margin.toFixed(0)}%). Posición de solidez ideal para el crecimiento.`
+        ],
+        estable: [
+            `Marcha operativa equilibrada (${margin.toFixed(0)}%). En ${periodLabel} sostienes un margen que permite mantener el capital de giro.`,
+            `Resultados consistentes. El balance de ${periodLabel} es positivo; buen escenario para planificar mejoras.`,
+            `Estabilidad productiva. Los ingresos de ${periodLabel} compensan los egresos, fortaleciendo la resiliencia.`
+        ],
+        ajustado: [
+            `Alerta de rentabilidad. En ${periodLabel}, el ${ (bal.gastos/bal.ingresos * 100).toFixed(0) }% de ingresos van a costos. Margen acotado.`,
+            `Presión sobre el capital. El margen del ${margin.toFixed(0)}% en ${periodLabel} obliga a una gestión fina de insumos.`,
+            `Punto de equilibrio cercano. ${periodLabel} cierra con excedente mínimo. Auditar eficiencia es clave.`
+        ],
+        critico: [
+            `Déficit operativo detectado. El neto de ${periodLabel} cierra en rojo (${formatMonto(bal.neto, moneda)}). Riesgo de descapitalización.`,
+            `Situación financiera de riesgo. Egresos superaron la generación de ${periodLabel}. Urge revisar estrategia de ventas.`,
+            `Descapitalización temporal. Pérdidas significativas en ${periodLabel}. Se requiere análisis de viabilidad profundo.`
+        ],
+        inversion: [
+            `Fase de implantación y cuidados. Sin ventas en ${periodLabel}, el flujo es de salida para inversión productiva.`,
+            `Periodo de acumulación. Los gastos en ${periodLabel} son el combustible para la zafra futura. Cuida la liquidez.`,
+            `Etapa de fondeo operativo. Ciclos largos: en ${periodLabel} toca controlar el presupuesto para llegar con aire a la venta.`
+        ],
+        vacio: [
+            `Faltan registros de actividad. Completa los movimientos de ${periodLabel} para diagnosticar la salud financiera.`,
+            `Sin datos de gestión. Anota tus ventas o compras de insumos para obtener el análisis técnico de ${periodLabel}.`,
+            `Tablero en blanco. La potencia de Ruralit se activa con tus datos. Registra la actividad de ${periodLabel}.`
+        ]
+    };
+
+    const recommendations: Record<string, string[]> = {
+        excelente: ["Ideal para crear un fondo de reserva o adelantar compra de insumos."],
+        estable: ["Mantén el foco en optimizar costos variables para saltar de margen."],
+        ajustado: ["Identifica el gasto principal y busca alternativas para recuperar aire."],
+        critico: ["Reduce gastos no operativos y evalúa venta de activos improductivos."],
+        inversion: ["Asegura que el costo por hectárea se mantenga dentro de lo previsto."],
+        vacio: ["Registrar gastos hormiga ayuda a ver fugas invisibles de capital."]
+    };
+
+    const strForHash = periodLabel + type + (bal.ingresos + bal.gastos).toString();
+    let hash = 0;
+    for (let i = 0; i < strForHash.length; i++) hash = ((hash << 5) - hash) + strForHash.charCodeAt(i);
+    const msg = messages[status][Math.abs(hash) % messages[status].length];
+    const rec = recommendations[status][Math.abs(hash * 3) % recommendations[status].length];
+
+    const colors: Record<string, string> = {
+        excelente: 'var(--green-main)',
+        estable: 'var(--blue-main)',
+        ajustado: '#F57C00',
+        critico: 'var(--red-soft)',
+        inversion: '#607D8B',
+        vacio: 'var(--t3)'
+    };
+
+    return (
+        <div style={{ 
+            background: 'var(--white)', 
+            borderRadius: '24px', 
+            padding: '20px 24px', 
+            border: '1px solid var(--border-sm)', 
+            borderLeft: `6px solid ${colors[status]}`,
+            marginBottom: '24px',
+            boxShadow: 'var(--shadow-xs)',
+            position: 'relative',
+            overflow: 'hidden'
+        }}>
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                <div style={{ 
+                    width: '40px', 
+                    height: '40px', 
+                    borderRadius: '12px', 
+                    background: `${colors[status]}12`, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    color: colors[status],
+                    flexShrink: 0
+                }}>
+                    {status === 'excelente' && <TrendingUp size={20} />}
+                    {status === 'estable' && <CheckCircle size={20} />}
+                    {status === 'ajustado' && <AlertTriangle size={20} />}
+                    {status === 'critico' && <AlertTriangle size={20} />}
+                    {status === 'inversion' && <Calendar size={20} />}
+                    {status === 'vacio' && <Info size={20} />}
+                </div>
+                
+                <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                        <span style={{ fontSize: '10px', fontWeight: 900, color: colors[status], textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                            {type === 'mensual' ? 'Mes' : type === 'trimestral' ? 'Trimestral' : 'Anual'} — {periodLabel}
+                        </span>
+                    </div>
+                    
+                    <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--t1)', lineHeight: 1.4 }}>
+                        {msg} <span style={{ fontWeight: 500, color: 'var(--t3)', marginLeft: '4px' }}>{rec}</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ── Analysis Section Component ──────────────
+interface AnalysisData {
+    bal: any;
+    prevBal?: any;
+    itemsE: CatItem[];
+    itemsS: CatItem[];
+    movs: Movimiento[];
+    type: 'mensual' | 'trimestral' | 'anual';
+    moneda: string;
+    catMap: Map<number, Categoria>;
+    periodLabel: string;
+}
+
+function AnalysisSection({ bal, prevBal, itemsE, itemsS, movs, type, moneda, catMap, periodLabel }: AnalysisData) {
+    type InsightType = { type: 'warning' | 'success' | 'info', text: string };
+    const insights: InsightType[] = [];
+
+    // 1. Concentration
+    if (itemsS.length > 0 && itemsS[0].pct > 40) {
+        insights.push({
+            type: 'warning',
+            text: `Tus egresos están concentrados. El ${itemsS[0].pct.toFixed(0)}% del total es en "${itemsS[0].cat.nombre}". Monitorear esto es clave para tus costos productivos.`
+        });
+    }
+
+    // 2. Comparison
+    if (prevBal && prevBal.gastos > 0) {
+        const varG = ((bal.gastos - prevBal.gastos) / prevBal.gastos) * 100;
+        if (varG > 15) {
+            insights.push({
+                type: 'warning',
+                text: `Los costos aumentaron un ${varG.toFixed(0)}% vs el ${type === 'mensual' ? 'mes' : 'periodo'} anterior. Revisalo si fue imprevisto o planificado.`
+            });
+        } else if (varG < -15) {
+            insights.push({
+                type: 'success',
+                text: `Tus costos bajaron un ${Math.abs(varG).toFixed(0)}% frente al ${type === 'mensual' ? 'mes' : 'periodo'} anterior. Buen control de caja.`
+            });
+        }
+    }
+
+    // 3. Status
+    if (bal.ingresos > bal.gastos * 1.5) {
+        insights.push({
+            type: 'success',
+            text: `Flujo altamente positivo. Asegura reinvertir este margen o crear un fondo sólido para etapas de sequía o meses de baja venta.`
+        });
+    } else if (bal.ingresos === 0 && bal.gastos > 0) {
+        insights.push({
+            type: 'info',
+            text: `${type === 'mensual' ? 'Mes' : 'Periodo'} de salida con 0 facturación. Asegura tu capital de trabajo para no descapitalizarte.`
+        });
+    } else if (bal.gastos > bal.ingresos) {
+        insights.push({
+            type: 'warning',
+            text: `Operación en rojo neto temporal (${formatMonto(bal.neto, moneda)}). Prevé ajustar la estructura si esto no corresponde a una inversión normal.`
+        });
+    }
+
+    if (insights.length === 0 && type !== 'anual') return null;
+
+    const topGasto = [...movs].filter(m => m.tipo === 'gasto').sort((a,b)=>b.monto - a.monto)[0];
+    const topIngreso = [...movs].filter(m => m.tipo === 'ingreso').sort((a,b)=>b.monto - a.monto)[0];
+    const qtyIngreso = movs.filter(m => m.tipo === 'ingreso').length;
+    const freeMargin = bal.ingresos > 0 ? (bal.neto / bal.ingresos) * 100 : 0;
+
+    return (
+        <div style={{ background: 'var(--white)', borderRadius: '28px', padding: '24px', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--blue-main)', letterSpacing: '-0.3px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                    <TrendingUp size={20} style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <span>Análisis de Resultados y Métricas Clave ({type === 'mensual' ? 'Mes' : type === 'trimestral' ? 'Trimestral' : 'Anual'})</span>
+                </h3>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {insights.slice(0, 3).map((insight, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', background: 'rgba(255, 255, 255, 0.03)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', borderLeft: `4px solid ${insight.type === 'warning' ? '#F57C00' : insight.type === 'success' ? '#388E3C' : '#1976D2'}`, boxShadow: 'var(--shadow-xs)' }}>
+                            <div style={{ marginTop: '2px', flexShrink: 0 }}>
+                                {insight.type === 'warning' && <AlertTriangle size={14} color="#F57C00" strokeWidth={2.5} />}
+                                {insight.type === 'success' && <CheckCircle size={14} color="#388E3C" strokeWidth={2.5} />}
+                                {insight.type === 'info' && <Info size={14} color="#1976D2" strokeWidth={2.5} />}
+                            </div>
+                            <p style={{ fontSize: '12.5px', color: 'var(--t1)', lineHeight: 1.45, fontWeight: 500 }}>{insight.text}</p>
+                        </div>
+                    ))}
+                    {type === 'anual' && (
+                        <div style={{ background: 'var(--gray-50)', padding: '16px', borderRadius: '16px', border: '1px solid var(--border)' }}>
+                            <p style={{ fontSize: '13px', color: 'var(--t2)', fontWeight: 700, marginBottom: '8px' }}>Rendimiento Anual Detallado</p>
+                            <p style={{ fontSize: '13px', color: 'var(--t1)', lineHeight: 1.5 }}>
+                                Análisis consolidado del ejercicio {periodLabel}. Se observa una {freeMargin > 0 ? 'rentabilidad positiva' : 'necesidad de ajuste'} con {qtyIngreso} eventos de ingreso detectados.
+                            </p>
+                        </div>
+                    )}
+                </div>
+
+                <div style={{ background: 'var(--bg)', borderRadius: '20px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <h4 style={{ fontSize: '11px', fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Indicadores de Desempeño</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '16px' }}>
+                        <div>
+                            <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 600, marginBottom: '4px' }}>Top Gasto</p>
+                            <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)' }}>{topGasto ? formatMonto(topGasto.monto, moneda) : '-'}</p>
+                            <p style={{ fontSize: '12px', color: 'var(--red-soft)', fontWeight: 600 }}>{topGasto ? catMap.get(topGasto.categoriaId)?.nombre : '-'}</p>
+                        </div>
+                        <div>
+                            <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 600, marginBottom: '4px' }}>Top Ingreso</p>
+                            <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)' }}>{topIngreso ? formatMonto(topIngreso.monto, moneda) : '-'}</p>
+                            <p style={{ fontSize: '12px', color: 'var(--green-main)', fontWeight: 600 }}>{topIngreso ? catMap.get(topIngreso.categoriaId)?.nombre : '-'}</p>
+                        </div>
+                        <div>
+                            <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 600, marginBottom: '4px' }}>Margen Libre</p>
+                            <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)' }}>{freeMargin.toFixed(1)}%</p>
+                            <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 500 }}>{freeMargin > 0 ? 'Global' : 'A pérdida'}</p>
+                        </div>
+                        <div>
+                            <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 600, marginBottom: '4px' }}>Eventos Ingreso</p>
+                            <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)' }}>{qtyIngreso}</p>
+                            <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 500 }}>{type === 'anual' ? 'en el año' : 'en el ciclo'}</p>
+                        </div>
+                        {type === 'anual' && (
+                            <>
+                                <div>
+                                    <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 600, marginBottom: '4px' }}>Promedio Mensual</p>
+                                    <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)' }}>{formatMonto(bal.ingresos / 12, moneda)}</p>
+                                    <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 500 }}>Ingresos Brutos</p>
+                                </div>
+                                <div>
+                                    <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 600, marginBottom: '4px' }}>Eficiencia Gasto</p>
+                                    <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)' }}>{bal.ingresos > 0 ? ((bal.gastos/bal.ingresos)*100).toFixed(0) : 0}%</p>
+                                    <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 500 }}>Costos vs Ventas</p>
+                                </div>
+                                <div>
+                                    <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 600, marginBottom: '4px' }}>Periodos con Venta</p>
+                                    <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)' }}>{qtyIngreso}</p>
+                                    <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 500 }}>Hitos de Comercialización</p>
+                                </div>
+                                <div>
+                                    <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 600, marginBottom: '4px' }}>Resultado Operativo</p>
+                                    <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--green-main)', fontFamily: 'var(--font-mono)' }}>{formatMonto(bal.neto, moneda)}</p>
+                                    <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 500 }}>Balance Final {periodLabel}</p>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ── KPI Card Component ───────────────────────────────────────
 const KPICard = ({ title, value, sub, icon, trend }: any) => (
-    <div style={{ background: 'var(--white)', borderRadius: '32px', padding: '32px', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
-        <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+    <div style={{ background: 'var(--white)', borderRadius: '24px', padding: '24px', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+        <p style={{ fontSize: '11px', fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             {icon} {title}
         </p>
-        <p style={{ fontSize: '36px', fontWeight: 800, color: 'var(--t1)', letterSpacing: '-1.5px', fontFamily: 'var(--font-mono)' }}>{value}</p>
-        <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {trend && <span style={{ padding: '4px 8px', borderRadius: '8px', background: trend.up ? 'var(--green-light)' : 'var(--gray-100)', color: trend.up ? 'var(--green-main)' : 'var(--t2)', fontSize: '12px', fontWeight: 700 }}>{trend.label}</span>}
-            {sub && <span style={{ fontSize: '13px', color: 'var(--t3)', fontWeight: 500 }}>{sub}</span>}
+        <p style={{ fontSize: '28px', fontWeight: 800, color: 'var(--t1)', letterSpacing: '-1.2px', fontFamily: 'var(--font-mono)' }}>{value}</p>
+        <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {trend && <span style={{ padding: '3px 8px', borderRadius: '6px', background: trend.up ? 'var(--green-light)' : 'var(--gray-100)', color: trend.up ? 'var(--green-main)' : 'var(--t2)', fontSize: '11px', fontWeight: 700 }}>{trend.label}</span>}
+            {sub && <span style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 500 }}>{sub}</span>}
         </div>
     </div>
 );
 
 // ── Main Balance ─────────────────────────────────────────────
-type Vista = 'mensual' | 'anual';
+type Vista = 'mensual' | 'trimestral' | 'anual';
 
 export function Balance() {
     const [vista, setVista] = useState<Vista>('mensual');
     const [anio, setAnio] = useState(new Date().getFullYear());
     const [mes, setMes] = useState(new Date().getMonth());
     const [movsMes, setMovsMes] = useState<Movimiento[]>([]);
+    const [movsTrim, setMovsTrim] = useState<Movimiento[]>([]);
     const [movsPrev, setMovsPrev] = useState<Movimiento[]>([]);
     const [movsAnio, setMovsAnio] = useState<Movimiento[]>([]);
 
@@ -112,6 +386,25 @@ export function Balance() {
     const categorias = useLiveQuery(() => db.categorias.toArray(), []) ?? [];
     const catMap = new Map<number, Categoria>(categorias.map(c => [c.id!, c]));
     const { moneda, monedasActivas, changeMoneda } = useMonedas();
+
+    const CurrencyTabs = () => (
+        <div style={{ display: 'flex', gap: '8px', background: 'var(--bg-input)', padding: '4px', borderRadius: '12px', width: 'fit-content' }}>
+            {monedasActivas.map(mnd => (
+                <button 
+                    key={mnd} 
+                    onClick={() => changeMoneda(mnd)}
+                    style={{ padding: '6px 16px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px',
+                        background: mnd === moneda ? 'var(--white)' : 'transparent',
+                        color: mnd === moneda ? 'var(--t1)' : 'var(--t3)',
+                        fontWeight: mnd === moneda ? 700 : 500,
+                        border: mnd === moneda ? '1px solid var(--green-main)' : '1px solid transparent'
+                    }}
+                >
+                    {mnd === 'USD' ? '🇺🇸' : mnd === 'UYU' ? '🇺🇾' : '🇦🇷'} {mnd}
+                </button>
+            ))}
+        </div>
+    );
 
     const cargarData = useCallback(async () => {
         if (vista === 'mensual') {
@@ -126,6 +419,10 @@ export function Balance() {
             const pFin = new Date(pa, pm + 1, 0).toISOString().split('T')[0];
             const prevRows = await db.movimientos.where('fecha').between(pIni, pFin, true, true).toArray();
             setMovsPrev(prevRows);
+        } else if (vista === 'trimestral') {
+            const { inicio, fin } = getTrimestreInfo(new Date(anio, mes, 1));
+            const trimRows = await db.movimientos.where('fecha').between(inicio, fin, true, true).toArray();
+            setMovsTrim(trimRows);
         } else {
             const ini = new Date(anio, 0, 1).toISOString().split('T')[0];
             const fin = new Date(anio, 11, 31).toISOString().split('T')[0];
@@ -137,6 +434,7 @@ export function Balance() {
     useEffect(() => { void cargarData(); }, [cargarData]);
 
     const navMes = (d: -1 | 1) => { let m = mes + d, a = anio; if (m < 0) { m = 11; a--; } if (m > 11) { m = 0; a++; } setMes(m); setAnio(a); };
+    const navTrim = (d: -1 | 1) => { let m = mes + (d * 3), a = anio; if (m < 0) { m = 9; a--; } if (m > 11) { m = 0; a++; } setMes(m); setAnio(a); };
 
     const buildCatItems = (tipo: 'ingreso' | 'gasto', dataset: Movimiento[]): CatItem[] => {
         const fil = dataset.filter(m => m.tipo === tipo), total = fil.reduce((s, m) => s + m.monto, 0);
@@ -153,14 +451,21 @@ export function Balance() {
     const topbarActions = (
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
             <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '14px', padding: '4px', display: 'flex' }}>
-                <button style={{ padding: '8px 16px', borderRadius: '10px', fontSize: '13px', background: vista === 'mensual' ? 'var(--white)' : 'transparent', fontWeight: vista === 'mensual' ? 700 : 500, color: vista === 'mensual' ? 'var(--t1)' : 'var(--t3)', boxShadow: vista === 'mensual' ? 'var(--shadow-sm)' : 'none', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }} onClick={() => setVista('mensual')}>Mensual</button>
-                <button style={{ padding: '8px 16px', borderRadius: '10px', fontSize: '13px', background: vista === 'anual' ? 'var(--white)' : 'transparent', fontWeight: vista === 'anual' ? 700 : 500, color: vista === 'anual' ? 'var(--t1)' : 'var(--t3)', boxShadow: vista === 'anual' ? 'var(--shadow-sm)' : 'none', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }} onClick={() => setVista('anual')}>Anual</button>
+                <button style={{ padding: '8px 16px', borderRadius: '10px', fontSize: '12px', background: vista === 'mensual' ? 'var(--white)' : 'transparent', fontWeight: vista === 'mensual' ? 700 : 500, color: vista === 'mensual' ? 'var(--t1)' : 'var(--t3)', boxShadow: vista === 'mensual' ? 'var(--shadow-sm)' : 'none', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }} onClick={() => setVista('mensual')}>Mensual</button>
+                <button style={{ padding: '8px 16px', borderRadius: '10px', fontSize: '12px', background: vista === 'trimestral' ? 'var(--white)' : 'transparent', fontWeight: vista === 'trimestral' ? 700 : 500, color: vista === 'trimestral' ? 'var(--t1)' : 'var(--t3)', boxShadow: vista === 'trimestral' ? 'var(--shadow-sm)' : 'none', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }} onClick={() => setVista('trimestral')}>Trimestral</button>
+                <button style={{ padding: '8px 16px', borderRadius: '10px', fontSize: '12px', background: vista === 'anual' ? 'var(--white)' : 'transparent', fontWeight: vista === 'anual' ? 700 : 500, color: vista === 'anual' ? 'var(--t1)' : 'var(--t3)', boxShadow: vista === 'anual' ? 'var(--shadow-sm)' : 'none', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }} onClick={() => setVista('anual')}>Anual</button>
             </div>
             {vista === 'mensual' ? (
                 <div style={{ display: 'flex', alignItems: 'center', background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '14px', overflow: 'hidden', boxShadow: 'var(--shadow-xs)' }}>
                     <button style={{ padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--t2)' }} onClick={() => navMes(-1)}><ChevronLeft size={16} /></button>
                     <span style={{ fontSize: '13px', fontWeight: 700, minWidth: '110px', textAlign: 'center', color: 'var(--t1)' }}>{formatMesLabel(anio, mes)}</span>
                     <button style={{ padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--t2)' }} onClick={() => navMes(1)}><ChevronRight size={16} /></button>
+                </div>
+            ) : vista === 'trimestral' ? (
+                <div style={{ display: 'flex', alignItems: 'center', background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '14px', overflow: 'hidden', boxShadow: 'var(--shadow-xs)' }}>
+                    <button style={{ padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--t2)' }} onClick={() => navTrim(-1)}><ChevronLeft size={16} /></button>
+                    <span style={{ fontSize: '13px', fontWeight: 700, minWidth: '130px', textAlign: 'center', color: 'var(--t1)' }}>{getTrimestreInfo(new Date(anio, mes, 1)).label}</span>
+                    <button style={{ padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--t2)' }} onClick={() => navTrim(1)}><ChevronRight size={16} /></button>
                 </div>
             ) : (
                 <div style={{ position: 'relative' }}>
@@ -227,15 +532,23 @@ export function Balance() {
 
         return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <FeedbackHeader 
+                    bal={balMoneda} 
+                    type="mensual" 
+                    periodLabel={formatMesLabel(anio, mes)} 
+                    moneda={moneda} 
+                    itemsE={eItems}
+                    itemsS={sItems}
+                />
                 {/* BIG HERO REPORT */}
-                <div style={{ background: 'var(--white)', borderRadius: '32px', padding: '40px', boxShadow: 'var(--shadow-sm)' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '48px', alignItems: 'center' }}>
+                <div style={{ background: 'var(--white)', borderRadius: '28px', padding: '24px 28px', boxShadow: 'var(--shadow-sm)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '32px', alignItems: 'center' }}>
 
                         {/* Saldo Principal */}
                         <div style={{ display: 'flex', flexDirection: 'column', minWidth: '220px' }}>
-                            <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--t2)', marginBottom: '8px' }}>Tu Saldo del Mes</p>
+                            <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--t2)', marginBottom: '4px' }}>Tu Saldo del Mes</p>
                             
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
                                 {monedasActivas.map((mnd, idx) => {
                                     const mvs = movsMes.filter(m => (m.moneda || 'UYU') === mnd);
                                     const pv = movsPrev.filter(m => (m.moneda || 'UYU') === mnd);
@@ -245,16 +558,16 @@ export function Balance() {
                                     const mgn = b.ingresos > 0 ? ((b.neto / b.ingresos) * 100).toFixed(1) : '0.0';
 
                                     return (
-                                        <div key={mnd} style={{ borderBottom: idx < monedasActivas.length - 1 ? '1px solid var(--border-sm)' : 'none', paddingBottom: idx < monedasActivas.length - 1 ? '16px' : '0' }}>
-                                            <p style={{ fontSize: '32px', fontWeight: 800, color: 'var(--t1)', letterSpacing: '-1.5px', lineHeight: 1, fontFamily: 'var(--font-mono)' }}>
+                                        <div key={mnd} style={{ borderBottom: idx < monedasActivas.length - 1 ? '1px solid var(--border-sm)' : 'none', paddingBottom: idx < monedasActivas.length - 1 ? '12px' : '0' }}>
+                                            <p style={{ fontSize: '28px', fontWeight: 800, color: 'var(--t1)', letterSpacing: '-1.2px', lineHeight: 1, fontFamily: 'var(--font-mono)' }}>
                                                 {formatMonto(b.neto, mnd)}
                                             </p>
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
                                                 <p style={{ fontSize: '11px', color: '#999999' }}>
                                                     <span style={{fontWeight: 500}}>{mnd === 'USD' ? '🇺🇸 USD' : mnd === 'UYU' ? '🇺🇾 UYU' : '🇦🇷 ARS'}</span> {dp !== 0 ? `(${dp >= 0 ? '+' : ''}${formatMonto(dp, mnd)})` : ''}
                                                 </p>
-                                                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--blue-main)', background: 'var(--blue-light)', padding: '4px 8px', borderRadius: '8px' }}>
-                                                    Margen {mgn}%
+                                                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--blue-main)', background: 'var(--blue-light)', padding: '3px 6px', borderRadius: '6px' }}>
+                                                    {mgn}%
                                                 </span>
                                             </div>
                                         </div>
@@ -264,9 +577,9 @@ export function Balance() {
                         </div>
 
                         {/* Chart Area */}
-                        <div style={{ width: '100%', height: '300px', flex: 2, minWidth: '320px', display: 'flex', flexDirection: 'column' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', alignItems: 'center' }}>
-                                <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--t1)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Evolución Mensual</p>
+                        <div style={{ width: '100%', height: '260px', flex: 2, minWidth: '320px', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', alignItems: 'center' }}>
+                                <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--t1)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Evolución Mensual</p>
                                 <CurrencyTabs />
                             </div>
                             <div style={{ flex: 1, width: '100%', minHeight: 0 }}>
@@ -277,219 +590,62 @@ export function Balance() {
                                                 <stop offset="5%" stopColor="var(--green-main)" stopOpacity={0.3} />
                                                 <stop offset="95%" stopColor="var(--green-main)" stopOpacity={0} />
                                             </linearGradient>
+                                            <linearGradient id="colorGasto" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="var(--red-soft)" stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor="var(--red-soft)" stopOpacity={0} />
+                                            </linearGradient>
                                         </defs>
                                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--t3)', fontWeight: 400 }} dy={10} minTickGap={20} />
-                                        <Tooltip formatter={(value: any) => formatMonto(value, moneda)} contentStyle={{ background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', fontSize: '13px', fontWeight: 600, padding: '12px 16px' }} labelStyle={{ color: 'var(--t3)', marginBottom: '8px', fontSize: '12px', fontWeight: 500 }} />
+                                        <Tooltip 
+                                            formatter={(value: any) => formatMonto(value, moneda)} 
+                                            contentStyle={{ background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', fontSize: '13px', fontWeight: 600, padding: '12px 16px' }} 
+                                            itemStyle={{ color: 'var(--t1)' }}
+                                            labelStyle={{ color: 'var(--t3)', marginBottom: '8px', fontSize: '12px', fontWeight: 500 }} 
+                                        />
                                         <Area type="monotone" dataKey="Ingresos" stroke="var(--green-main)" strokeWidth={3} fillOpacity={1} fill="url(#colorIngreso)" dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                                        <Area type="monotone" dataKey="Gastos" stroke="var(--red-soft)" strokeWidth={3} fillOpacity={1} fill="url(#colorGasto)" dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
                                     </AreaChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
 
                         {/* Secondary Stats */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '40px', minWidth: '180px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', minWidth: '180px' }}>
                             <div>
-                                <h3 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Ingresos Totales</h3>
-                                <p style={{ fontSize: '32px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)', letterSpacing: '-1.5px' }}>{formatMonto(balMoneda.ingresos, moneda)}</p>
+                                <h3 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Ingresos Totales</h3>
+                                <p style={{ fontSize: '28px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)', letterSpacing: '-1.2px' }}>{formatMonto(balMoneda.ingresos, moneda)}</p>
                             </div>
                             <div>
-                                <h3 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Gastos Totales</h3>
-                                <p style={{ fontSize: '32px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)', letterSpacing: '-1.5px' }}>{formatMonto(balMoneda.gastos, moneda)}</p>
-                                <p style={{ fontSize: '12px', color: '#999999', marginTop: '8px', fontWeight: 500 }}>
-                                    {balMoneda.ingresos > 0 ? `${((balMoneda.gastos / balMoneda.ingresos) * 100).toFixed(1)}% de salidas en base a ingresos` : 'Sin gastos'}
+                                <h3 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Gastos Totales</h3>
+                                <p style={{ fontSize: '28px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)', letterSpacing: '-1.2px' }}>{formatMonto(balMoneda.gastos, moneda)}</p>
+                                <p style={{ fontSize: '11px', color: '#999999', marginTop: '6px', fontWeight: 500 }}>
+                                    {balMoneda.ingresos > 0 ? `${((balMoneda.gastos / balMoneda.ingresos) * 100).toFixed(0)}% de salidas` : 'Sin gastos'}
                                 </p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Análisis de Resultados para el Productor */}
-                {balMoneda.ingresos > 0 || balMoneda.gastos > 0 ? (
-                    (() => {
-                        type InsightType = { type: 'warning' | 'success' | 'info', text: string };
-                        const insights: InsightType[] = [];
-
-                        // 1. Concentración de Gastos
-                        if (sItems.length > 0 && sItems[0].pct > 40) {
-                            insights.push({
-                                type: 'warning',
-                                text: `Tus egresos están concentrados. El ${sItems[0].pct.toFixed(0)}% del total es en "${sItems[0].cat.nombre}". Monitorear esto es clave para tus costos productivos.`
-                            });
-                        }
-
-                        // 2. Comparativa con mes anterior
-                        if (balPrevMoneda.gastos > 0) {
-                            const varG = ((balMoneda.gastos - balPrevMoneda.gastos) / balPrevMoneda.gastos) * 100;
-                            if (varG > 15) {
-                                insights.push({
-                                    type: 'warning',
-                                    text: `Los costos aumentaron un ${varG.toFixed(0)}% vs cierre anterior. Revisalo si fue imprevisto o planificado en el ciclo productivo.`
-                                });
-                            } else if (varG < -15) {
-                                insights.push({
-                                    type: 'success',
-                                    text: `Tus costos bajaron un ${Math.abs(varG).toFixed(0)}% frente al cierre anterior. Buen control de caja este periodo.`
-                                });
-                            }
-                        }
-
-                        // 3. Situación de Ingresos
-                        if (balMoneda.ingresos > balMoneda.gastos * 1.5) {
-                            insights.push({
-                                type: 'success',
-                                text: `Flujo altamente positivo. Asegura reinvertir este margen o crear un fondo sólido para etapas de sequía o meses de baja venta.`
-                            });
-                        } else if (balMoneda.ingresos === 0 && balMoneda.gastos > 0) {
-                            insights.push({
-                                type: 'info',
-                                text: `Mes de salida con 0 facturación (común en etapas de engorde o cultivo). Asegura tu capital de trabajo para no descapitalizarte.`
-                            });
-                        } else if (balMoneda.gastos > balMoneda.ingresos) {
-                            insights.push({
-                                type: 'warning',
-                                text: `Estás operando en rojo neto temporal (${formatMonto(balMoneda.neto, moneda)}). Prevé ajustar la estructura si esto no corresponde a una inversión normal de temporada.`
-                            });
-                        }
-                        
-                        // 4. Dependencia de un ingreso
-                        if (eItems.length > 0 && eItems[0].pct > 85 && eItems.length === 1) {
-                            insights.push({
-                                type: 'info',
-                                text: `Giro focalizado: dependes 100% de la venta de "${eItems[0].cat.nombre}". Diversificar giros en el predio suele mejorar la fluidez mensual de caja.`
-                            });
-                        }
-
-                        if (insights.length === 0) return null;
-
-                        const topGasto = movsMesMoneda.filter(m => m.tipo === 'gasto').sort((a,b)=>b.monto - a.monto)[0];
-                        const topIngreso = movsMesMoneda.filter(m => m.tipo === 'ingreso').sort((a,b)=>b.monto - a.monto)[0];
-                        const qtyIngreso = movsMesMoneda.filter(m => m.tipo === 'ingreso').length;
-                        const avgGastoDay = dayToday > 0 ? balMoneda.gastos / dayToday : 0;
-                        const freeMargin = balMoneda.ingresos > 0 ? (balMoneda.neto / balMoneda.ingresos) * 100 : 0;
-
-                        return (
-                            <div style={{ background: 'var(--white)', borderRadius: '32px', padding: '32px', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                                    <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--blue-main)', letterSpacing: '-0.3px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                                        <TrendingUp size={22} style={{ flexShrink: 0, marginTop: '2px' }} />
-                                        <span>Análisis de Resultados y Métricas Clave</span>
-                                    </h3>
-                                </div>
-
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '32px' }}>
-                                    {/* Columna Izquierda: Mensajes Insight */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                        {insights.slice(0, 3).map((insight, i) => (
-                                            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', background: 'rgba(255, 255, 255, 0.03)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', borderLeft: `4px solid ${insight.type === 'warning' ? '#F57C00' : insight.type === 'success' ? '#388E3C' : '#1976D2'}`, boxShadow: 'var(--shadow-xs)' }}>
-                                                <div style={{ marginTop: '2px', flexShrink: 0 }}>
-                                                    {insight.type === 'warning' && <AlertTriangle size={16} color="#F57C00" strokeWidth={2} />}
-                                                    {insight.type === 'success' && <CheckCircle size={16} color="#388E3C" strokeWidth={2} />}
-                                                    {insight.type === 'info' && <Info size={16} color="#1976D2" strokeWidth={2} />}
-                                                </div>
-                                                <p style={{ fontSize: '13px', color: 'var(--t1)', lineHeight: 1.5, fontWeight: 500 }}>
-                                                    {insight.text}
-                                                </p>
-                                            </div>
-                                        ))}
-                                        
-                                        {/* Espacio para proyección o resumen de cierre */}
-                                        {dayToday >= 5 && dayToday < daysInMonth ? (
-                                            <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '16px', borderRadius: '16px', border: '1px dashed var(--border)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                <p style={{ fontSize: '13px', color: 'var(--t2)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                    <Calendar size={16} color="var(--t3)" /> Proyección a fin de mes
-                                                </p>
-                                                <p style={{ fontSize: '13px', color: 'var(--t1)', lineHeight: 1.5 }}>
-                                                    Faltan <strong>{daysInMonth - dayToday} días</strong>. A este ritmo, el mes cerraría con egresos aprox. de <strong style={{color:'var(--red-soft)', fontFamily:'var(--font-mono)'}}>{formatMonto((balMoneda.gastos / dayToday) * daysInMonth, moneda)}</strong>.
-                                                </p>
-                                            </div>
-                                        ) : dayToday === daysInMonth ? (
-                                            <div style={{ background: 'rgba(102, 187, 106, 0.05)', padding: '16px', borderRadius: '16px', border: '1px dashed var(--green-main)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                <p style={{ fontSize: '13px', color: 'var(--green-main)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                    <Calendar size={16} color="var(--green-main)" /> Mes trancado y cerrado
-                                                </p>
-                                                <p style={{ fontSize: '13px', color: 'var(--green-main)', lineHeight: 1.5 }}>
-                                                    Usa este historial para planificar la operativa de la próxima rotación de manera más eficiente.
-                                                </p>
-                                            </div>
-                                        ) : null}
-                                    </div>
-
-                                    {/* Columna Derecha: KPI Data Complementaria */}
-                                    <div style={{ background: 'var(--bg)', borderRadius: '24px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                        <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                             Métricas Operativas Breves
-                                        </h4>
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '16px' }}>
-                                            <div>
-                                                <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 600, marginBottom: '4px' }}>Gasto más grande</p>
-                                                <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)', letterSpacing: '-0.5px' }}>
-                                                    {topGasto ? formatMonto(topGasto.monto, moneda) : formatMonto(0, moneda)}
-                                                </p>
-                                                <p style={{ fontSize: '12px', color: 'var(--red-soft)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                    {topGasto ? catMap.get(topGasto.categoriaId)?.nombre : '-'}
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 600, marginBottom: '4px' }}>Cobro más grande</p>
-                                                <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)', letterSpacing: '-0.5px' }}>
-                                                    {topIngreso ? formatMonto(topIngreso.monto, moneda) : formatMonto(0, moneda)}
-                                                </p>
-                                                <p style={{ fontSize: '12px', color: 'var(--green-main)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                    {topIngreso ? catMap.get(topIngreso.categoriaId)?.nombre : '-'}
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 600, marginBottom: '4px' }}>Gasto diario aprox.</p>
-                                                <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)', letterSpacing: '-0.5px' }}>
-                                                    {formatMonto(avgGastoDay, moneda)}
-                                                </p>
-                                                <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 500 }}>
-                                                    En {dayToday} días transcurridos
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 600, marginBottom: '4px' }}>Cobros o Ventas</p>
-                                                <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)', letterSpacing: '-0.5px' }}>
-                                                    {qtyIngreso} {qtyIngreso === 1 ? 'vez' : 'veces'}
-                                                </p>
-                                                <p style={{ fontSize: '12px', color: 'var(--green-main)', fontWeight: 600 }}>
-                                                    entró plata al campo
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 600, marginBottom: '4px' }}>Margen Libre</p>
-                                                <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)', letterSpacing: '-0.5px' }}>
-                                                    {balMoneda.ingresos > 0 ? `${freeMargin.toFixed(1)}%` : '0%'}
-                                                </p>
-                                                <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 500 }}>
-                                                    {freeMargin > 0 ? 'ganancia sobre ventas' : 'operando a pérdida'}
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 600, marginBottom: '4px' }}>Movimientos Totales</p>
-                                                <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)', letterSpacing: '-0.5px' }}>
-                                                    {movsMesMoneda.length} {movsMesMoneda.length === 1 ? 'anotación' : 'anotaciones'}
-                                                </p>
-                                                <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 500 }}>
-                                                    hechas en el mes
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })()
-                ) : null}
+                <AnalysisSection
+                    bal={balMoneda}
+                    prevBal={balPrevMoneda}
+                    itemsE={eItems}
+                    itemsS={sItems}
+                    movs={movsMesMoneda}
+                    type="mensual"
+                    moneda={moneda}
+                    catMap={catMap}
+                    periodLabel={formatMesLabel(anio, mes)}
+                />
 
                 {/* LOWER SECTION GRID */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '24px' }}>
-                    <div style={{ background: 'var(--white)', borderRadius: '32px', padding: '40px', boxShadow: 'var(--shadow-sm)' }}>
-                        <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--t1)', marginBottom: '32px', letterSpacing: '-0.5px' }}>Ingresos por Categoría</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '16px' }}>
+                    <div style={{ background: 'var(--white)', borderRadius: '28px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
+                        <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', marginBottom: '20px', letterSpacing: '-0.3px' }}>Ingresos por Categoría</h3>
                         <HorzBars items={eItems} palette={PAL_E} onCatClick={(cat) => openCat(cat, movsMesMoneda)} />
                     </div>
-                    <div style={{ background: 'var(--white)', borderRadius: '32px', padding: '40px', boxShadow: 'var(--shadow-sm)' }}>
-                        <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--t1)', marginBottom: '32px', letterSpacing: '-0.5px' }}>Gastos por Categoría</h3>
+                    <div style={{ background: 'var(--white)', borderRadius: '28px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
+                        <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', marginBottom: '20px', letterSpacing: '-0.3px' }}>Gastos por Categoría</h3>
                         <HorzBars items={sItems} palette={PAL_S} onCatClick={(cat) => openCat(cat, movsMesMoneda)} />
                     </div>
                 </div>
@@ -497,7 +653,126 @@ export function Balance() {
         );
     };
 
-    // ── Render Anual ───────────────────────────────────────
+    // ── Render Trimestral ───────────────────────────────────────
+    const renderTrimestral = () => {
+        const tMovesMoneda = movsTrim.filter(m => (m.moneda || 'UYU') === moneda);
+        const balTrim = calcularBalance(tMovesMoneda);
+        const margenTrim = balTrim.ingresos > 0 ? ((balTrim.neto / balTrim.ingresos) * 100).toFixed(1) : '0.0';
+
+        const { inicio, fin } = getTrimestreInfo(new Date(anio, mes, 1));
+        const mesIni = parseInt(inicio.slice(5, 7));
+        const mesesLabels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        
+        const chartData = Array.from({ length: 3 }, (_, i) => {
+            const mIdx = (mesIni - 1) + i;
+            return { name: mesesLabels[mIdx], Ingresos: 0, Gastos: 0, Margen: 0, Neto: 0 };
+        });
+
+        tMovesMoneda.forEach(m => {
+            const mth = parseInt(m.fecha.slice(5, 7)) - 1;
+            const idx = mth - (mesIni - 1);
+            if (idx >= 0 && idx < 3) {
+                if (m.tipo === 'ingreso') chartData[idx].Ingresos += m.monto;
+                else chartData[idx].Gastos += m.monto;
+            }
+        });
+
+        let highestMargin = 0;
+        chartData.forEach(d => {
+            d.Neto = d.Ingresos - d.Gastos;
+            d.Margen = d.Ingresos > 0 ? (d.Neto / d.Ingresos) * 100 : 0;
+            if (d.Margen > highestMargin) highestMargin = d.Margen;
+        });
+
+        const eItems = buildCatItems('ingreso', tMovesMoneda);
+        const sItems = buildCatItems('gasto', tMovesMoneda);
+
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                <FeedbackHeader 
+                    bal={balTrim} 
+                    type="trimestral" 
+                    periodLabel={getTrimestreInfo(new Date(anio, mes, 1)).label} 
+                    moneda={moneda} 
+                    itemsE={eItems}
+                    itemsS={sItems}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: -8 }}>
+                    <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--t1)', letterSpacing: '-0.5px' }}>Análisis por Moneda</h2>
+                    <CurrencyTabs />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+                    <div style={{ background: 'var(--white)', borderRadius: '32px', padding: '32px', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column' }}>
+                        <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <BarChart2 size={18} color="var(--t1)" /> Balance Neto Trimestral
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {monedasActivas.map((mnd, idx) => {
+                                const mvTr = movsTrim.filter(m => (m.moneda || 'UYU') === mnd);
+                                const bld = calcularBalance(mvTr);
+                                return (
+                                    <div key={mnd} style={{ borderBottom: idx < monedasActivas.length - 1 ? '1px solid var(--border-sm)' : 'none', paddingBottom: idx < monedasActivas.length - 1 ? '12px' : '0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t2)' }}>{mnd === 'USD' ? '🇺🇸' : mnd === 'UYU' ? '🇺🇾' : '🇦🇷'} {mnd}</span>
+                                        <span style={{ fontSize: '24px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)', letterSpacing: '-1px' }}>{formatMonto(bld.neto, mnd)}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    
+                    <KPICard title="Ingresos del Trimestre" value={formatMonto(balTrim.ingresos, moneda)} icon={<TrendingUp size={18} color="var(--green-main)" />} sub={`Periodo ${mesesLabels[mesIni-1]} - ${mesesLabels[mesIni+1]}`} />
+                    <KPICard title="Gastos del Trimestre" value={formatMonto(balTrim.gastos, moneda)} icon={<TrendingDown size={18} color="var(--red-soft)" />} sub="Salidas operativas" />
+                    <KPICard title="Margen Bruto" value={`${margenTrim}%`} icon={<Divide size={18} color="var(--blue-500)" />} trend={parseFloat(margenTrim) > 30 ? { up: true, label: 'Saludable' } : { up: false, label: 'Bajo' }} />
+                </div>
+
+                <AnalysisSection
+                    bal={balTrim}
+                    itemsE={eItems}
+                    itemsS={sItems}
+                    movs={tMovesMoneda}
+                    type="trimestral"
+                    moneda={moneda}
+                    catMap={catMap}
+                    periodLabel={getTrimestreInfo(new Date(anio, mes, 1)).label}
+                />
+
+                <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+                    <div style={{ background: 'var(--white)', borderRadius: '32px', padding: '40px', boxShadow: 'var(--shadow-sm)', flex: '1 1 500px' }}>
+                        <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--t1)', marginBottom: '32px' }}>Evolución Mensual</h3>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={chartData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-sm)" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 13, fill: 'var(--t3)', fontWeight: 600 }} dy={10} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--t3)', fontWeight: 500 }} />
+                                <Tooltip 
+                                    cursor={{ fill: 'var(--gray-50)', opacity: 0.1 }} 
+                                    contentStyle={{ background: 'var(--bg-card)', borderRadius: '20px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', padding: '12px 16px' }} 
+                                    itemStyle={{ color: 'var(--t1)', fontSize: '14px', fontWeight: 600 }}
+                                    labelStyle={{ color: 'var(--t3)', fontSize: '12px', marginBottom: '4px' }}
+                                    formatter={(v: any) => formatMonto(v, moneda)} 
+                                />
+                                <Bar dataKey="Ingresos" fill="var(--green-main)" radius={[6, 6, 0, 0]} />
+                                <Bar dataKey="Gastos" fill="var(--red-soft)" radius={[6, 6, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
+                    <div style={{ background: 'var(--white)', borderRadius: '28px', padding: '28px', boxShadow: 'var(--shadow-sm)' }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--t1)', marginBottom: '32px' }}>Mayores Ingresos</h3>
+                        <HorzBars items={eItems} palette={PAL_E} onCatClick={(cat) => openCat(cat, tMovesMoneda)} />
+                    </div>
+                    <div style={{ background: 'var(--white)', borderRadius: '28px', padding: '28px', boxShadow: 'var(--shadow-sm)' }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--t1)', marginBottom: '32px' }}>Mayores Gastos</h3>
+                        <HorzBars items={sItems} palette={PAL_S} onCatClick={(cat) => openCat(cat, tMovesMoneda)} />
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     const renderAnual = () => {
         const aMovesMoneda = movsAnio.filter(m => (m.moneda || 'UYU') === moneda);
 
@@ -523,28 +798,17 @@ export function Balance() {
         const eItemsAnual = buildCatItems('ingreso', aMovesMoneda);
         const sItemsAnual = buildCatItems('gasto', aMovesMoneda);
 
-        const CurrencyTabs = () => (
-            <div style={{ display: 'flex', gap: '8px', background: 'var(--bg-input)', padding: '4px', borderRadius: '12px', width: 'fit-content' }}>
-                {monedasActivas.map(mnd => (
-                    <button 
-                        key={mnd} 
-                        onClick={() => changeMoneda(mnd)}
-                        style={{ padding: '6px 16px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px',
-                            background: mnd === moneda ? 'var(--white)' : 'transparent',
-                            color: mnd === moneda ? 'var(--t1)' : 'var(--t3)',
-                            fontWeight: mnd === moneda ? 700 : 500,
-                            border: mnd === moneda ? '1px solid var(--green-main)' : '1px solid transparent'
-                        }}
-                    >
-                        {mnd === 'USD' ? '🇺🇸' : mnd === 'UYU' ? '🇺🇾' : '🇦🇷'} {mnd}
-                    </button>
-                ))}
-            </div>
-        );
 
         return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-
+                <FeedbackHeader 
+                    bal={balAnual} 
+                    type="anual" 
+                    periodLabel={anio.toString()} 
+                    moneda={moneda} 
+                    itemsE={eItemsAnual}
+                    itemsS={sItemsAnual}
+                />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--t1)', letterSpacing: '-0.5px' }}>Análisis por Moneda</h2>
                     <CurrencyTabs />
@@ -579,17 +843,23 @@ export function Balance() {
                 {/* 2. Charts */}
                 <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
                     {/* Bar Chart Comparativo */}
-                    <div style={{ background: 'var(--white)', borderRadius: '32px', padding: '40px', boxShadow: 'var(--shadow-sm)', flex: '2 1 600px', minWidth: '400px' }}>
-                        <div style={{ marginBottom: '32px' }}>
-                            <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--t1)', letterSpacing: '-0.5px' }}>Ingresos vs Gastos {anio}</h3>
-                            <p style={{ fontSize: '14px', color: 'var(--t3)', fontWeight: 500, marginTop: '4px' }}>Comparativa interanual agrupada mensual</p>
+                    <div style={{ background: 'var(--white)', borderRadius: '28px', padding: '32px', boxShadow: 'var(--shadow-sm)', flex: '2 1 600px', minWidth: '400px' }}>
+                        <div style={{ marginBottom: '24px' }}>
+                            <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--t1)', letterSpacing: '-0.3px' }}>Ingresos vs Gastos {anio}</h3>
+                            <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 500, marginTop: '2px' }}>Comparativa interanual agrupada mensual</p>
                         </div>
-                        <ResponsiveContainer width="100%" height={320}>
+                        <ResponsiveContainer width="100%" height={280}>
                             <BarChart data={monthlyData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }} barGap={6} barSize={16}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-sm)" />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 13, fill: 'var(--t3)', fontWeight: 600 }} dy={10} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--t3)', fontWeight: 500 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-                                <Tooltip cursor={{ fill: 'var(--gray-50)' }} contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: 'var(--shadow-lg)', fontSize: '14px', fontWeight: 600, padding: '16px 20px' }} formatter={(value: any) => formatMonto(value, moneda)} />
+                                <Tooltip 
+                                    cursor={{ fill: 'var(--gray-50)', opacity: 0.1 }} 
+                                    contentStyle={{ background: 'var(--bg-card)', borderRadius: '20px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', fontSize: '14px', fontWeight: 600, padding: '12px 16px' }} 
+                                    itemStyle={{ color: 'var(--t1)' }}
+                                    labelStyle={{ color: 'var(--t3)', fontSize: '12px', marginBottom: '4px' }}
+                                    formatter={(value: any) => formatMonto(value, moneda)} 
+                                />
                                 <Legend wrapperStyle={{ paddingTop: '24px', fontSize: '14px', fontWeight: 600, color: 'var(--t2)' }} iconType="circle" />
                                 <Bar dataKey="Ingresos" fill="var(--green-main)" radius={[6, 6, 0, 0]} />
                                 <Bar dataKey="Gastos" fill="var(--red-soft)" radius={[6, 6, 0, 0]} />
@@ -598,12 +868,12 @@ export function Balance() {
                     </div>
 
                     {/* Area Chart Margen */}
-                    <div style={{ background: 'var(--white)', borderRadius: '32px', padding: '40px', boxShadow: 'var(--shadow-sm)', flex: '1 1 400px', minWidth: '320px' }}>
-                        <div style={{ marginBottom: '32px' }}>
-                            <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--t1)', letterSpacing: '-0.5px' }}>Tendencia de Margen (%)</h3>
-                            <p style={{ fontSize: '14px', color: 'var(--t3)', fontWeight: 500, marginTop: '4px' }}>Fluctuación del rendimiento mensual</p>
+                    <div style={{ background: 'var(--white)', borderRadius: '28px', padding: '32px', boxShadow: 'var(--shadow-sm)', flex: '1 1 400px', minWidth: '320px' }}>
+                        <div style={{ marginBottom: '24px' }}>
+                            <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--t1)', letterSpacing: '-0.3px' }}>Tendencia de Margen (%)</h3>
+                            <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 500, marginTop: '4px' }}>Fluctuación del rendimiento mensual</p>
                         </div>
-                        <ResponsiveContainer width="100%" height={320}>
+                        <ResponsiveContainer width="100%" height={280}>
                             <AreaChart data={monthlyData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorMargen" x1="0" y1="0" x2="0" y2="1">
@@ -614,21 +884,36 @@ export function Balance() {
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-sm)" />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--t3)', fontWeight: 600 }} dy={10} minTickGap={20} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--t3)', fontWeight: 500 }} tickFormatter={v => `${v.toFixed(0)}%`} domain={[0, highestMargin > 100 ? 'auto' : 100]} />
-                                <Tooltip contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: 'var(--shadow-lg)', fontSize: '14px', fontWeight: 600, padding: '16px 20px' }} formatter={(value: any) => `${value.toFixed(1)}%`} />
+                                <Tooltip 
+                                    contentStyle={{ background: 'var(--bg-card)', borderRadius: '20px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', fontSize: '14px', fontWeight: 600, padding: '12px 16px' }} 
+                                    itemStyle={{ color: 'var(--t1)' }}
+                                    labelStyle={{ color: 'var(--t3)', fontSize: '12px', marginBottom: '4px' }}
+                                    formatter={(value: any) => `${value.toFixed(1)}%`} 
+                                />
                                 <Area type="monotone" dataKey="Margen" stroke="var(--t1)" strokeWidth={4} fillOpacity={1} fill="url(#colorMargen)" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
+                <AnalysisSection
+                    bal={balAnual}
+                    itemsE={eItemsAnual}
+                    itemsS={sItemsAnual}
+                    movs={aMovesMoneda}
+                    type="anual"
+                    moneda={moneda}
+                    catMap={catMap}
+                    periodLabel={anio.toString()}
+                />
 
                 {/* 3. Distribution Categories */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
-                    <div style={{ background: 'var(--white)', borderRadius: '32px', padding: '40px', boxShadow: 'var(--shadow-sm)' }}>
-                        <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--t1)', marginBottom: '32px', letterSpacing: '-0.5px' }}>Distribución de Ingresos {anio}</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '16px' }}>
+                    <div style={{ background: 'var(--white)', borderRadius: '28px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
+                        <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', marginBottom: '20px', letterSpacing: '-0.3px' }}>Distribución de Ingresos {anio}</h3>
                         <HorzBars items={eItemsAnual} palette={PAL_E} onCatClick={(cat) => openCat(cat, aMovesMoneda)} />
                     </div>
-                    <div style={{ background: 'var(--white)', borderRadius: '32px', padding: '40px', boxShadow: 'var(--shadow-sm)' }}>
-                        <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--t1)', marginBottom: '32px', letterSpacing: '-0.5px' }}>Distribución de Gastos {anio}</h3>
+                    <div style={{ background: 'var(--white)', borderRadius: '28px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
+                        <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', marginBottom: '20px', letterSpacing: '-0.3px' }}>Distribución de Gastos {anio}</h3>
                         <HorzBars items={sItemsAnual} palette={PAL_S} onCatClick={(cat) => openCat(cat, aMovesMoneda)} />
                     </div>
                 </div>
@@ -647,7 +932,7 @@ export function Balance() {
                 hideCurrencyToggle={true}
             />
             <div className="page-content" style={{ maxWidth: '1400px', margin: '0 auto', width: '100%', paddingTop: '24px' }}>
-                {vista === 'mensual' ? renderMensual() : renderAnual()}
+                {vista === 'mensual' ? renderMensual() : vista === 'trimestral' ? renderTrimestral() : renderAnual()}
             </div>
 
             {catModal && <CatDetailModal cat={catModal.cat} movs={catModal.movs} onClose={() => setCatModal(null)} onEdit={mov => { setEditMov({ mov, tipo: mov.tipo }); }} />}

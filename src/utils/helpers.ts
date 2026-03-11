@@ -61,6 +61,30 @@ export const getMesActualInfo = () => {
     };
 };
 
+export const getTrimestreInfo = (fecha: Date = new Date()) => {
+    const mes = fecha.getMonth();
+    const anio = fecha.getFullYear();
+    const trimestre = Math.floor(mes / 3); // 0, 1, 2, 3
+    
+    // Q1: 0,1,2 | Q2: 3,4,5 | Q3: 6,7,8 | Q4: 9,10,11
+    const inicioMes = trimestre * 3;
+    const finMes = inicioMes + 2;
+    
+    const inicio = new Date(anio, inicioMes, 1).toISOString().split('T')[0];
+    const fin = new Date(anio, finMes + 1, 0).toISOString().split('T')[0];
+    
+    const labelMesInicio = format(new Date(anio, inicioMes, 1), 'MMM', { locale: es });
+    const labelMesFin = format(new Date(anio, finMes, 1), 'MMM', { locale: es });
+    
+    return {
+        inicio,
+        fin,
+        label: `Trimestre Q${trimestre + 1} (${labelMesInicio} - ${labelMesFin})`,
+        trimestre: trimestre + 1,
+        anio
+    };
+};
+
 // ─── Consultas DB ─────────────────────────────────────────────────────────────
 
 export const getMovimientosPorMes = async (
