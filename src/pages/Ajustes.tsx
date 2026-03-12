@@ -117,7 +117,7 @@ function CurrencyModal({ current, onClose, onSave }: { current: Moneda[], onClos
                     })}
                 </div>
 
-                <button onClick={() => onSave(selected)} style={{ width: '100%', padding: '16px', borderRadius: '16px', background: 'var(--t1)', color: 'white', fontSize: '15px', fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: 'var(--shadow-md)' }}>Aplicar Cambios</button>
+                <button onClick={() => onSave(selected)} style={{ width: '100%', padding: '16px', borderRadius: '16px', background: 'var(--green-main)', color: 'var(--white)', fontSize: '15px', fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: 'var(--shadow-md)' }}>Aplicar Cambios</button>
             </div>
         </div>,
         document.body
@@ -496,7 +496,6 @@ export function Ajustes() {
             {
                 title: 'SOPORTE',
                 items: [
-                    { id: 'tema', label: 'Modo Oscuro / Claro', icon: Moon, action: toggleTema },
                     { id: 'sistema', label: 'Sistema', icon: Settings2, tab: 'sistema' as TabKey },
                     { id: 'ayuda', label: 'Centro de Ayuda', icon: HelpCircle, tab: 'sistema' as TabKey }
                 ]
@@ -517,25 +516,17 @@ export function Ajustes() {
                                 <div key={item.id}>
                                     <button 
                                         onClick={() => {
-                                            if (item.action) {
-                                                item.action();
-                                            } else {
-                                                setActiveTab(item.tab!);
-                                                setMobileDetailType(item.id);
-                                                setMobileView('detail');
-                                            }
+                                            setActiveTab(item.tab!);
+                                            setMobileDetailType(item.id);
+                                            setMobileView('detail');
                                         }}
                                         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 8px', border: 'none', background: 'transparent', cursor: 'pointer' }}
                                     >
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                            {item.id === 'tema' ? (
-                                                document.documentElement.getAttribute('data-theme') === 'dark' ? <Sun size={20} color="var(--t1)" /> : <Moon size={20} color="var(--t1)" />
-                                            ) : (
-                                                <item.icon size={20} color="var(--t1)" strokeWidth={1.5} />
-                                            )}
+                                            <item.icon size={20} color="var(--t1)" strokeWidth={1.5} />
                                             <span style={{ fontSize: '15px', fontWeight: 500, color: 'var(--t1)' }}>{item.label}</span>
                                         </div>
-                                        {item.id !== 'tema' && <ChevronRight size={18} color="var(--t3)" strokeWidth={2.5} />}
+                                        <ChevronRight size={18} color="var(--t3)" strokeWidth={2.5} />
                                     </button>
                                     {idx < group.items.length - 1 && (
                                         <div style={{ height: '1px', background: 'var(--border-rgba)', margin: '0 8px' }}></div>

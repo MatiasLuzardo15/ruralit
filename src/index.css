@@ -3060,13 +3060,13 @@ textarea.field-input {
 }
 
 .settings-visual-card {
-  border: 1px solid var(--border-sm);
-  border-radius: 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
   overflow: hidden;
   position: relative;
   cursor: pointer;
   transition: all 0.2s;
-  background: var(--white);
+  background: var(--bg-card);
 }
 
 .settings-visual-card.active {
@@ -3124,33 +3124,41 @@ textarea.field-input {
 }
 
 .btn-secondary {
-  padding: 8px 14px;
-  border-radius: 6px;
-  background: var(--white);
+  padding: 10px 18px;
+  border-radius: 12px;
+  background: var(--bg-card);
   border: 1px solid var(--border);
-  color: var(--t2);
-  font-size: 13px;
-  font-weight: 600;
+  color: var(--t1);
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.1s;
+  transition: all 0.2s;
 }
 
 .btn-secondary:hover {
   background: var(--gray-50);
-  border-color: var(--gray-300);
+  border-color: var(--border-rgba);
+}
+
+.btn-secondary:active {
+  transform: scale(0.97);
 }
 
 .btn-primary {
-  padding: 8px 16px;
-  border-radius: 6px;
-  background: #111111;
+  padding: 10px 20px;
+  border-radius: 12px;
+  background: var(--charcoal);
   border: none;
-  color: #FFFFFF;
-  font-size: 13px;
-  font-weight: 600;
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
-  box-shadow: var(--shadow-xs);
-  transition: opacity 0.1s;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s;
+}
+
+.btn-primary:active {
+  transform: scale(0.97);
 }
 
 .settings-table-row {
