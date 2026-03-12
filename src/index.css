@@ -177,6 +177,8 @@ body {
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  overscroll-behavior-y: none; /* Prevent pull-to-refresh / bounce in some browsers */
 }
 
 #root {
@@ -197,10 +199,15 @@ select {
   font: inherit;
 }
 
-button {
-  cursor: pointer;
-  border: none;
-  background: none;
+/* Prevent mobile auto-zoom on focus by ensuring font-size is at least 16px */
+@media (max-width: 767px) {
+  input, 
+  textarea, 
+  select,
+  .premium-input,
+  .search-inner input {
+    font-size: 16px !important;
+  }
 }
 
 input[type='number'] {
@@ -220,6 +227,8 @@ input[type='number']::-webkit-inner-spin-button {
   min-height: 100dvh;
   background: var(--bg);
   padding: 0;
+  width: 100vw;
+  overflow: hidden; /* Lock root to prevent unwanted horizontal scroll */
 }
 
 @media (min-width: 768px) {
@@ -606,8 +615,18 @@ input[type='number']::-webkit-inner-spin-button {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
-    position: relative;
+    position: sticky;
+    top: 0;
+    background: rgba(245, 243, 231, 0.85); /* Matches --beige-bg */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 90;
     flex-shrink: 0;
+    border-bottom: 1px solid var(--border-rgba);
+  }
+
+  [data-theme='dark'] .topbar {
+    background: rgba(12, 14, 16, 0.85); /* Matches dark --bg */
   }
 
   /* Make sure the main section H1s disappear since they moved to TopBar */
@@ -618,6 +637,85 @@ input[type='number']::-webkit-inner-spin-button {
   .topbar-actions {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  /* Fix for balance selectors horizontal layout */
+  .balance-selectors-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .tab-group-minimal {
+    display: flex;
+    background: var(--bg-sidebar);
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid var(--border-rgba);
+  }
+
+  .tab-mini {
+    flex: 1;
+    padding: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 9px;
+    color: var(--t3);
+    transition: all 0.2s;
+  }
+
+  .tab-mini.active {
+    background: var(--bg-card);
+    color: var(--t1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+
+  .date-nav-minimal, .year-select-minimal {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-card);
+    border: 1px solid var(--border-rgba);
+    border-radius: 12px;
+    padding: 4px;
+    width: 100%;
+  }
+
+  .nav-arrow {
+    padding: 8px 12px;
+    color: var(--t2);
+  }
+
+  .nav-label {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--t1);
+  }
+
+  .year-select-minimal {
+    position: relative;
+    padding: 0;
+  }
+
+  .year-select-minimal select {
+    width: 100%;
+    padding: 10px 16px;
+    border-radius: 12px;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--t1);
+    appearance: none;
+    outline: none;
+  }
+
+  .select-arrow {
+    position: absolute;
+    right: 12px;
+    pointer-events: none;
+    color: var(--t3);
   }
 
   .topbar-btn {

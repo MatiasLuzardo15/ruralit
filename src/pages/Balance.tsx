@@ -449,32 +449,32 @@ export function Balance() {
     const openCat = (cat: Categoria, dataset: Movimiento[]) => setCatModal({ cat, movs: dataset.filter(m => m.categoriaId === cat.id) });
 
     const topbarActions = (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-            <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '14px', padding: '4px', display: 'flex' }}>
-                <button style={{ padding: '8px 16px', borderRadius: '10px', fontSize: '12px', background: vista === 'mensual' ? 'var(--white)' : 'transparent', fontWeight: vista === 'mensual' ? 700 : 500, color: vista === 'mensual' ? 'var(--t1)' : 'var(--t3)', boxShadow: vista === 'mensual' ? 'var(--shadow-sm)' : 'none', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }} onClick={() => setVista('mensual')}>Mensual</button>
-                <button style={{ padding: '8px 16px', borderRadius: '10px', fontSize: '12px', background: vista === 'trimestral' ? 'var(--white)' : 'transparent', fontWeight: vista === 'trimestral' ? 700 : 500, color: vista === 'trimestral' ? 'var(--t1)' : 'var(--t3)', boxShadow: vista === 'trimestral' ? 'var(--shadow-sm)' : 'none', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }} onClick={() => setVista('trimestral')}>Trimestral</button>
-                <button style={{ padding: '8px 16px', borderRadius: '10px', fontSize: '12px', background: vista === 'anual' ? 'var(--white)' : 'transparent', fontWeight: vista === 'anual' ? 700 : 500, color: vista === 'anual' ? 'var(--t1)' : 'var(--t3)', boxShadow: vista === 'anual' ? 'var(--shadow-sm)' : 'none', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }} onClick={() => setVista('anual')}>Anual</button>
+        <div className="balance-selectors-wrap">
+            <div className="tab-group-minimal">
+                <button className={`tab-mini ${vista === 'mensual' ? 'active' : ''}`} onClick={() => setVista('mensual')}>Mes</button>
+                <button className={`tab-mini ${vista === 'trimestral' ? 'active' : ''}`} onClick={() => setVista('trimestral')}>Trim</button>
+                <button className={`tab-mini ${vista === 'anual' ? 'active' : ''}`} onClick={() => setVista('anual')}>Año</button>
             </div>
             {vista === 'mensual' ? (
-                <div style={{ display: 'flex', alignItems: 'center', background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '14px', overflow: 'hidden', boxShadow: 'var(--shadow-xs)' }}>
-                    <button style={{ padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--t2)' }} onClick={() => navMes(-1)}><ChevronLeft size={16} /></button>
-                    <span style={{ fontSize: '13px', fontWeight: 700, minWidth: '110px', textAlign: 'center', color: 'var(--t1)' }}>{formatMesLabel(anio, mes)}</span>
-                    <button style={{ padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--t2)' }} onClick={() => navMes(1)}><ChevronRight size={16} /></button>
+                <div className="date-nav-minimal">
+                    <button className="nav-arrow" onClick={() => navMes(-1)}><ChevronLeft size={16} /></button>
+                    <span className="nav-label">{formatMesLabel(anio, mes)}</span>
+                    <button className="nav-arrow" onClick={() => navMes(1)}><ChevronRight size={16} /></button>
                 </div>
             ) : vista === 'trimestral' ? (
-                <div style={{ display: 'flex', alignItems: 'center', background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '14px', overflow: 'hidden', boxShadow: 'var(--shadow-xs)' }}>
-                    <button style={{ padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--t2)' }} onClick={() => navTrim(-1)}><ChevronLeft size={16} /></button>
-                    <span style={{ fontSize: '13px', fontWeight: 700, minWidth: '130px', textAlign: 'center', color: 'var(--t1)' }}>{getTrimestreInfo(new Date(anio, mes, 1)).label}</span>
-                    <button style={{ padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--t2)' }} onClick={() => navTrim(1)}><ChevronRight size={16} /></button>
+                <div className="date-nav-minimal">
+                    <button className="nav-arrow" onClick={() => navTrim(-1)}><ChevronLeft size={16} /></button>
+                    <span className="nav-label">{getTrimestreInfo(new Date(anio, mes, 1)).label}</span>
+                    <button className="nav-arrow" onClick={() => navTrim(1)}><ChevronRight size={16} /></button>
                 </div>
             ) : (
-                <div style={{ position: 'relative' }}>
-                    <select value={anio} onChange={e => setAnio(parseInt(e.target.value))} style={{ padding: '10px 36px 10px 16px', borderRadius: '14px', border: '1px solid var(--border)', fontSize: '13px', fontWeight: 700, color: 'var(--t1)', outline: 'none', appearance: 'none', background: 'var(--white)', cursor: 'pointer', boxShadow: 'var(--shadow-xs)' }}>
+                <div className="year-select-minimal">
+                    <select value={anio} onChange={e => setAnio(parseInt(e.target.value))}>
                         {[anio - 2, anio - 1, anio, anio + 1].map(y => (
                             <option key={y} value={y}>{y}</option>
                         ))}
                     </select>
-                    <ChevronDown size={14} style={{ position: 'absolute', top: '12px', right: '12px', color: 'var(--t3)', pointerEvents: 'none' }} />
+                    <ChevronDown size={14} className="select-arrow" />
                 </div>
             )}
         </div>
