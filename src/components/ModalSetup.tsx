@@ -32,7 +32,7 @@ export function ModalSetup({ onComplete, initialName = '' }: Props) {
             await db.config.put({ clave: 'tipoProduccion', valor: tipo });
             
             // Inicializar las categorías sugeridas
-            await inicializarCategorias(tipo);
+            await inicializarCategorias(tipo, true);
             
             showToast('¡Configuración completada!');
             onComplete();

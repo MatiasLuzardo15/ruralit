@@ -200,7 +200,19 @@ export const CATEGORIAS_POR_TIPO: Record<TipoProduccion, Omit<Categoria, 'id'>[]
     ]
 };
 
-export async function inicializarCategorias(tipo: TipoProduccion) {
+export async function inicializarCategorias(tipo: TipoProduccion, limpiar: boolean = false) {
+    if (limpiar) {
+        // Obtenemos los IDs de categorías que tienen movimientos asociados
+        const movimientos = await db.movimientos.toArray();
+        const idsEnUso = new Set(movimientos.map(m => m.categoriaId));
+
+        // Borramos solo las categorías predefinidas que NO están en uso
+        // Usamos filter porque es posible que el índice esPredefinida sea nuevo
+        await db.categorias
+            .filter(c => c.esPredefinida === true && !idsEnUso.has(c.id!))
+            .delete();
+    }
+
     const todas = CATEGORIAS_POR_TIPO[tipo] || [];
     
     for (const cat of todas) {
@@ -229,10 +241,10 @@ export class RuralitDatabase extends Dexie {
             categorias: '++id, tipo, nombre',
             config: 'clave',
         });
-        // v3: No cambia esquema pero marca la versión para futuras migraciones si fuera necesario
-        this.version(3).stores({
+        // v4: Indexamos esPredefinida para limpiezas eficientes
+        this.version(4).stores({
             movimientos: '++id, tipo, categoriaId, fecha, creado_en, moneda',
-            categorias: '++id, tipo, nombre',
+            categorias: '++id, tipo, nombre, esPredefinida',
             config: 'clave',
         });
     }

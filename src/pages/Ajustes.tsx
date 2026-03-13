@@ -327,8 +327,8 @@ export function Ajustes() {
                                 className="btn-secondary" 
                                 style={{ fontSize: '12px', alignSelf: 'flex-start' }}
                                 onClick={async () => {
-                                    if(confirm('¿Deseas cargar las categorías sugeridas para ' + tipoProduccion + '? Las existentes no se borrarán.')) {
-                                        await inicializarCategorias(tipoProduccion);
+                                    if(confirm('¿Deseas sincronizar las categorías sugeridas? Esto eliminará las categorías predefinidas que NO estés usando.')) {
+                                        await inicializarCategorias(tipoProduccion, true);
                                         showToast('Categorías sincronizadas');
                                         cargar();
                                     }
@@ -665,8 +665,8 @@ export function Ajustes() {
                                             className="btn-secondary" 
                                             style={{ fontSize: '13px', padding: '14px' }}
                                             onClick={async () => {
-                                                if(confirm('¿Deseas cargar las categorías sugeridas para ' + tipoProduccion + '?')) {
-                                                    await inicializarCategorias(tipoProduccion);
+                                                if(confirm('¿Deseas sincronizar las categorías sugeridas? Esto eliminará las predefinidas que NO estés usando.')) {
+                                                    await inicializarCategorias(tipoProduccion, true);
                                                     showToast('Categorías sincronizadas');
                                                     cargar();
                                                 }
