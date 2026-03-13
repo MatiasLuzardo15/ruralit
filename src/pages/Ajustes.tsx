@@ -632,8 +632,8 @@ export function Ajustes() {
                                         <p>Actualiza tu nombre y comercio.</p>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
-                                        <input type="text" value={nombreUsuario} onChange={e => setNombreUsuario(e.target.value)} placeholder="Tu Nombre" style={{ padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px', background: 'var(--white)', color: 'var(--t1)' }} />
-                                        <input type="text" value={nombreEstab} onChange={e => setNombre(e.target.value)} placeholder="Nombre Comercial" style={{ padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px', background: 'var(--white)', color: 'var(--t1)' }} />
+                                        <input type="text" value={nombreUsuario} onChange={e => setNombreUsuario(e.target.value)} placeholder="Tu Nombre" style={{ padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px', background: 'var(--bg-input)', color: 'var(--t1)' }} />
+                                        <input type="text" value={nombreEstab} onChange={e => setNombre(e.target.value)} placeholder="Nombre Comercial" style={{ padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px', background: 'var(--bg-input)', color: 'var(--t1)' }} />
                                         <button className="btn-primary" onClick={guardarNombre} style={{ marginTop: '12px', padding: '16px', borderRadius: '14px' }}>Actualizar Perfil</button>
                                     </div>
                                 </div>
@@ -649,7 +649,7 @@ export function Ajustes() {
                                                 <button
                                                     key={t}
                                                     onClick={() => setTipoProduccion(t)}
-                                                    style={{ padding: '16px 8px', borderRadius: '14px', border: tipoProduccion === t ? '2px solid var(--green-main)' : '1px solid var(--border)', background: tipoProduccion === t ? 'var(--green-light)' : 'var(--white)', color: 'var(--t1)', fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+                                                    style={{ padding: '16px 8px', borderRadius: '14px', border: tipoProduccion === t ? '2px solid var(--green-main)' : '1px solid var(--border)', background: tipoProduccion === t ? 'var(--green-light)' : 'var(--bg-card)', color: 'var(--t1)', fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
                                                 >
                                                     {t === 'Contratista' ? 'Servicios' : t}
                                                 </button>
@@ -689,7 +689,7 @@ export function Ajustes() {
                                             <div
                                                 key={est.id}
                                                 onClick={() => cambiarEstablecimiento(est.id)}
-                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', borderRadius: '16px', border: est.id === activeEstId ? '2px solid var(--green-main)' : '1px solid var(--border)', background: 'white' }}
+                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', borderRadius: '16px', border: est.id === activeEstId ? '2px solid var(--green-main)' : '1px solid var(--border)', background: est.id === activeEstId ? 'var(--green-light)' : 'var(--bg-card)' }}
                                             >
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                                     <Building2 size={20} color={est.id === activeEstId ? 'var(--green-main)' : 'var(--t3)'} />
@@ -698,7 +698,7 @@ export function Ajustes() {
                                                 {est.id === activeEstId && <Check size={16} color="var(--green-main)" />}
                                             </div>
                                         ))}
-                                        <button onClick={crearNuevoEstablecimiento} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '16px', borderRadius: '16px', border: '1px dashed var(--t3)', background: 'transparent', color: 'var(--t3)', fontWeight: 600, justifyContent: 'center' }}>
+                                        <button onClick={crearNuevoEstablecimiento} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '16px', borderRadius: '16px', border: '1px dashed var(--t3)', background: 'transparent', color: 'var(--t2)', fontWeight: 600, justifyContent: 'center' }}>
                                             <Plus size={16} /> Nuevo Establecimiento
                                         </button>
                                     </div>
