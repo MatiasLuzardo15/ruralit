@@ -240,6 +240,19 @@ export class DataService {
         window.dispatchEvent(new CustomEvent('ruralit_profile_updated'));
     }
 
+    async updateTheme(theme: string) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        
+        await supabase
+            .from('profiles')
+            .update({ theme })
+            .eq('id', session.user.id);
+            
+        // Clean cache to ensure next getProfile shows new theme
+        localStorage.removeItem(`ruralit_cache_profile_${session.user.id}`);
+    }
+
     // --- Categorías ---
 
     async getCategorias(estabId: string, forceRefresh: boolean = false): Promise<Categoria[]> {

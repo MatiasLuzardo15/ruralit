@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   username TEXT,
   default_currency TEXT DEFAULT 'UYU',
   avatar_url TEXT DEFAULT '👨‍🌾',
+  theme TEXT DEFAULT 'light',
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

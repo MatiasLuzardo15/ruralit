@@ -1,6 +1,6 @@
 import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import type { Movimiento, BalanceMes, Categoria } from '../types';
+import type { Movimiento, BalanceMes, Categoria, Moneda } from '../types';
 import db from '../db/database';
 
 // ─── Formateo ────────────────────────────────────────────────────────────────
@@ -121,7 +121,7 @@ export const calcularBalance = (movimientos: Movimiento[]): BalanceMes => {
 
 export const hoy = (): string => new Date().toISOString().split('T')[0];
 
-export const parseRegistroRapido = (texto: string, categorias: Categoria[]): { tipo: 'ingreso' | 'gasto', monto: number, categoriaId: string | number | null, nota: string } | null => {
+export const parseRegistroRapido = (texto: string, categorias: Categoria[], monedasActivas: Moneda[] = ['UYU']): { tipo: 'ingreso' | 'gasto', monto: number, categoriaId: string | number | null, nota: string, moneda?: Moneda } | null => {
     if (!texto.trim()) return null;
     
     const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -129,10 +129,13 @@ export const parseRegistroRapido = (texto: string, categorias: Categoria[]): { t
 
     // 1. Determinar Tipo
     let tipo: 'ingreso' | 'gasto' = 'gasto';
-    const palabrasGasto = ['gaste', 'pague', 'compre', 'gasto', 'compra', 'salida', 'pagamos', 'compramos', 'retiro', 'pago', 'factura', 'cuota'];
-    const palabrasIngreso = ['vendi', 'cobre', 'ingrese', 'ingreso', 'venta', 'entrada', 'vendimos', 'cobramos', 'deposito', 'cobro', 'liquidar', 'cheque'];
+    const palabrasGasto = ['gaste', 'pague', 'compre', 'gasto', 'compra', 'salida', 'pagamos', 'compramos', 'retiro', 'pago', 'factura', 'cuota', 'abone', 'debito', 'transferi', 'comision', 'interes', 'perdida', 'gastamos', 'inverti', 'taller', 'mecanico', 'repuesto'];
+    const palabrasIngreso = ['vendi', 'cobre', 'ingrese', 'ingreso', 'venta', 'entrada', 'vendimos', 'cobramos', 'deposito', 'cobro', 'liquidar', 'cheque', 'transfirieron', 'recibi', 'abonaron', 'ganancia', 'liquidacion', 'reembolso', 'devolucion'];
 
-    const checkKw = (kws: string[]) => kws.some(kw => new RegExp(`\\b${normalize(kw)}\\b`, 'i').test(txt));
+    const checkKw = (kws: string[]) => kws.some(kw => {
+        const normalizedKw = normalize(kw);
+        return new RegExp(`\\b${normalizedKw}\\b`, 'i').test(txt) || txt.includes(normalizedKw);
+    });
 
     if (checkKw(palabrasIngreso)) tipo = 'ingreso';
     else if (checkKw(palabrasGasto)) tipo = 'gasto';
@@ -142,26 +145,40 @@ export const parseRegistroRapido = (texto: string, categorias: Categoria[]): { t
     if (!matchMonto) return null; 
     const monto = parseFloat(matchMonto[0].replace(',', '.'));
 
+    // 2.1 Determinar Moneda
+    let monedaDectectada: Moneda | undefined;
+    const currencyKeywords: Record<Moneda, string[]> = {
+        'USD': ['dolares', 'usd', 'u$s', 'dolar', 'green', 'verdes', 'us$'],
+        'UYU': ['pesos', 'uyu', '$u', 'uru', 'peso', 'uruguayos'],
+        'ARS': ['ars', 'argentinos', 'peronios', 'pesos arg'],
+        'BRL': ['reales', 'brl', 'real'],
+        'EUR': ['euros', 'eur', 'euro'],
+        'CLP': ['clp', 'chilenos'],
+        'COP': ['cop', 'colombianos'],
+        'PYG': ['pyg', 'guaranies'],
+        'BOB': ['bob', 'bolivianos'],
+        'PEN': ['pen', 'soles'],
+        'MXN': ['mxn', 'mexicanos']
+    };
+
+    for (const [code, kws] of Object.entries(currencyKeywords)) {
+        if (monedasActivas.includes(code as Moneda) && checkKw(kws)) {
+            monedaDectectada = code as Moneda;
+            break;
+        }
+    }
+
     let categoriaId: string | number | null = null;
+    const catsDelTipo = categorias.filter(c => c.tipo === tipo);
 
     // 3. Prioridad 1: Buscar si el NOMBRE de alguna categoría está explícitamente en el texto
-    // Ordenamos por longitud de nombre descendente para que "Venta de animales" gane a "Venta"
-    const catsDelTipo = categorias.filter(c => c.tipo === tipo);
     const sortedCats = [...catsDelTipo].sort((a, b) => b.nombre.length - a.nombre.length);
-    
-    // Palabras genéricas que no deben disparar un match por sí solas
-    const palabrasGenericas = ['venta', 'compra', 'gasto', 'ingreso', 'entrada', 'salida', 'otros', 'otras', 'pago', 'cobro'];
+    const palabrasGenericas = ['venta', 'compra', 'gasto', 'ingreso', 'entrada', 'salida', 'otros', 'otras', 'pago', 'cobro', 'varios', 'general'];
 
     const catPorNombre = sortedCats.find(c => {
         const nom = normalize(c.nombre);
-        // Si el nombre de la categoría es una palabra genérica, ignoramos este paso
         if (palabrasGenericas.includes(nom)) return false;
-        
-        // 1. Coincidencia exacta/contenida (ej: "venta de leche" -> "leche")
         if (txt.includes(nom)) return true;
-
-        // 2. Coincidencia de palabra significativa (ej: "novillos" -> "Venta de novillos")
-        // Filtramos palabras de la categoría que sean cortas o genéricas
         const palabrasSignificativas = nom.split(' ').filter(w => w.length > 3 && !palabrasGenericas.includes(w));
         return palabrasSignificativas.some(w => new RegExp(`\\b${w}\\b`, 'i').test(txt));
     });
@@ -169,22 +186,34 @@ export const parseRegistroRapido = (texto: string, categorias: Categoria[]): { t
     if (catPorNombre) {
         categoriaId = catPorNombre.id!;
     } else {
-        // 4. Prioridad 2: Diccionario de palabras clave (Mapeo Semántico)
+        // 4. Prioridad 2: Diccionario de palabras clave Ultra-Robusto (Multisectorial)
         const keywordMap = [
-            { key: 'Leche', words: ['leche', 'queso', 'lacteo', 'manteca', 'suero', 'tambo', 'remitente', 'conaprole', 'indlacol'] },
-            { key: 'Animales', words: ['vaca', 'vacas', 'ternero', 'terneros', 'novillo', 'novillos', 'animal', 'toro', 'vaquillona', 'oveja', 'lana', 'cordero', 'borrego', 'capon', 'lanar', 'ovino', 'bovino', 'hacienda', 'vaquillonas'] },
-            { key: 'Sanidad', words: ['vet', 'veterinaria', 'remedio', 'vacuna', 'sanidad', 'medicamento', 'antibiotico', 'jeringa', 'desparasitante', 'aftosa', 'iia', 'inseminacion', 'carbunco'] },
-            { key: 'Combustible', words: ['nafta', 'gasoil', 'diesel', 'combustible', 'gasolina', 'estacion', 'bencina', 'premium', 'gasóleo'] },
-            { key: 'Alimentación', words: ['racion', 'fardo', 'comida', 'pasto', 'maiz', 'avena', 'suplemento', 'rollo', 'alfalfa', 'proteina', 'silaje', 'concentrado', 'grano', 'semilla'] },
-            { key: 'Granos', words: ['soja', 'trigo', 'sorgo', 'girasol', 'cebada', 'cosecha', 'trilla', 'flete', 'granos', 'silobolsa'] },
-            { key: 'Reparaciones', words: ['reparacion', 'arreglo', 'taller', 'repuesto', 'mecanico', 'goma', 'cubierta', 'alambre', 'pique', 'varilla', 'tornillo', 'herramienta', 'ferreteria', 'pintura', 'tractor', 'arado', 'herrería'] },
-            { key: 'Mano de obra', words: ['peon', 'sueldo', 'jornal', 'empleado', 'salario', 'personal', 'aguinaldo', 'bps', 'pago', 'obrero'] },
+            { key: 'Leche', words: ['leche', 'queso', 'lacteo', 'manteca', 'suero', 'tambo', 'remitente', 'conaprole', 'indlacol', 'ordeñe', 'tanque frio', 'cuota leche', 'pezonera', 'detergente tambo', 'sellador'] },
+            { key: 'Animales', words: ['vaca', 'vacas', 'ternero', 'novillo', 'toro', 'vaquillona', 'oveja', 'lana', 'cordero', 'borrego', 'ovino', 'bovino', 'hacienda', 'ternerada', 'rodeo', 'lote', 'tropa', 'remate', 'feria', 'consignatario', 'pantalla', 'plazarural', 'destete', 'invernada', 'cria', 'recria', 'vaquillonas', 'animal', 'animales', 'caravanas', 'arete', 'caballos', 'yegua', 'potrillo', 'lanar', 'vellon', 'esquila', 'carnero', 'capon'] },
+            { key: 'Sanidad', words: ['vet', 'veterinaria', 'remedio', 'vacuna', 'sanidad', 'medicamento', 'antibiotico', 'jeringa', 'desparasitante', 'aftosa', 'iia', 'inseminacion', 'carbunco', 'ivermectina', 'piojo', 'garrapata', 'bichera', 'cura de bicho', 'tacto', 'ecografia', 'raspaje', 'podologia', 'mineral', 'sal mineral', 'bloque', 'especifico', 'etiqueta azul', 'carbunclo', 'clostridiosis', 'querato'] },
+            { key: 'Combustible', words: ['nafta', 'gasoil', 'diesel', 'combustible', 'gasolina', 'estacion', 'bencina', 'premium', 'gasóleo', 'ancap', 'axion', 'shell', 'ypf', 'petrobras', 'grasa', 'lubricante', 'aceite motor', 'transmision', 'hidraulico', 'adblue'] },
+            { key: 'Alimentación', words: ['racion', 'fardo', 'comida', 'pasto', 'maiz', 'avena', 'suplemento', 'rollo', 'alfalfa', 'proteina', 'silaje', 'concentrado', 'grano', 'semilla', 'sorgo', 'silo', 'autoconsumo', 'reserva', 'afrechillo', 'malteo', 'fardos', 'rollos', 'expeller', 'afrecho'] },
+            { key: 'Granos', words: ['soja', 'trigo', 'sorgo', 'girasol', 'cebada', 'cosecha', 'trilla', 'flete', 'granos', 'silobolsa', 'planta', 'acopio', 'cooperativa', 'secado', 'humedad', 'zaranda', 'maizena'] },
+            { key: 'Reparaciones', words: ['reparacion', 'arreglo', 'taller', 'repuesto', 'mecanico', 'goma', 'cubierta', 'alambre', 'pique', 'varilla', 'tornillo', 'herramienta', 'ferreteria', 'pintura', 'tractor', 'arado', 'herrería', 'aceite', 'filtro', 'bateria', 'soldadura', 'torneria', 'ferretería', 'rodamiento', 'ruleman', 'correa', 'alternador', 'arranque', 'hidraulico', 'manguera', 'disco', 'punta de eje'] },
+            { key: 'Infraestructura', words: ['poste', 'portland', 'arena', 'pedregal', 'caño', 'tanque', 'bebedero', 'molino', 'bomba', 'panel solar', 'tejido', 'porteria', 'tranquera', 'cepo', 'manga', 'balanza', 'galpon', 'alambrado', 'electrificador', 'boyero', 'piquetes', 'pastoreo', 'bebederos', 'flotador', 'picada'] },
+            { key: 'Granja', words: ['cajon', 'plantin', 'semillero', 'invernaculo', 'nylon', 'riego', 'goteo', 'malla', 'fruta', 'verdura', 'hortaliza', 'packing', ' cajones', 'plantines', 'vivero', 'injerto', 'fungicida', 'atadura', 'tijera poda'] },
+            { key: 'Apicultura', words: ['miel', 'colmena', 'alza', 'ahumador', 'cera', 'nucleo', 'reina', 'cuadro', 'extractora', 'jarabe', 'fructosa', 'varroa', 'centrifuga', 'tambor miel'] },
+            { key: 'Forestal', words: ['madera', 'raleo', 'poda', 'vivero', 'eucaliptus', 'pino', 'cuadrilla', 'motosierra', 'cadena', 'aserradero', 'leña', 'monte'] },
+            { key: 'Avicultura', words: ['pollito', 'ponedora', 'parrillero', 'huevo', 'incubadora', 'galpon aves', 'bebedero ave', 'jaula', 'ave', 'aves', 'maple', 'guano'] },
+            { key: 'Porcinos', words: ['lechon', 'cerdo', 'chancho', 'paridera', 'marrana', 'verraco', 'lechones', 'puerco'] },
+            { key: 'Sueldos', words: ['peon', 'sueldo', 'jornal', 'empleado', 'salario', 'personal', 'aguinaldo', 'bps', 'pago', 'obrero', 'capataz', 'casero', 'tropero', 'esquilador', 'vivienda', 'comestibles', 'adelanto', 'liquidacion', 'despido'] },
+            { key: 'Administración', words: ['guia', 'dicose', 'guía', 'contribucion', 'impuesto', 'dgi', 'bps', 'contador', 'escribano', 'timbre', 'seguro', 'poliza', 'banco', 'intereses', 'comision', 'honorarios', 'papeleria', 'abono', 'primaria', 'patente', 'sucive', 'aduana'] },
+            { key: 'Servicios', words: ['luz', 'agua', 'internet', 'telefono', 'ute', 'antel', 'ose', 'gas', 'wifi', 'celular', 'flete', 'transporte', 'camion', 'flete animal', 'jaula', 'maquinista', 'trilla', 'siembra directa'] },
+            { key: 'Insumos', words: ['fertilizante', 'urea', 'herbicida', 'glifosato', 'veneno', 'fertilizacion', 'potasio', 'fosforo', 'agroquimico', 'hormiguicida', 'fungicida', 'insecticida', 'curasemilla', 'inoculante', 'coadyuvante', 'fosfato'] },
+            { key: 'Varios', words: ['mercaderia', 'comida', 'limpieza', 'provista', 'almacen', 'provisiones', 'casa', 'gastos varios', 'personal', 'carniceria', 'panaderia'] },
         ];
 
         for (const map of keywordMap) {
             if (checkKw(map.words)) {
                 const found = catsDelTipo.find(c => {
                     const nom = normalize(c.nombre);
+                    // Match si el nombre de la categoría contiene la "key" (ej: "SanidadAnimal" contiene "Sanidad")
+                    // O si la "key" contiene el nombre de la categoría (ej: "Hacienda" matchea con "Animales")
                     return nom.includes(normalize(map.key)) || normalize(map.key).includes(nom);
                 });
                 if (found) {
@@ -195,17 +224,22 @@ export const parseRegistroRapido = (texto: string, categorias: Categoria[]): { t
         }
     }
 
-    // 5. Prioridad 3: Fallback inteligente a "Otros"
+    // 5. Fallback inteligente
     if (!categoriaId) {
-        const fallbacks = ['otros', 'otras', 'general', 'varios', 'diversos'];
+        const fallbacks = ['otros', 'otras', 'general', 'varios', 'diversos', 'varias'];
         const catFallback = catsDelTipo.find(c => fallbacks.some(f => normalize(c.nombre).includes(f)));
         if (catFallback) categoriaId = catFallback.id!;
     }
 
-    // 6. Último recurso: Primera categoría del tipo
     if (!categoriaId && catsDelTipo.length > 0) {
         categoriaId = catsDelTipo[0].id!;
     }
 
-    return { tipo, monto, categoriaId, nota: texto.charAt(0).toUpperCase() + texto.slice(1) };
+    return { 
+        tipo, 
+        monto, 
+        categoriaId, 
+        nota: texto.charAt(0).toUpperCase() + texto.slice(1),
+        moneda: monedaDectectada 
+    };
 };

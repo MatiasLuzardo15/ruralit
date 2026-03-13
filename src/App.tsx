@@ -45,6 +45,17 @@ function App() {
 
     useEffect(() => {
         if (user) {
+            // Sincronizar tema desde el perfil
+            dataService.getProfile().then(prof => {
+                if (prof?.theme) {
+                    const currentTheme = localStorage.getItem('ruralit_theme');
+                    if (currentTheme !== prof.theme) {
+                        localStorage.setItem('ruralit_theme', prof.theme);
+                        document.documentElement.setAttribute('data-theme', prof.theme);
+                    }
+                }
+            });
+
             dataService.getEstablecimientoActivo().then(estab => {
                 setActiveEstab(estab);
                 if (!estab || !estab.tipo_produccion) {
@@ -54,7 +65,7 @@ function App() {
                 }
             });
         }
-    }, [user, tab]); // Re-check when user or tab changes
+    }, [user, tab]); 
 
     if (loading) return null;
     if (!user) return <Login />;

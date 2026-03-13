@@ -240,7 +240,6 @@ export function Ajustes({ user }: AjustesProps) {
             try {
                 await supabase.auth.signOut();
                 localStorage.removeItem('activeEstDB_uuid');
-                localStorage.removeItem('ruralit_theme');
                 showToast('Sesión cerrada');
                 setTimeout(() => { window.location.href = '/'; }, 1000);
             } catch (error) {
@@ -385,6 +384,7 @@ export function Ajustes({ user }: AjustesProps) {
         const nuevo = current === 'light' ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', nuevo);
         localStorage.setItem('ruralit_theme', nuevo);
+        void dataService.updateTheme(nuevo);
         showToast(`Modo ${nuevo === 'dark' ? 'oscuro' : 'claro'} activado`);
     };
 

@@ -77,7 +77,7 @@ export function Inicio() {
 
     const handleRegistroRapido = async (e: React.FormEvent) => {
         e.preventDefault();
-        const parsed = parseRegistroRapido(textoRapido, categorias);
+        const parsed = parseRegistroRapido(textoRapido, categorias, monedasActivas);
         if (!parsed) {
             alert('No entendí el ingreso o gasto. Probá escribiendo: "gasté 500 en ración"');
             return;
@@ -101,7 +101,7 @@ export function Inicio() {
             fecha: hoy(),
             creado_en: new Date().toISOString(),
             nota: parsed.nota,
-            moneda: moneda
+            moneda: parsed.moneda || moneda
         };
 
         // ACCIÓN INSTANTÁNEA
