@@ -38,18 +38,27 @@ function App() {
         }
 
         // Escuchar cambios de sesión
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        supabase.auth.getSession().then(async ({ data: { session } }) => {
             const newUser = session?.user ?? null;
             setUser(newUser);
-            if (newUser) syncService.syncEverything();
-            setLoading(false);
+            if (newUser) {
+                // PRIMERO: Bajar configuración (para evitar el popup de bienvenida)
+                await syncService.syncConfigOnly();
+                // SEGUNDO: El resto en segundo plano
+                syncService.syncEverything();
+            }
+            // Pequeño delay para que useLiveQuery se entere de los cambios en DB
+            setTimeout(() => setLoading(false), 300);
         });
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
             const newUser = session?.user ?? null;
             setUser(newUser);
-            if (newUser) syncService.syncEverything();
-            setLoading(false);
+            if (newUser) {
+                await syncService.syncConfigOnly();
+                syncService.syncEverything();
+            }
+            setTimeout(() => setLoading(false), 300);
         });
 
         return () => subscription.unsubscribe();

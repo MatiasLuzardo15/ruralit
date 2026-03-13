@@ -24,17 +24,17 @@ export class SyncService {
         try {
             console.log('🔄 Iniciando sincronización absoluta...');
             
-            // 1. Asegurar perfil
-            await this.syncProfile(session.user.id);
-            
-            // 2. Sincronizar Establecimiento actual
-            const estabServerId = await this.ensureActiveEstablecimiento(session.user.id);
-            if (!estabServerId) throw new Error('No se pudo determinar el establecimiento de servidor');
+            // 1. Sincronizar Configuración Base (Perfil y Establecimiento)
+            const estabServerId = await this.syncConfigOnly();
+            if (!estabServerId) {
+                console.log('ℹ️ No se encontró establecimiento previo, esperando setup...');
+                return;
+            }
 
-            // 3. Sincronizar Categorías (Bidireccional)
+            // 2. Sincronizar Categorías (Bidireccional)
             await this.syncCategorias(estabServerId);
 
-            // 4. Sincronizar Movimientos (Bidireccional)
+            // 3. Sincronizar Movimientos (Bidireccional)
             await this.syncMovimientos(estabServerId);
 
             console.log('✅ Sincronización completada.');
@@ -44,6 +44,18 @@ export class SyncService {
             this.isSyncing = false;
             this.suppressHooks = false;
         }
+    }
+
+    /**
+     * Sincroniza solo lo básico (Perfil y Establecimiento)
+     * Útil para recuperar el acceso rápidamente sin bajar todos los movimientos.
+     */
+    async syncConfigOnly(): Promise<string | null> {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return null;
+
+        await this.syncProfile(session.user.id);
+        return await this.ensureActiveEstablecimiento(session.user.id);
     }
 
     private async syncProfile(userId: string) {
@@ -123,6 +135,24 @@ export class SyncService {
             .maybeSingle();
 
         if (firstOne) {
+            // Si el nombre local es personalizado (no el default) y el del servidor es distinto,
+            // actualizamos el del servidor para que coincida con el elegido por el usuario.
+            const isLocalCustom = currentName !== 'Mi Establecimiento' && currentName !== '';
+            
+            if (isLocalCustom && firstOne.nombre !== currentName) {
+                const { data: updated } = await supabase
+                    .from('establecimientos')
+                    .update({ nombre: currentName })
+                    .eq('id', firstOne.id)
+                    .select()
+                    .single();
+                
+                if (updated) {
+                    this.updateLocalEstServerId(updated.id, updated.nombre);
+                    return updated.id;
+                }
+            }
+
             this.updateLocalEstServerId(firstOne.id, firstOne.nombre);
             await db.config.put({ clave: 'nombreEstablecimiento', valor: firstOne.nombre });
             if (firstOne.tipo_produccion) {
@@ -144,24 +174,20 @@ export class SyncService {
             .single();
 
         if (error) throw error;
+        
+        // Importante: Guardar el nombre localmente también al crear
+        await db.config.put({ clave: 'nombreEstablecimiento', valor: created.nombre });
         this.updateLocalEstServerId(created.id, created.nombre);
         return created.id;
     }
 
     private updateLocalEstServerId(serverId: string, nombre: string) {
-        const estabs = JSON.parse(localStorage.getItem('ruralit_establecimientos') || '[]');
+        // En caso de login limpio, esto reconstruye ruralit_establecimientos
         const activeDbName = localStorage.getItem('activeEstDB') || 'RuralitDB';
+        const item = { id: activeDbName, nombre, server_id: serverId };
         
-        // Buscar si ya existe la entrada local
-        const index = estabs.findIndex((e: any) => e.id === activeDbName);
-        
-        if (index >= 0) {
-            estabs[index] = { ...estabs[index], server_id: serverId, nombre };
-        } else {
-            estabs.push({ id: activeDbName, nombre, server_id: serverId });
-        }
-        
-        localStorage.setItem('ruralit_establecimientos', JSON.stringify(estabs));
+        // Guardamos solo el activo actual de forma limpia
+        localStorage.setItem('ruralit_establecimientos', JSON.stringify([item]));
     }
 
     async updateEstablecimientoType(serverId: string, type: string) {
@@ -334,8 +360,8 @@ export class SyncService {
 
     private triggerBackgroundSync() {
         if (this.suppressHooks) return;
-        // Debounce simple para no saturar
-        setTimeout(() => this.syncEverything(), 2000);
+        // Debounce para no saturar durante cargas iniciales
+        setTimeout(() => this.syncEverything(), 5000);
     }
 }
 

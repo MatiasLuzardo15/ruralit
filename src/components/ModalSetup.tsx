@@ -42,6 +42,9 @@ export function ModalSetup({ onComplete, initialName = '' }: Props) {
                 await syncService.updateEstablecimientoType(serverId, tipo);
             }
             
+            // Forzar sincronización completa para asegurar que el nombre y resto de datos suban
+            await syncService.syncEverything();
+            
             showToast('¡Configuración lista!');
             onComplete();
         } catch (e) {
