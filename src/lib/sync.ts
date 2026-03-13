@@ -55,6 +55,11 @@ export class SyncService {
         }
     }
 
+    async getProfile(userId: string) {
+        const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+        return data;
+    }
+
     async updateProfile(username: string, defaultCurrency: string, avatarUrl?: string) {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
@@ -94,23 +99,28 @@ export class SyncService {
         // 2. Si no hay ID o falló el anterior, buscar por nombre
         const { data: existing } = await supabase
             .from('establecimientos')
-            .select('id, nombre')
+            .select('id, nombre, tipo_produccion')
             .eq('user_id', userId)
             .eq('nombre', currentName)
             .maybeSingle();
 
         if (existing) {
             this.updateLocalEstServerId(existing.id);
+            // Si el servidor tiene tipo_produccion, lo bajamos a local
+            if (existing.tipo_produccion) {
+                await db.config.put({ clave: 'tipoProduccion', valor: existing.tipo_produccion });
+            }
             return existing.id;
         }
 
         // 3. Si no existe nada, crear nuevo
+        const localTipo = await db.config.get('tipoProduccion');
         const { data: created, error } = await supabase
             .from('establecimientos')
             .insert({
                 user_id: userId,
                 nombre: currentName,
-                tipo_produccion: 'Mixto'
+                tipo_produccion: localTipo?.valor || 'Mixto'
             })
             .select()
             .single();
@@ -125,6 +135,14 @@ export class SyncService {
         const activeDbName = localStorage.getItem('activeEstDB') || 'RuralitDB';
         const updated = estabs.map((e: any) => e.id === activeDbName ? { ...e, server_id: serverId } : e);
         localStorage.setItem('ruralit_establecimientos', JSON.stringify(updated));
+    }
+
+    async updateEstablecimientoType(serverId: string, type: string) {
+        const { error } = await supabase
+            .from('establecimientos')
+            .update({ tipo_produccion: type })
+            .eq('id', serverId);
+        if (error) throw error;
     }
 
     private async syncCategorias(estabId: string) {

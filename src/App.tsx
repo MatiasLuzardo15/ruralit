@@ -60,10 +60,12 @@ function App() {
     const [showSetup, setShowSetup] = useState(false);
 
     useEffect(() => {
-        if (tipoProduccion !== undefined && !tipoProduccion) {
+        if (user && tipoProduccion === null) {
             setShowSetup(true);
+        } else if (tipoProduccion) {
+            setShowSetup(false);
         }
-    }, [tipoProduccion]);
+    }, [tipoProduccion, user]);
 
     const establecimiento = useLiveQuery(
         () => db.config.get('nombreEstablecimiento').then(r => r?.valor ?? 'Mi Establecimiento'),
@@ -82,13 +84,12 @@ function App() {
                 collapsed={collapsed} 
                 setCollapsed={setCollapsed}
                 user={user}
-                onLoginClick={() => {}}
             />
             <main className="app-main">
                 {tab === 'inicio' && <Inicio />}
                 {tab === 'libreta' && <Libreta />}
                 {tab === 'balance' && <Balance />}
-                {tab === 'ajustes' && <Ajustes user={user} onLoginClick={() => {}} />}
+                {tab === 'ajustes' && <Ajustes user={user} />}
             </main>
             <BottomNav activo={tab} onChange={setTab} />
             <Toast />
