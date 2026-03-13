@@ -13,7 +13,7 @@ interface Props {
 
 export function ModalSetup({ onComplete, initialName = '' }: Props) {
     const [nombre, setNombre] = useState(initialName);
-    const [tipo, setTipo] = useState<TipoProduccion>('Ganadería');
+    const [tipo, setTipo] = useState<TipoProduccion | null>(null);
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
 
@@ -28,6 +28,7 @@ export function ModalSetup({ onComplete, initialName = '' }: Props) {
 
     const finalizar = async () => {
         if (!nombre.trim()) return showToast('Ingresá el nombre');
+        if (!tipo) return showToast('Seleccioná el rubro');
         setLoading(true);
         try {
             let id = localStorage.getItem('activeEstDB_uuid');
@@ -198,11 +199,13 @@ export function ModalSetup({ onComplete, initialName = '' }: Props) {
                             </button>
                             <button 
                                 onClick={finalizar}
-                                disabled={loading}
+                                disabled={loading || !tipo}
                                 style={{ 
                                     flex: 2, padding: '20px', borderRadius: '20px', 
-                                    background: 'var(--logo-dot)', color: '#0c0e10', 
-                                    fontSize: '17px', fontWeight: 900, border: 'none', cursor: 'pointer',
+                                    background: tipo ? 'var(--logo-dot)' : 'rgba(255,255,255,0.1)', 
+                                    color: tipo ? '#0c0e10' : 'rgba(255,255,255,0.3)', 
+                                    fontSize: '17px', fontWeight: 900, border: 'none', 
+                                    cursor: tipo ? 'pointer' : 'not-allowed',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
                                 }}
                             >

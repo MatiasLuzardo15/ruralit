@@ -222,33 +222,43 @@ export function Libreta() {
                         </div>
                     </div>
 
-                    {/* SISTEMA DE FILTROS MODERNOS */}
-                    <div className="no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: 'var(--bg-card)', marginTop: '8px' }}>
-                        <div style={{ position: 'relative' }}>
-                            <label style={{ position: 'absolute', top: '-8px', left: '12px', background: 'var(--bg-card)', padding: '0 4px', fontSize: '11px', fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase' }}>Búsqueda Rápida</label>
+                    {/* SISTEMA DE FILTROS MODERNOS ADAPTATIVO */}
+                    <div className="no-print" style={{ 
+                        display: 'flex', 
+                        flexDirection: isMobile ? 'column' : 'row', 
+                        gap: isMobile ? '12px' : '16px', 
+                        background: 'var(--bg-card)', 
+                        marginTop: '8px' 
+                    }}>
+                        {/* BÚSQUEDA: Full width en móvil, flexible en desktop */}
+                        <div style={{ position: 'relative', flex: isMobile ? 'none' : 1.5 }}>
+                            <label style={{ position: 'absolute', top: '-8px', left: '12px', background: 'var(--bg-card)', padding: '0 4px', fontSize: '11px', fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', zIndex: 1 }}>Búsqueda Rápida</label>
                             <Search size={16} strokeWidth={2.5} style={{ position: 'absolute', top: '16px', left: '16px', color: 'var(--t3)' }} />
                             <input type="text" placeholder="Leche, ración..." value={busqueda} onChange={e => setBusy(e.target.value)} style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', background: 'var(--bg-input)', color: 'var(--t1)' }} />
                         </div>
 
-                        <div style={{ position: 'relative' }}>
-                            <label style={{ position: 'absolute', top: '-8px', left: '12px', background: 'var(--bg-card)', padding: '0 4px', fontSize: '11px', fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase' }}>Flujo Monetario</label>
-                            <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)} style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', appearance: 'none', background: 'var(--bg-input)', color: 'var(--t1)', cursor: 'pointer' }}>
-                                <option value="todos">Ventas y Compras</option>
-                                <option value="ingreso">Solo Ingresos / Ventas</option>
-                                <option value="gasto">Solo Gastos / Compras</option>
-                            </select>
-                            <ChevronDown size={16} style={{ position: 'absolute', top: '16px', right: '16px', color: 'var(--t3)', pointerEvents: 'none' }} />
-                        </div>
+                        {/* SELECTORES: Lado a lado en móvil para ahorrar 50% de espacio vertical */}
+                        <div style={{ display: 'flex', gap: isMobile ? '8px' : '16px', flex: isMobile ? 'none' : 2 }}>
+                            <div style={{ position: 'relative', flex: 1 }}>
+                                <label style={{ position: 'absolute', top: '-8px', left: '12px', background: 'var(--bg-card)', padding: '0 4px', fontSize: '11px', fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', zIndex: 1 }}>{isMobile ? 'Flujo' : 'Flujo Monetario'}</label>
+                                <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)} style={{ width: '100%', padding: isMobile ? '14px 28px 14px 12px' : '14px 34px 14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', appearance: 'none', background: 'var(--bg-input)', color: 'var(--t1)', cursor: 'pointer', textOverflow: 'ellipsis' }}>
+                                    <option value="todos">Ventas y Compras</option>
+                                    <option value="ingreso">Solo Ingresos</option>
+                                    <option value="gasto">Solo Gastos</option>
+                                </select>
+                                <ChevronDown size={14} style={{ position: 'absolute', top: '17px', right: isMobile ? '8px' : '12px', color: 'var(--t3)', pointerEvents: 'none' }} />
+                            </div>
 
-                        <div style={{ position: 'relative' }}>
-                            <label style={{ position: 'absolute', top: '-8px', left: '12px', background: 'var(--bg-card)', padding: '0 4px', fontSize: '11px', fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase' }}>Clasificación</label>
-                            <select value={filtroCat} onChange={e => setFiltroCat(e.target.value)} style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', appearance: 'none', background: 'var(--bg-input)', color: 'var(--t1)', cursor: 'pointer' }}>
-                                <option value="todas">Cualquier Categoría</option>
-                                {categorias.filter(c => filtroTipo === 'todos' || c.tipo === filtroTipo).map(c => (
-                                    <option key={String(c.id)} value={String(c.id)}>{c.nombre}</option>
-                                ))}
-                            </select>
-                            <ChevronDown size={16} style={{ position: 'absolute', top: '16px', right: '16px', color: 'var(--t3)', pointerEvents: 'none' }} />
+                            <div style={{ position: 'relative', flex: 1 }}>
+                                <label style={{ position: 'absolute', top: '-8px', left: '12px', background: 'var(--bg-card)', padding: '0 4px', fontSize: '11px', fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', zIndex: 1 }}>{isMobile ? 'Clase' : 'Clasificación'}</label>
+                                <select value={filtroCat} onChange={e => setFiltroCat(e.target.value)} style={{ width: '100%', padding: isMobile ? '14px 28px 14px 12px' : '14px 34px 14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', appearance: 'none', background: 'var(--bg-input)', color: 'var(--t1)', cursor: 'pointer', textOverflow: 'ellipsis' }}>
+                                    <option value="todas">Cualquier Categoría</option>
+                                    {categorias.filter(c => filtroTipo === 'todos' || c.tipo === filtroTipo).map(c => (
+                                        <option key={String(c.id)} value={String(c.id)}>{c.nombre}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown size={14} style={{ position: 'absolute', top: '17px', right: isMobile ? '8px' : '12px', color: 'var(--t3)', pointerEvents: 'none' }} />
+                            </div>
                         </div>
                     </div>
 

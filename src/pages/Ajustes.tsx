@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { createPortal } from 'react-dom';
-import { Plus, Pencil, Trash2, Check, X, Settings2, Building2, Coins, LayoutGrid, AlertCircle, ChevronRight, ArrowLeft, ArrowUpRight, ArrowDownLeft, User, HelpCircle, Moon, Sun, Cloud, CloudOff, LogOut, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, Settings2, Building2, Coins, LayoutGrid, AlertCircle, ChevronRight, ArrowLeft, ArrowUpRight, ArrowDownLeft, User, HelpCircle, Moon, Sun, Cloud, CloudOff, LogOut, Loader2, TrendingUp, Milk, Sprout } from 'lucide-react';
 import type { Categoria, TipoMovimiento, Moneda, Establecimiento } from '../types';
 import { MONEDAS } from '../utils/helpers';
 import { dataService } from '../lib/dataService';
@@ -10,6 +10,7 @@ import { useMonedas } from '../utils/useMoneda';
 import { type TipoProduccion, inicializarCategorias } from '../db/database';
 import { showToast } from '../components/Toast';
 import { TopBar } from '../components/TopBar';
+import { ModalNuevoEstablecimiento } from '../components/ModalNuevoEstablecimiento';
 
 const CATEGORY_ICONS = [
     '🐄', '🌾', '🚜', '💰', '📉', '📈', '📦', '🛒', '🔧', '⛽',
@@ -149,7 +150,7 @@ export function Ajustes({ user }: AjustesProps) {
     const [tipoProduccion, setTipoProduccion] = useState<TipoProduccion>('Ganadería');
     const [activeTab, setActiveTab] = useState<TabKey>('establecimiento');
     const [saving, setSaving] = useState(false);
-    
+
     // States for multi-establishment
     const [activeEstId, setActiveEstId] = useState<string | null>(localStorage.getItem('activeEstDB_uuid'));
     const [estabsList, setEstabsList] = useState<Establecimiento[]>([]);
@@ -164,6 +165,8 @@ export function Ajustes({ user }: AjustesProps) {
     const [mobileView, setMobileView] = useState<'menu' | 'detail'>('menu');
     const [mobileDetailType, setMobileDetailType] = useState<string | null>(null);
 
+    const [showNewEstabModal, setShowNewEstabModal] = useState(false);
+
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
         window.addEventListener('resize', handleResize);
@@ -174,7 +177,7 @@ export function Ajustes({ user }: AjustesProps) {
 
     const cargar = async () => {
         let activeId = localStorage.getItem('activeEstDB_uuid');
-        
+
         // Si no hay ID en localStorage, intentamos obtenerlo de Supabase
         if (!activeId) {
             const activeEstab = await dataService.getEstablecimientoActivo();
@@ -182,7 +185,7 @@ export function Ajustes({ user }: AjustesProps) {
                 activeId = String(activeEstab.id);
             }
         }
-        
+
         if (!activeId) {
             setLoadingData(false);
             return;
@@ -224,9 +227,9 @@ export function Ajustes({ user }: AjustesProps) {
         }
     };
 
-    useEffect(() => { 
-        void cargar(); 
-        
+    useEffect(() => {
+        void cargar();
+
         const handleProfileUpdate = () => {
             void cargar();
         };
@@ -310,14 +313,14 @@ export function Ajustes({ user }: AjustesProps) {
     const handleSaveCur = async (selected: Moneda[]) => {
         const activeId = localStorage.getItem('activeEstDB_uuid');
         if (!activeId) return;
-        
+
         setSaving(true);
         try {
             await dataService.updateMonedasActivas(activeId, selected);
             setMonedasActivas(selected);
             showToast('Divisas actualizadas');
             setShowCurModal(false);
-            
+
             const currentView = localStorage.getItem('ruralia_moneda_view') as Moneda;
             if (!selected.includes(currentView)) {
                 localStorage.setItem('ruralia_moneda_view', selected[0]);
@@ -346,21 +349,15 @@ export function Ajustes({ user }: AjustesProps) {
         void cargar();
     };
 
-    const crearNuevoEstablecimiento = async () => {
-        const nuevoNombre = prompt('Ingresá el nombre del nuevo establecimiento:');
-        if (!nuevoNombre || !nuevoNombre.trim()) return;
+    const crearNuevoEstablecimiento = () => {
+        setShowNewEstabModal(true);
+    };
 
-        setSaving(true);
-        try {
-            const data = await dataService.addEstablecimiento(nuevoNombre.trim());
-            dataService.clearCache();
-            localStorage.setItem('activeEstDB_uuid', String(data.id));
-            window.location.reload();
-        } catch (error) {
-            showToast('Error al crear');
-        } finally {
-            setSaving(false);
-        }
+    const handleNewEstabSuccess = (id: string) => {
+        setShowNewEstabModal(false);
+        dataService.clearCache();
+        localStorage.setItem('activeEstDB_uuid', id);
+        window.location.reload();
     };
 
     const eliminarEstablecimiento = async (id: string, nombre: string) => {
@@ -462,8 +459,8 @@ export function Ajustes({ user }: AjustesProps) {
                                         <button
                                             key={emoji}
                                             onClick={() => setAvatarEmoji(emoji)}
-                                            style={{ 
-                                                fontSize: '16px', padding: '4px', borderRadius: '6px', border: 'none', 
+                                            style={{
+                                                fontSize: '16px', padding: '4px', borderRadius: '6px', border: 'none',
                                                 background: avatarEmoji === emoji ? 'var(--green-light)' : 'transparent',
                                                 boxShadow: avatarEmoji === emoji ? '0 0 0 1.5px var(--green-main)' : 'none',
                                                 cursor: 'pointer', transition: 'all 0.1s'
@@ -522,12 +519,12 @@ export function Ajustes({ user }: AjustesProps) {
                             <p>Este es el nombre principal que aparece en todos tus reportes.</p>
                         </div>
                         <div style={{ width: '100%' }}>
-                            <input 
-                                type="text" 
-                                value={nombreEstab} 
-                                onChange={e => setNombre(e.target.value)} 
-                                placeholder="Nombre del Establecimiento" 
-                                style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--t1)' }} 
+                            <input
+                                type="text"
+                                value={nombreEstab}
+                                onChange={e => setNombre(e.target.value)}
+                                placeholder="Nombre del Establecimiento"
+                                style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--t1)' }}
                             />
                         </div>
                     </div>
@@ -539,23 +536,50 @@ export function Ajustes({ user }: AjustesProps) {
                             <p>Define el rubro principal para sugerir categorías apropiadas.</p>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' }}>
-                                {(['Ganadería', 'Lechería', 'Agricultura', 'Contratista', 'Ovina', 'Mixto'] as TipoProduccion[]).map(t => (
-                                     <button
-                                         key={t}
-                                         onClick={() => setTipoProduccion(t)}
-                                         style={{ padding: '12px 8px', borderRadius: '12px', border: tipoProduccion === t ? '2px solid var(--green-main)' : '1px solid var(--border)', background: tipoProduccion === t ? 'var(--green-light)' : 'var(--white)', color: 'var(--t1)', fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
-                                     >
-                                         {t === 'Contratista' ? 'Servicios' : t}
-                                     </button>
-                                 ))}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
+                                {[
+                                    { id: 'Ganadería', icon: TrendingUp },
+                                    { id: 'Lechería', icon: Milk },
+                                    { id: 'Agricultura', icon: Sprout },
+                                    { id: 'Contratista', icon: Settings2, label: 'Servicios' },
+                                    { id: 'Ovina', icon: User },
+                                    { id: 'Mixto', icon: LayoutGrid }
+                                ].map(t => {
+                                    const Icon = t.icon;
+                                    const label = t.label || t.id;
+                                    const selected = tipoProduccion === t.id;
+                                    return (
+                                        <button
+                                            key={t.id}
+                                            onClick={() => setTipoProduccion(t.id as TipoProduccion)}
+                                            style={{
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                padding: '16px 8px',
+                                                borderRadius: '16px',
+                                                border: selected ? '2px solid var(--green-main)' : '1px solid var(--border)',
+                                                background: selected ? 'var(--green-light)' : 'var(--white)',
+                                                color: selected ? 'var(--green-main)' : 'var(--t1)',
+                                                fontSize: '13px',
+                                                fontWeight: 800,
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            <Icon size={18} strokeWidth={selected ? 2.5 : 2} style={{ opacity: selected ? 1 : 0.6 }} />
+                                            {label}
+                                        </button>
+                                    );
+                                })}
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%', marginTop: '4px' }}>
-                                <button 
-                                    className="btn-secondary" 
+                                <button
+                                    className="btn-secondary"
                                     style={{ fontSize: '12px', background: '#FFFFFF', color: '#1A1A1A', border: '1px solid #E5E7EB', padding: '10px 16px' }}
                                     onClick={async () => {
-                                        if(confirm('¿Deseas combinar las categorías sugeridas? Esto agregará las categorías faltantes del nuevo rubro sin borrar tus registros actuales.')) {
+                                        if (confirm('¿Deseas combinar las categorías sugeridas? Esto agregará las categorías faltantes del nuevo rubro sin borrar tus registros actuales.')) {
                                             await inicializarCategorias(tipoProduccion, true);
                                             showToast('Categorías combinadas correctamente');
                                             cargar();
@@ -594,7 +618,7 @@ export function Ajustes({ user }: AjustesProps) {
                                             <p>{est.id === activeEstId ? 'Activo actualmente' : 'Presiona para entrar'}</p>
                                         </div>
                                         {est.id !== activeEstId && (
-                                            <button 
+                                            <button
                                                 onClick={(e) => { e.stopPropagation(); eliminarEstablecimiento(String(est.id), est.nombre); }}
                                                 style={{ position: 'absolute', top: '12px', right: '12px', background: 'var(--red-light)', color: 'var(--red-soft)', border: 'none', borderRadius: '50%', padding: '6px', cursor: 'pointer', display: 'flex' }}
                                             >
@@ -901,7 +925,6 @@ export function Ajustes({ user }: AjustesProps) {
                 <div className={isMobile ? "" : "settings-card"} style={{ paddingTop: isMobile ? '0' : '16px' }}>
                     {!isMobile && renderNav()}
                     <div style={{ padding: isMobile ? '0 8px' : '0' }}>
-                        {/* If mobile, we might want to filter what we show within establishment tab */}
                         {isMobile && activeTab === 'perfil' ? (
                             <div className="settings-grid-row" style={{ gridTemplateColumns: '1fr', border: 'none' }}>
                                 <div className="settings-row-info">
@@ -920,8 +943,8 @@ export function Ajustes({ user }: AjustesProps) {
                                                 <button
                                                     key={emoji}
                                                     onClick={() => setAvatarEmoji(emoji)}
-                                                    style={{ 
-                                                        fontSize: '18px', padding: '4px', borderRadius: '8px', border: 'none', 
+                                                    style={{
+                                                        fontSize: '18px', padding: '4px', borderRadius: '8px', border: 'none',
                                                         background: avatarEmoji === emoji ? 'var(--green-light)' : 'transparent',
                                                         boxShadow: avatarEmoji === emoji ? '0 0 0 1.5px var(--green-main)' : 'none',
                                                         cursor: 'pointer'
@@ -931,25 +954,6 @@ export function Ajustes({ user }: AjustesProps) {
                                                 </button>
                                             ))}
                                         </div>
-                                    </div>
-                                    {user && (
-                                        <div style={{ background: 'var(--gray-50)', padding: '16px', borderRadius: '16px', border: '1px solid var(--border)' }}>
-                                            <p style={{ fontSize: '11px', fontWeight: 700, color: 'var(--t3)', marginBottom: '4px' }}>EMAIL ACTUAL</p>
-                                            <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--t1)' }}>{user.email}</p>
-                                        </div>
-                                    )}
-                                    <div style={{ padding: '0 0 20px' }}>
-                                        <h4 style={{ fontSize: '12px', fontWeight: 700, color: 'var(--t3)', marginBottom: '16px', textTransform: 'uppercase' }}>Apariencia</h4>
-                                        <button
-                                            onClick={toggleTema}
-                                            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', borderRadius: '16px', background: 'var(--bg-card)', border: '1px solid var(--border)', fontWeight: 600, color: 'var(--t1)' }}
-                                        >
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                {typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-                                                <span>Modo {typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark' ? 'Claro' : 'Oscuro'}</span>
-                                            </div>
-                                            <ChevronRight size={16} color="var(--t3)" />
-                                        </button>
                                     </div>
                                     <button className="btn-primary" onClick={guardarPerfil} disabled={saving} style={{ padding: '18px', borderRadius: '14px' }}>
                                         {saving ? 'Guardando...' : 'Actualizar Perfil'}
@@ -978,36 +982,62 @@ export function Ajustes({ user }: AjustesProps) {
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                                            {(['Ganadería', 'Lechería', 'Agricultura', 'Contratista', 'Ovina', 'Mixto'] as TipoProduccion[]).map(t => (
-                                                <button
-                                                    key={t}
-                                                    onClick={() => setTipoProduccion(t)}
-                                                    style={{ padding: '16px 8px', borderRadius: '14px', border: tipoProduccion === t ? '2px solid var(--green-main)' : '1px solid var(--border)', background: tipoProduccion === t ? 'var(--green-light)' : 'var(--bg-card)', color: 'var(--t1)', fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
-                                                >
-                                                    {t === 'Contratista' ? 'Servicios' : t}
-                                                </button>
-                                            ))}
+                                            {[
+                                                { id: 'Ganadería', icon: TrendingUp },
+                                                { id: 'Lechería', icon: Milk },
+                                                { id: 'Agricultura', icon: Sprout },
+                                                { id: 'Contratista', icon: Settings2, label: 'Servicios' },
+                                                { id: 'Ovina', icon: User },
+                                                { id: 'Mixto', icon: LayoutGrid }
+                                            ].map(t => {
+                                                const Icon = t.icon;
+                                                const label = t.label || t.id;
+                                                const selected = tipoProduccion === t.id;
+                                                return (
+                                                    <button
+                                                        key={t.id}
+                                                        onClick={() => setTipoProduccion(t.id as TipoProduccion)}
+                                                        style={{
+                                                            display: 'flex',
+                                                            flexDirection: 'column',
+                                                            alignItems: 'center',
+                                                            gap: '8px',
+                                                            padding: '16px 8px',
+                                                            borderRadius: '16px',
+                                                            border: selected ? '2px solid var(--green-main)' : '1px solid var(--border)',
+                                                            background: selected ? 'var(--green-light)' : 'var(--bg-card)',
+                                                            color: selected ? 'var(--green-main)' : 'var(--t1)',
+                                                            fontSize: '13px',
+                                                            fontWeight: 800,
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.2s'
+                                                        }}
+                                                    >
+                                                        <Icon size={18} strokeWidth={selected ? 2.5 : 2} style={{ opacity: selected ? 1 : 0.6 }} />
+                                                        {label}
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
-                                        <button 
-                                            className="btn-primary" 
+                                        <button
+                                            className="btn-primary"
                                             onClick={guardarEstablecimiento}
                                             style={{ padding: '16px', borderRadius: '14px' }}
                                         >
                                             Guardar Rubro
                                         </button>
-                                        <div style={{ height: '1px', background: 'var(--border-sm)', margin: '8px 0' }}></div>
-                                        <button 
-                                            className="btn-secondary" 
-                                            style={{ fontSize: '13px', padding: '14px' }}
+                                        <button
+                                            className="btn-secondary"
+                                            style={{ fontSize: '13px', padding: '14px', marginTop: '8px' }}
                                             onClick={async () => {
-                                                if(confirm('¿Deseas sincronizar las categorías sugeridas? Esto eliminará las predefinidas que NO estés usando.')) {
+                                                if(confirm('¿Deseas sincronizar las categorías sugeridas?')) {
                                                     await inicializarCategorias(tipoProduccion, true);
                                                     showToast('Categorías sincronizadas');
                                                     cargar();
                                                 }
                                             }}
                                         >
-                                            Sincronizar Categorías Sugeridas
+                                            Sincronizar Sugeridas
                                         </button>
                                     </div>
                                 </div>
@@ -1042,9 +1072,10 @@ export function Ajustes({ user }: AjustesProps) {
                 </div>
             </div>
 
-            {/* Modals */}
+            {/* Modals outside scrollable area */}
             {showCatModal && <CatModal mode={showCatModal} initData={editCatData as CatForm} onClose={() => setShowCatModal(false)} onSave={handleSaveCat} />}
             {showCurModal && <CurrencyModal current={monedasActivas} onClose={() => setShowCurModal(false)} onSave={handleSaveCur} />}
+            {showNewEstabModal && <ModalNuevoEstablecimiento onClose={() => setShowNewEstabModal(false)} onSuccess={handleNewEstabSuccess} />}
         </div>
     );
 }
