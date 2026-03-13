@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Search, ChevronDown, Download, MoreHorizontal, Pencil, Trash2, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, ChevronDown, Download, MoreHorizontal, Pencil, Trash2, Filter, ChevronLeft, ChevronRight, Printer } from 'lucide-react';
 import db from '../db/database';
 import type { Movimiento, Categoria, TipoMovimiento } from '../types';
 import { formatMonto, formatFechaCorta, formatMesLabel } from '../utils/helpers';
@@ -33,12 +33,12 @@ export function Libreta() {
     const [anio, setAnio] = useState(new Date().getFullYear());
     const [mes, setMes] = useState(new Date().getMonth());
     const [movimientos, setMov] = useState<Movimiento[]>([]);
-    
+
     // Filtros
     const [busqueda, setBusy] = useState('');
     const [filtroTipo, setFiltroTipo] = useState('todos');
     const [filtroCat, setFiltroCat] = useState('todas');
-    
+
     const [movEditar, setMovEd] = useState<Movimiento | undefined>();
     const [tipoModal, setTipo] = useState<TipoMovimiento | null>(null);
     const [key, setKey] = useState(0);
@@ -97,15 +97,15 @@ export function Libreta() {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', paddingBottom: '40px' }}>
-            <TopBar 
-                title="Libreta de Movimientos" 
+            <TopBar
+                title="Libreta de Movimientos"
                 heading="Reporte General"
                 subtitle="Visualizá y modificá todo el historial"
                 actions={topbarActions}
             />
 
             <div className="page-content" style={{ maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
-                
+
                 {/* ── BIG FLOATING CARD ── */}
                 <div style={{ background: 'var(--white)', borderRadius: '32px', padding: '40px', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column', gap: '32px' }}>
 
@@ -128,7 +128,7 @@ export function Libreta() {
                             <Search size={16} strokeWidth={2.5} style={{ position: 'absolute', top: '16px', left: '16px', color: 'var(--t3)' }} />
                             <input type="text" placeholder="Leche, ración..." value={busqueda} onChange={e => setBusy(e.target.value)} style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', background: 'var(--bg-input)', color: 'var(--t1)' }} />
                         </div>
-                        
+
                         <div style={{ position: 'relative' }}>
                             <label style={{ position: 'absolute', top: '-8px', left: '12px', background: 'var(--bg-card)', padding: '0 4px', fontSize: '11px', fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase' }}>Flujo Monetario</label>
                             <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)} style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', appearance: 'none', background: 'var(--bg-input)', color: 'var(--t1)', cursor: 'pointer' }}>
@@ -154,7 +154,31 @@ export function Libreta() {
                     {/* EXPORT ROW */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-sm)', paddingBottom: '16px' }}>
                         <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--t2)', display: 'flex', alignItems: 'center', gap: '8px' }}><Filter size={16} /> Mostrando {filtrados.length} resultados</p>
-                        <button onClick={() => showToast('Iniciando exportación...')} style={{ fontSize: '12px', fontWeight: 700, color: 'var(--t1)', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '10px', padding: '8px 16px', transition: 'all 0.2s', boxShadow: 'var(--shadow-xs)' }}><Download size={14} /> EXPORT REPORT</button>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                                onClick={() => {
+                                    if (filtrados.length === 0) {
+                                        showToast('No hay datos para exportar');
+                                        return;
+                                    }
+                                    import('../utils/exportUtils').then(mod => {
+                                        mod.exportMovimientosCSV(filtrados, catMap, formatMesLabel(anio, mes));
+                                        showToast('Reporte exportado con éxito');
+                                    });
+                                }}
+                                style={{ fontSize: '12px', fontWeight: 700, color: 'var(--t2)', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '10px', padding: '8px 16px', transition: 'all 0.2s', boxShadow: 'var(--shadow-xs)' }}
+                            >
+                                <Download size={14} /> CSV
+                            </button>
+                            <button
+                                onClick={() => window.print()}
+                                className="nav-arrow"
+                                style={{ width: '38px', height: '38px', color: 'var(--t1)', padding: 0 }}
+                                title="Imprimir PDF"
+                            >
+                                <Printer size={20} />
+                            </button>
+                        </div>
                     </div>
 
                     {/* DATA GRID ESTILO INVENTORY 360 */}
@@ -184,8 +208,8 @@ export function Libreta() {
                                         const ing = mov.tipo === 'ingreso';
                                         const isCtxOpen = ctxOpen === mov.id;
                                         return (
-                                            <tr key={mov.id} onClick={() => !isCtxOpen && setCtxOpen(null)} style={{ borderBottom: i === filtrados.length -1 ? 'none' : '1px solid var(--border-sm)', transition: 'background 0.1s', cursor: 'default' }} onMouseOver={e=>e.currentTarget.style.background='var(--bg)'} onMouseOut={e=>e.currentTarget.style.background='transparent'}>
-                                                
+                                            <tr key={mov.id} onClick={() => !isCtxOpen && setCtxOpen(null)} style={{ borderBottom: i === filtrados.length - 1 ? 'none' : '1px solid var(--border-sm)', transition: 'background 0.1s', cursor: 'default' }} onMouseOver={e => e.currentTarget.style.background = 'var(--bg)'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+
                                                 <td style={{ padding: '20px 16px' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                                                         <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: ing ? 'var(--green-light)' : 'var(--red-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
@@ -197,15 +221,15 @@ export function Libreta() {
                                                         </div>
                                                     </div>
                                                 </td>
-                                                
+
                                                 <td style={{ padding: '20px 16px', color: 'var(--t2)', fontSize: '14px' }}>
                                                     {mov.nota ? mov.nota : <span style={{ color: 'var(--t3)' }}>Sin observaciones</span>}
                                                 </td>
-                                                
+
                                                 <td style={{ padding: '20px 16px', color: 'var(--t2)', fontSize: '14px', fontWeight: 500 }}>
                                                     {formatFechaCorta(mov.fecha)}
                                                 </td>
-                                                
+
                                                 <td style={{ padding: '20px 16px', textAlign: 'right' }}>
                                                     <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '15px', color: ing ? 'var(--green-main)' : 'var(--t1)', letterSpacing: '-0.5px' }}>
                                                         {ing ? '' : '-'}{formatMonto(mov.monto, mov.moneda)}
@@ -214,10 +238,10 @@ export function Libreta() {
 
                                                 {/* ⋮ Menú */}
                                                 <td style={{ padding: '20px 16px', position: 'relative', textAlign: 'right' }} onClick={e => e.stopPropagation()}>
-                                                    <button onClick={() => setCtxOpen(isCtxOpen ? null : (mov.id ?? null))} style={{ padding: '6px', borderRadius: '8px', color: 'var(--t2)', background: 'transparent', border: 'none', cursor: 'pointer' }} onMouseOver={e=>e.currentTarget.style.background='var(--gray-100)'} onMouseOut={e=>e.currentTarget.style.background='transparent'}>
+                                                    <button onClick={() => setCtxOpen(isCtxOpen ? null : (mov.id ?? null))} style={{ padding: '6px', borderRadius: '8px', color: 'var(--t2)', background: 'transparent', border: 'none', cursor: 'pointer' }} onMouseOver={e => e.currentTarget.style.background = 'var(--gray-100)'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
                                                         <MoreHorizontal size={18} />
                                                     </button>
-                                                    
+
                                                     {isCtxOpen && (
                                                         <ContextMenu
                                                             onClose={() => setCtxOpen(null)}
@@ -226,7 +250,7 @@ export function Libreta() {
                                                         />
                                                     )}
                                                 </td>
-                                                
+
                                             </tr>
                                         );
                                     })}

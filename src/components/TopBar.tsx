@@ -80,7 +80,7 @@ export function TopBar({ title, heading, badge, subtitle, actions, hideCurrencyT
                 </div>
 
                 {/* Lado Derecho: Controles e Interactivos */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0, flexWrap: 'nowrap', overflowX: 'auto', maxWidth: '100%', scrollbarWidth: 'none' }}>
                     {currencyToggle}
                     {actions}
                     

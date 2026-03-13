@@ -178,7 +178,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
-  overscroll-behavior-y: none; /* Prevent pull-to-refresh / bounce in some browsers */
+  overscroll-behavior-y: none;
+  /* Prevent pull-to-refresh / bounce in some browsers */
 }
 
 #root {
@@ -201,8 +202,9 @@ select {
 
 /* Prevent mobile auto-zoom on focus by ensuring font-size is at least 16px */
 @media (max-width: 767px) {
-  input, 
-  textarea, 
+
+  input,
+  textarea,
   select,
   .premium-input,
   .search-inner input {
@@ -228,7 +230,8 @@ input[type='number']::-webkit-inner-spin-button {
   background: var(--bg);
   padding: 0;
   width: 100vw;
-  overflow: hidden; /* Lock root to prevent unwanted horizontal scroll */
+  overflow: hidden;
+  /* Lock root to prevent unwanted horizontal scroll */
 }
 
 @media (min-width: 768px) {
@@ -644,7 +647,9 @@ input[type='number']::-webkit-inner-spin-button {
   box-shadow: var(--shadow-sm);
 }
 
-.date-nav-minimal, .year-select-minimal {
+.date-nav-minimal,
+.year-select-minimal {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -685,10 +690,7 @@ input[type='number']::-webkit-inner-spin-button {
   text-align: center;
 }
 
-.year-select-minimal {
-  position: relative;
-  padding: 0;
-}
+/* Year select specific within the container */
 
 .year-select-minimal select {
   width: 100%;
@@ -705,9 +707,16 @@ input[type='number']::-webkit-inner-spin-button {
   cursor: pointer;
 }
 
+.year-select-minimal select option {
+  background: var(--bg-card);
+  color: var(--t1);
+}
+
 .select-arrow {
   position: absolute;
   right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
   pointer-events: none;
   color: var(--t3);
 }
@@ -721,7 +730,8 @@ input[type='number']::-webkit-inner-spin-button {
     gap: 16px;
     position: sticky;
     top: 0;
-    background: rgba(245, 243, 231, 0.85); /* Matches --beige-bg */
+    background: rgba(245, 243, 231, 0.85);
+    /* Matches --beige-bg */
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     z-index: 90;
@@ -730,7 +740,8 @@ input[type='number']::-webkit-inner-spin-button {
   }
 
   [data-theme='dark'] .topbar {
-    background: rgba(12, 14, 16, 0.85); /* Matches dark --bg */
+    background: rgba(12, 14, 16, 0.85);
+    /* Matches dark --bg */
   }
 
   /* Make sure the main section H1s disappear since they moved to TopBar */
@@ -745,18 +756,30 @@ input[type='number']::-webkit-inner-spin-button {
 
   /* Mobile balance selectors layout */
   .balance-selectors-wrap {
-    flex-direction: column;
-    gap: 10px;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 8px;
     width: 100%;
+    padding-bottom: 4px;
+    /* Space for scroll if needed */
+    scrollbar-width: none;
   }
 
-  .date-nav-minimal, .year-select-minimal {
-    width: 100%;
+  .balance-selectors-wrap::-webkit-scrollbar {
+    display: none;
+  }
+
+  .date-nav-minimal,
+  .year-select-minimal {
+    width: auto;
+    flex-shrink: 0;
     padding: 2px;
   }
 
   .nav-arrow {
-    padding: 12px 16px; /* Larger tap target for mobile */
+    padding: 12px 16px;
+    /* Larger tap target for mobile */
   }
 
   .nav-label {
@@ -1001,7 +1024,8 @@ input[type='number']::-webkit-inner-spin-button {
 
 .action-card-text {
   font-weight: 600;
-  color: var(--charcoal); /* Matches #101828 in light mode and lightens in dark */
+  color: var(--charcoal);
+  /* Matches #101828 in light mode and lightens in dark */
   font-size: 14px;
   letter-spacing: -0.2px;
 }
@@ -3400,5 +3424,75 @@ textarea.field-input {
   .balance-item-income {
     border-right: 1px solid var(--border-sm);
     padding-right: 16px;
+  }
+}
+
+@media print {
+
+  .app-sidebar,
+  .bottom-nav,
+  .topbar-actions,
+  .balance-selectors-wrap,
+  .modal-backdrop,
+  .toast-container,
+  .nav-arrow {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    padding: 0 !important;
+    color: black !important;
+  }
+
+  .app-main {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
+  .page-content {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+
+  .topbar {
+    padding-bottom: 0 !important;
+    border-bottom: 2px solid var(--green-main) !important;
+  }
+
+  .card,
+  .balance-card,
+  .libreta-card {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    page-break-inside: avoid;
+  }
+
+  button {
+    display: none !important;
+  }
+
+  :root, [data-theme='dark'] {
+    --white: #ffffff !important;
+    --bg: #F5F3E7 !important;
+    --bg-outer: white !important;
+    --bg-card: white !important;
+    --bg-input: white !important;
+    --t1: #000000 !important;
+    --t2: #111111 !important;
+    --t3: #333333 !important;
+    --t-muted: #444444 !important;
+    --charcoal: #000000 !important; /* Force black for printed titles */
+    --border: #cccccc !important;
+    --border-sm: #dddddd !important;
+    --green-main: #2E7D32 !important;
+    --green-sec: #66BB6A !important;
+    --green-light: #E8F5E9 !important;
+    --red-soft: #C94A4A !important;
+    --red-light: #FDECEA !important;
+    --shadow-sm: none !important;
+    --shadow-xs: none !important;
   }
 }

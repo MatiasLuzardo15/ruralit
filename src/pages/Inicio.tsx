@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
     Wallet, TrendingUp, ArrowUpRight, ArrowDownRight, BookOpen, Plus, Minus, Send, Search,
-    Calculator, Clock
+    Calculator, Clock, Printer
 } from 'lucide-react';
 import db from '../db/database';
 import type { Movimiento, Categoria, TipoMovimiento } from '../types';
@@ -123,6 +123,16 @@ export function Inicio() {
                 title="Mi Establecimiento"
                 heading={`${saludo}, ${nombreUsuario}`}
                 subtitle={`Resumen financiero al ${formatFechaCorta(new Date().toISOString().split('T')[0])}`}
+                actions={
+                    <button 
+                        onClick={() => window.print()}
+                        className="nav-arrow" 
+                        style={{ background: 'var(--blue-light)', color: 'var(--blue-main)', borderRadius: '12px', padding: '10px 14px' }} 
+                        title="Imprimir Resumen"
+                    >
+                        <Printer size={18} />
+                    </button>
+                }
             />
 
             <div className="page-content" style={{ paddingBottom: 80 }}>

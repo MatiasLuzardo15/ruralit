@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
-import { ChevronLeft, ChevronRight, ChevronDown, X, BarChart2, TrendingUp, TrendingDown, Divide, AlertTriangle, CheckCircle, Info, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, X, BarChart2, TrendingUp, TrendingDown, Divide, AlertTriangle, CheckCircle, Info, Calendar, Download, Printer } from 'lucide-react';
 import db from '../db/database';
 import type { Movimiento, Categoria, TipoMovimiento } from '../types';
 import { formatMonto, formatMesLabel, calcularBalance, formatFechaCorta, getTrimestreInfo } from '../utils/helpers';
@@ -84,7 +84,7 @@ function CatDetailModal({ cat, movs, onClose, onEdit }: { cat: Categoria; movs: 
 function FeedbackHeader({ bal, type, periodLabel, moneda, itemsE, itemsS }: { bal: any, type: string, periodLabel: string, moneda: string, itemsE: CatItem[], itemsS: CatItem[] }) {
     const margin = bal.ingresos > 0 ? (bal.neto / bal.ingresos) * 100 : (bal.gastos > 0 ? -100 : 0);
     const concentration = itemsS.length > 0 ? itemsS[0].pct : 0;
-    
+
     let status = 'neutral';
     if (bal.ingresos > 0) {
         if (margin > 35) status = 'excelente';
@@ -109,7 +109,7 @@ function FeedbackHeader({ bal, type, periodLabel, moneda, itemsE, itemsS }: { ba
             `Estabilidad productiva. Los ingresos de ${periodLabel} compensan los egresos, fortaleciendo la resiliencia.`
         ],
         ajustado: [
-            `Alerta de rentabilidad. En ${periodLabel}, el ${ (bal.gastos/bal.ingresos * 100).toFixed(0) }% de ingresos van a costos. Margen acotado.`,
+            `Alerta de rentabilidad. En ${periodLabel}, el ${(bal.gastos / bal.ingresos * 100).toFixed(0)}% de ingresos van a costos. Margen acotado.`,
             `Presión sobre el capital. El margen del ${margin.toFixed(0)}% en ${periodLabel} obliga a una gestión fina de insumos.`,
             `Punto de equilibrio cercano. ${periodLabel} cierra con excedente mínimo. Auditar eficiencia es clave.`
         ],
@@ -155,11 +155,11 @@ function FeedbackHeader({ bal, type, periodLabel, moneda, itemsE, itemsS }: { ba
     };
 
     return (
-        <div style={{ 
-            background: 'var(--white)', 
-            borderRadius: '24px', 
-            padding: '20px 24px', 
-            border: '1px solid var(--border-sm)', 
+        <div style={{
+            background: 'var(--white)',
+            borderRadius: '24px',
+            padding: '20px 24px',
+            border: '1px solid var(--border-sm)',
             borderLeft: `6px solid ${colors[status]}`,
             marginBottom: '24px',
             boxShadow: 'var(--shadow-xs)',
@@ -167,13 +167,13 @@ function FeedbackHeader({ bal, type, periodLabel, moneda, itemsE, itemsS }: { ba
             overflow: 'hidden'
         }}>
             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                <div style={{ 
-                    width: '40px', 
-                    height: '40px', 
-                    borderRadius: '12px', 
-                    background: `${colors[status]}12`, 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '12px',
+                    background: `${colors[status]}12`,
+                    display: 'flex',
+                    alignItems: 'center',
                     justifyContent: 'center',
                     color: colors[status],
                     flexShrink: 0
@@ -185,14 +185,14 @@ function FeedbackHeader({ bal, type, periodLabel, moneda, itemsE, itemsS }: { ba
                     {status === 'inversion' && <Calendar size={20} />}
                     {status === 'vacio' && <Info size={20} />}
                 </div>
-                
+
                 <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
                         <span style={{ fontSize: '10px', fontWeight: 900, color: colors[status], textTransform: 'uppercase', letterSpacing: '0.8px' }}>
                             {type === 'mensual' ? 'Mes' : type === 'trimestral' ? 'Trimestral' : 'Anual'} — {periodLabel}
                         </span>
                     </div>
-                    
+
                     <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--t1)', lineHeight: 1.4 }}>
                         {msg} <span style={{ fontWeight: 500, color: 'var(--t3)', marginLeft: '4px' }}>{rec}</span>
                     </p>
@@ -263,8 +263,8 @@ function AnalysisSection({ bal, prevBal, itemsE, itemsS, movs, type, moneda, cat
 
     if (insights.length === 0 && type !== 'anual') return null;
 
-    const topGasto = [...movs].filter(m => m.tipo === 'gasto').sort((a,b)=>b.monto - a.monto)[0];
-    const topIngreso = [...movs].filter(m => m.tipo === 'ingreso').sort((a,b)=>b.monto - a.monto)[0];
+    const topGasto = [...movs].filter(m => m.tipo === 'gasto').sort((a, b) => b.monto - a.monto)[0];
+    const topIngreso = [...movs].filter(m => m.tipo === 'ingreso').sort((a, b) => b.monto - a.monto)[0];
     const qtyIngreso = movs.filter(m => m.tipo === 'ingreso').length;
     const freeMargin = bal.ingresos > 0 ? (bal.neto / bal.ingresos) * 100 : 0;
 
@@ -331,7 +331,7 @@ function AnalysisSection({ bal, prevBal, itemsE, itemsS, movs, type, moneda, cat
                                 </div>
                                 <div>
                                     <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 600, marginBottom: '4px' }}>Eficiencia Gasto</p>
-                                    <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)' }}>{bal.ingresos > 0 ? ((bal.gastos/bal.ingresos)*100).toFixed(0) : 0}%</p>
+                                    <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)' }}>{bal.ingresos > 0 ? ((bal.gastos / bal.ingresos) * 100).toFixed(0) : 0}%</p>
                                     <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 500 }}>Costos vs Ventas</p>
                                 </div>
                                 <div>
@@ -390,10 +390,11 @@ export function Balance() {
     const CurrencyTabs = () => (
         <div style={{ display: 'flex', gap: '8px', background: 'var(--bg-input)', padding: '4px', borderRadius: '12px', width: 'fit-content' }}>
             {monedasActivas.map(mnd => (
-                <button 
-                    key={mnd} 
+                <button
+                    key={mnd}
                     onClick={() => changeMoneda(mnd)}
-                    style={{ padding: '6px 16px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px',
+                    style={{
+                        padding: '6px 16px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px',
                         background: mnd === moneda ? 'var(--white)' : 'transparent',
                         color: mnd === moneda ? 'var(--t1)' : 'var(--t3)',
                         fontWeight: mnd === moneda ? 700 : 500,
@@ -450,33 +451,65 @@ export function Balance() {
 
     const topbarActions = (
         <div className="balance-selectors-wrap">
-            <div className="tab-group-minimal">
-                <button className={`tab-mini ${vista === 'mensual' ? 'active' : ''}`} onClick={() => setVista('mensual')}>Mes</button>
-                <button className={`tab-mini ${vista === 'trimestral' ? 'active' : ''}`} onClick={() => setVista('trimestral')}>Trim</button>
-                <button className={`tab-mini ${vista === 'anual' ? 'active' : ''}`} onClick={() => setVista('anual')}>Año</button>
+            {/* Unified Dropdown for Desktop and Mobile */}
+            <div className="year-select-minimal" style={{ flexShrink: 0, minWidth: '100px' }}>
+                <select value={vista} onChange={(e) => setVista(e.target.value as any)}>
+                    <option value="mensual">Mensual</option>
+                    <option value="trimestral">Trimestral</option>
+                    <option value="anual">Anual</option>
+                </select>
+                <ChevronDown size={14} className="select-arrow" />
             </div>
             {vista === 'mensual' ? (
-                <div className="date-nav-minimal">
-                    <button className="nav-arrow" onClick={() => navMes(-1)}><ChevronLeft size={16} /></button>
-                    <span className="nav-label">{formatMesLabel(anio, mes)}</span>
-                    <button className="nav-arrow" onClick={() => navMes(1)}><ChevronRight size={16} /></button>
+                <div className="date-nav-minimal" style={{ minWidth: '120px', flexShrink: 0 }}>
+                    <button className="nav-arrow" style={{ padding: '8px 6px' }} onClick={() => navMes(-1)}><ChevronLeft size={16} /></button>
+                    <span className="nav-label" style={{ fontSize: '12px', padding: '0 4px' }}>{formatMesLabel(anio, mes)}</span>
+                    <button className="nav-arrow" style={{ padding: '8px 6px' }} onClick={() => navMes(1)}><ChevronRight size={16} /></button>
                 </div>
             ) : vista === 'trimestral' ? (
-                <div className="date-nav-minimal">
-                    <button className="nav-arrow" onClick={() => navTrim(-1)}><ChevronLeft size={16} /></button>
-                    <span className="nav-label">{getTrimestreInfo(new Date(anio, mes, 1)).label}</span>
-                    <button className="nav-arrow" onClick={() => navTrim(1)}><ChevronRight size={16} /></button>
+                <div className="date-nav-minimal" style={{ minWidth: '120px', flexShrink: 0 }}>
+                    <button className="nav-arrow" style={{ padding: '8px 6px' }} onClick={() => navTrim(-1)}><ChevronLeft size={16} /></button>
+                    <span className="nav-label" style={{ fontSize: '12px', padding: '0 4px' }}>{getTrimestreInfo(new Date(anio, mes, 1)).label}</span>
+                    <button className="nav-arrow" style={{ padding: '8px 6px' }} onClick={() => navTrim(1)}><ChevronRight size={16} /></button>
                 </div>
             ) : (
-                <div className="year-select-minimal">
-                    <select value={anio} onChange={e => setAnio(parseInt(e.target.value))}>
+                <div className="year-select-minimal" style={{ minWidth: '80px', flexShrink: 0 }}>
+                    <select value={anio} onChange={e => setAnio(parseInt(e.target.value))} style={{ padding: '8px 24px 8px 10px', fontSize: '12px' }}>
                         {[anio - 2, anio - 1, anio, anio + 1].map(y => (
                             <option key={y} value={y}>{y}</option>
                         ))}
                     </select>
-                    <ChevronDown size={14} className="select-arrow" />
+                    <ChevronDown size={12} className="select-arrow" style={{ right: '8px' }} />
                 </div>
             )}
+            <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                <button
+                    onClick={() => {
+                        const currentMovs = vista === 'mensual' ? movsMes : vista === 'trimestral' ? movsTrim : movsAnio;
+                        if (currentMovs.length === 0) {
+                            alert('No hay datos para exportar en este periodo');
+                            return;
+                        }
+                        const label = vista === 'mensual' ? formatMesLabel(anio, mes) : vista === 'trimestral' ? getTrimestreInfo(new Date(anio, mes, 1)).label : `Año ${anio}`;
+                        import('../utils/exportUtils').then(mod => {
+                            mod.exportMovimientosCSV(currentMovs, catMap, label);
+                        });
+                    }}
+                    className="nav-arrow"
+                    style={{ background: 'var(--gray-100)', color: 'var(--t2)' }}
+                    title="Exportar CSV"
+                >
+                    <Download size={16} />
+                </button>
+                <button
+                    onClick={() => window.print()}
+                    className="nav-arrow"
+                    style={{ background: 'var(--blue-light)', color: 'var(--blue-main)' }}
+                    title="Imprimir Reporte (PDF)"
+                >
+                    <Printer size={16} />
+                </button>
+            </div>
         </div>
     );
 
@@ -486,7 +519,7 @@ export function Balance() {
         const movsPrevMoneda = movsPrev.filter(m => (m.moneda || 'UYU') === moneda);
         const balMoneda = calcularBalance(movsMesMoneda);
         const balPrevMoneda = calcularBalance(movsPrevMoneda);
-        
+
         const daysInMonth = new Date(anio, mes + 1, 0).getDate();
         const today = new Date();
         const isCurrent = today.getFullYear() === anio && today.getMonth() === mes;
@@ -514,10 +547,11 @@ export function Balance() {
         const CurrencyTabs = () => (
             <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-input)', padding: '4px', borderRadius: '12px', width: 'fit-content' }}>
                 {monedasActivas.map(mnd => (
-                    <button 
-                        key={mnd} 
+                    <button
+                        key={mnd}
                         onClick={() => changeMoneda(mnd)}
-                        style={{ padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px',
+                        style={{
+                            padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px',
                             background: mnd === moneda ? 'var(--white)' : 'transparent',
                             color: mnd === moneda ? 'var(--t1)' : 'var(--t3)',
                             fontWeight: mnd === moneda ? 700 : 500,
@@ -532,11 +566,11 @@ export function Balance() {
 
         return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <FeedbackHeader 
-                    bal={balMoneda} 
-                    type="mensual" 
-                    periodLabel={formatMesLabel(anio, mes)} 
-                    moneda={moneda} 
+                <FeedbackHeader
+                    bal={balMoneda}
+                    type="mensual"
+                    periodLabel={formatMesLabel(anio, mes)}
+                    moneda={moneda}
                     itemsE={eItems}
                     itemsS={sItems}
                 />
@@ -547,7 +581,7 @@ export function Balance() {
                         {/* Saldo Principal */}
                         <div style={{ display: 'flex', flexDirection: 'column', minWidth: '220px' }}>
                             <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--t2)', marginBottom: '4px' }}>Tu Saldo del Mes</p>
-                            
+
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
                                 {monedasActivas.map((mnd, idx) => {
                                     const mvs = movsMes.filter(m => (m.moneda || 'UYU') === mnd);
@@ -564,7 +598,7 @@ export function Balance() {
                                             </p>
                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
                                                 <p style={{ fontSize: '11px', color: '#999999' }}>
-                                                    <span style={{fontWeight: 500}}>{mnd === 'USD' ? '🇺🇸 USD' : mnd === 'UYU' ? '🇺🇾 UYU' : '🇦🇷 ARS'}</span> {dp !== 0 ? `(${dp >= 0 ? '+' : ''}${formatMonto(dp, mnd)})` : ''}
+                                                    <span style={{ fontWeight: 500 }}>{mnd === 'USD' ? '🇺🇸 USD' : mnd === 'UYU' ? '🇺🇾 UYU' : '🇦🇷 ARS'}</span> {dp !== 0 ? `(${dp >= 0 ? '+' : ''}${formatMonto(dp, mnd)})` : ''}
                                                 </p>
                                                 <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--blue-main)', background: 'var(--blue-light)', padding: '3px 6px', borderRadius: '6px' }}>
                                                     {mgn}%
@@ -596,11 +630,11 @@ export function Balance() {
                                             </linearGradient>
                                         </defs>
                                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--t3)', fontWeight: 400 }} dy={10} minTickGap={20} />
-                                        <Tooltip 
-                                            formatter={(value: any) => formatMonto(value, moneda)} 
-                                            contentStyle={{ background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', fontSize: '13px', fontWeight: 600, padding: '12px 16px' }} 
+                                        <Tooltip
+                                            formatter={(value: any) => formatMonto(value, moneda)}
+                                            contentStyle={{ background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', fontSize: '13px', fontWeight: 600, padding: '12px 16px' }}
                                             itemStyle={{ color: 'var(--t1)' }}
-                                            labelStyle={{ color: 'var(--t3)', marginBottom: '8px', fontSize: '12px', fontWeight: 500 }} 
+                                            labelStyle={{ color: 'var(--t3)', marginBottom: '8px', fontSize: '12px', fontWeight: 500 }}
                                         />
                                         <Area type="monotone" dataKey="Ingresos" stroke="var(--green-main)" strokeWidth={3} fillOpacity={1} fill="url(#colorIngreso)" dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
                                         <Area type="monotone" dataKey="Gastos" stroke="var(--red-soft)" strokeWidth={3} fillOpacity={1} fill="url(#colorGasto)" dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
@@ -662,7 +696,7 @@ export function Balance() {
         const { inicio, fin } = getTrimestreInfo(new Date(anio, mes, 1));
         const mesIni = parseInt(inicio.slice(5, 7));
         const mesesLabels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-        
+
         const chartData = Array.from({ length: 3 }, (_, i) => {
             const mIdx = (mesIni - 1) + i;
             return { name: mesesLabels[mIdx], Ingresos: 0, Gastos: 0, Margen: 0, Neto: 0 };
@@ -689,11 +723,11 @@ export function Balance() {
 
         return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-                <FeedbackHeader 
-                    bal={balTrim} 
-                    type="trimestral" 
-                    periodLabel={getTrimestreInfo(new Date(anio, mes, 1)).label} 
-                    moneda={moneda} 
+                <FeedbackHeader
+                    bal={balTrim}
+                    type="trimestral"
+                    periodLabel={getTrimestreInfo(new Date(anio, mes, 1)).label}
+                    moneda={moneda}
                     itemsE={eItems}
                     itemsS={sItems}
                 />
@@ -720,8 +754,8 @@ export function Balance() {
                             })}
                         </div>
                     </div>
-                    
-                    <KPICard title="Ingresos del Trimestre" value={formatMonto(balTrim.ingresos, moneda)} icon={<TrendingUp size={18} color="var(--green-main)" />} sub={`Periodo ${mesesLabels[mesIni-1]} - ${mesesLabels[mesIni+1]}`} />
+
+                    <KPICard title="Ingresos del Trimestre" value={formatMonto(balTrim.ingresos, moneda)} icon={<TrendingUp size={18} color="var(--green-main)" />} sub={`Periodo ${mesesLabels[mesIni - 1]} - ${mesesLabels[mesIni + 1]}`} />
                     <KPICard title="Gastos del Trimestre" value={formatMonto(balTrim.gastos, moneda)} icon={<TrendingDown size={18} color="var(--red-soft)" />} sub="Salidas operativas" />
                     <KPICard title="Margen Bruto" value={`${margenTrim}%`} icon={<Divide size={18} color="var(--blue-500)" />} trend={parseFloat(margenTrim) > 30 ? { up: true, label: 'Saludable' } : { up: false, label: 'Bajo' }} />
                 </div>
@@ -745,12 +779,12 @@ export function Balance() {
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-sm)" />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 13, fill: 'var(--t3)', fontWeight: 600 }} dy={10} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--t3)', fontWeight: 500 }} />
-                                <Tooltip 
-                                    cursor={{ fill: 'var(--gray-50)', opacity: 0.1 }} 
-                                    contentStyle={{ background: 'var(--bg-card)', borderRadius: '20px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', padding: '12px 16px' }} 
+                                <Tooltip
+                                    cursor={{ fill: 'var(--gray-50)', opacity: 0.1 }}
+                                    contentStyle={{ background: 'var(--bg-card)', borderRadius: '20px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', padding: '12px 16px' }}
                                     itemStyle={{ color: 'var(--t1)', fontSize: '14px', fontWeight: 600 }}
                                     labelStyle={{ color: 'var(--t3)', fontSize: '12px', marginBottom: '4px' }}
-                                    formatter={(v: any) => formatMonto(v, moneda)} 
+                                    formatter={(v: any) => formatMonto(v, moneda)}
                                 />
                                 <Bar dataKey="Ingresos" fill="var(--green-main)" radius={[6, 6, 0, 0]} />
                                 <Bar dataKey="Gastos" fill="var(--red-soft)" radius={[6, 6, 0, 0]} />
@@ -801,11 +835,11 @@ export function Balance() {
 
         return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-                <FeedbackHeader 
-                    bal={balAnual} 
-                    type="anual" 
-                    periodLabel={anio.toString()} 
-                    moneda={moneda} 
+                <FeedbackHeader
+                    bal={balAnual}
+                    type="anual"
+                    periodLabel={anio.toString()}
+                    moneda={moneda}
                     itemsE={eItemsAnual}
                     itemsS={sItemsAnual}
                 />
@@ -816,7 +850,7 @@ export function Balance() {
 
                 {/* 1. KPIs */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
-                    
+
                     <div style={{ background: 'var(--white)', borderRadius: '32px', padding: '32px', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column' }}>
                         <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <BarChart2 size={18} color="var(--t1)" /> Balance Neto Anual
@@ -853,12 +887,12 @@ export function Balance() {
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-sm)" />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 13, fill: 'var(--t3)', fontWeight: 600 }} dy={10} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--t3)', fontWeight: 500 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-                                <Tooltip 
-                                    cursor={{ fill: 'var(--gray-50)', opacity: 0.1 }} 
-                                    contentStyle={{ background: 'var(--bg-card)', borderRadius: '20px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', fontSize: '14px', fontWeight: 600, padding: '12px 16px' }} 
+                                <Tooltip
+                                    cursor={{ fill: 'var(--gray-50)', opacity: 0.1 }}
+                                    contentStyle={{ background: 'var(--bg-card)', borderRadius: '20px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', fontSize: '14px', fontWeight: 600, padding: '12px 16px' }}
                                     itemStyle={{ color: 'var(--t1)' }}
                                     labelStyle={{ color: 'var(--t3)', fontSize: '12px', marginBottom: '4px' }}
-                                    formatter={(value: any) => formatMonto(value, moneda)} 
+                                    formatter={(value: any) => formatMonto(value, moneda)}
                                 />
                                 <Legend wrapperStyle={{ paddingTop: '24px', fontSize: '14px', fontWeight: 600, color: 'var(--t2)' }} iconType="circle" />
                                 <Bar dataKey="Ingresos" fill="var(--green-main)" radius={[6, 6, 0, 0]} />
@@ -884,11 +918,11 @@ export function Balance() {
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-sm)" />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--t3)', fontWeight: 600 }} dy={10} minTickGap={20} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--t3)', fontWeight: 500 }} tickFormatter={v => `${v.toFixed(0)}%`} domain={[0, highestMargin > 100 ? 'auto' : 100]} />
-                                <Tooltip 
-                                    contentStyle={{ background: 'var(--bg-card)', borderRadius: '20px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', fontSize: '14px', fontWeight: 600, padding: '12px 16px' }} 
+                                <Tooltip
+                                    contentStyle={{ background: 'var(--bg-card)', borderRadius: '20px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', fontSize: '14px', fontWeight: 600, padding: '12px 16px' }}
                                     itemStyle={{ color: 'var(--t1)' }}
                                     labelStyle={{ color: 'var(--t3)', fontSize: '12px', marginBottom: '4px' }}
-                                    formatter={(value: any) => `${value.toFixed(1)}%`} 
+                                    formatter={(value: any) => `${value.toFixed(1)}%`}
                                 />
                                 <Area type="monotone" dataKey="Margen" stroke="var(--t1)" strokeWidth={4} fillOpacity={1} fill="url(#colorMargen)" />
                             </AreaChart>

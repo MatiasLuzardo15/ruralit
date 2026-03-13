@@ -19,7 +19,7 @@ interface CatForm { nombre: string; tipo: TipoMovimiento; icono: string; }
 // ── Modals ──────────────────────────────────────────────────
 function CatModal({ mode, initData, onClose, onSave }: { mode: 'add' | 'edit', initData?: CatForm, onClose: () => void, onSave: (data: CatForm) => Promise<void> }) {
     const [form, setForm] = useState<CatForm>(initData || { nombre: '', tipo: 'ingreso', icono: '🐄' });
-    
+
     return createPortal(
         <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
             <div className="modal-panel" style={{ borderRadius: '32px', padding: '32px', width: '100%', maxWidth: '440px' }}>
@@ -27,7 +27,7 @@ function CatModal({ mode, initData, onClose, onSave }: { mode: 'add' | 'edit', i
                     <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--t1)' }}>{mode === 'add' ? 'Añadir Categoría' : 'Editar Categoría'}</h3>
                     <button onClick={onClose} style={{ background: 'var(--gray-100)', borderRadius: '50%', padding: '8px', display: 'flex', border: 'none', cursor: 'pointer' }}><X size={16} /></button>
                 </div>
-                
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     {mode === 'add' && (
                         <div>
@@ -46,7 +46,7 @@ function CatModal({ mode, initData, onClose, onSave }: { mode: 'add' | 'edit', i
                             </div>
                         </div>
                     )}
-                    
+
                     <div>
                         <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t2)', marginBottom: '8px', display: 'block' }}>Nombre</label>
                         <input type="text" value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Ej: Vaca, Soja, Tractor" style={{ width: '100%', padding: '14px 16px', borderRadius: '16px', border: '1px solid var(--border)', fontSize: '15px', outline: 'none', transition: 'border 0.2s', background: 'var(--white)', color: 'var(--t1)' }} />
@@ -63,7 +63,7 @@ function CatModal({ mode, initData, onClose, onSave }: { mode: 'add' | 'edit', i
                         </div>
                     </div>
 
-                    <button 
+                    <button
                         onClick={() => onSave(form)}
                         style={{ width: '100%', padding: '16px', borderRadius: '16px', background: form.tipo === 'ingreso' ? 'var(--green-main)' : 'var(--red-soft)', color: 'white', fontSize: '15px', fontWeight: 700, marginTop: '8px', border: 'none', cursor: 'pointer', boxShadow: form.tipo === 'ingreso' ? 'var(--shadow-entrada)' : 'var(--shadow-salida)' }}>
                         Guardar Categoría
@@ -96,7 +96,7 @@ function CurrencyModal({ current, onClose, onSave }: { current: Moneda[], onClos
                     <button onClick={onClose} style={{ background: 'var(--gray-100)', borderRadius: '50%', padding: '8px', display: 'flex', border: 'none', cursor: 'pointer' }}><X size={16} /></button>
                 </div>
                 <p style={{ fontSize: '14px', color: 'var(--t3)', marginBottom: '24px' }}>Seleccioná hasta 2 monedas en las que quieres gestionar tu negocio.</p>
-                
+
                 <div className="custom-scroll" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '32px', maxHeight: '50vh', overflowY: 'auto', paddingRight: '8px', paddingBottom: '8px' }}>
                     {(Object.keys(MONEDAS) as Moneda[]).map(code => {
                         const active = selected.includes(code);
@@ -133,7 +133,7 @@ export function Ajustes() {
     const [nombreUsuario, setNombreUsuario] = useState('');
     const [monedasActivas, setMonedasActivas] = useState<Moneda[]>(['UYU']);
     const [activeTab, setActiveTab] = useState<TabKey>('establecimiento');
-    
+
     // Modals state
     const [showCatModal, setShowCatModal] = useState<'add' | 'edit' | false>(false);
     const [editCatData, setEditCatData] = useState<Categoria | undefined>();
@@ -176,13 +176,13 @@ export function Ajustes() {
             const estabs = JSON.parse(localStorage.getItem('ruralit_establecimientos') || '[]');
             const updated = estabs.map((e: any) => e.id === activeId ? { ...e, nombre: nombreEstab } : e);
             localStorage.setItem('ruralit_establecimientos', JSON.stringify(updated));
-        } catch (e) {}
+        } catch (e) { }
         showToast('Datos actualizados');
     };
 
     const handleSaveCat = async (data: CatForm) => {
         if (!data.nombre.trim()) return showToast('Escribí un nombre');
-        
+
         if (showCatModal === 'edit' && editCatData) {
             await db.categorias.update(editCatData.id!, { nombre: data.nombre.trim(), icono: data.icono });
             showToast('Categoría actualizada');
@@ -208,12 +208,12 @@ export function Ajustes() {
         const usos = await db.movimientos.where('categoriaId').equals(cat.id!).count();
         if (usos > 0) return showToast(`Usada en ${usos} movimientos, no se puede eliminar`);
         await db.categorias.delete(cat.id!);
-        showToast('Eliminada'); 
+        showToast('Eliminada');
         void cargar();
     };
 
     let estabsList = [{ id: 'RuralitDB', nombre: 'Mi Establecimiento' }];
-    try { estabsList = JSON.parse(localStorage.getItem('ruralit_establecimientos') || '[]'); } catch(e){}
+    try { estabsList = JSON.parse(localStorage.getItem('ruralit_establecimientos') || '[]'); } catch (e) { }
     const activeEstId = localStorage.getItem('activeEstDB') || 'RuralitDB';
 
     const cambiarEstablecimiento = (id: string) => {
@@ -225,11 +225,11 @@ export function Ajustes() {
     const crearNuevoEstablecimiento = () => {
         const nuevoNombre = prompt('Ingresá el nombre del nuevo establecimiento:');
         if (!nuevoNombre || !nuevoNombre.trim()) return;
-        
+
         const newId = 'RuralitDB_' + Date.now();
         const nuevaLista = [...estabsList, { id: newId, nombre: nuevoNombre.trim() }];
         localStorage.setItem('ruralit_establecimientos', JSON.stringify(nuevaLista));
-        
+
         localStorage.setItem('activeEstDB', newId);
         window.location.reload();
     };
@@ -254,8 +254,8 @@ export function Ajustes() {
         return (
             <div className="settings-nav">
                 {NAV_ITEMS.map(item => (
-                    <button 
-                        key={item.id} 
+                    <button
+                        key={item.id}
                         onClick={() => setActiveTab(item.id)}
                         className={`settings-nav-item ${activeTab === item.id ? 'active' : ''}`}
                     >
@@ -316,8 +316,8 @@ export function Ajustes() {
                         <div>
                             <div className="settings-visual-grid">
                                 {estabsList.map(est => (
-                                    <div 
-                                        key={est.id} 
+                                    <div
+                                        key={est.id}
                                         onClick={() => cambiarEstablecimiento(est.id)}
                                         className={`settings-visual-card ${est.id === activeEstId ? 'active' : ''}`}
                                     >
@@ -335,7 +335,7 @@ export function Ajustes() {
                                         </div>
                                     </div>
                                 ))}
-                                <div 
+                                <div
                                     onClick={crearNuevoEstablecimiento}
                                     className="settings-visual-card"
                                     style={{ borderStyle: 'dashed' }}
@@ -397,7 +397,7 @@ export function Ajustes() {
             const isIngreso = activeTab === 'entradas';
             const list = isIngreso ? entradas : salidas;
             const mainColor = isIngreso ? 'var(--green-light)' : 'var(--red-light)';
-            
+
             return (
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <div className="settings-grid-row" style={{ gridTemplateColumns: '1fr', paddingBottom: '0', borderBottom: 'none' }}>
@@ -411,7 +411,7 @@ export function Ajustes() {
                             </button>
                         </div>
                     </div>
-                    
+
                     <div style={{ border: '1px solid var(--border-sm)', borderRadius: '12px', overflow: 'hidden', background: 'var(--white)', marginBottom: '24px' }}>
                         {list.length === 0 ? (
                             <div style={{ padding: '60px 40px', textAlign: 'center', background: 'var(--white)' }}>
@@ -441,7 +441,7 @@ export function Ajustes() {
                             <p>Elegí el estilo visual que más te guste.</p>
                         </div>
                         <div style={{ display: 'flex', gap: '12px' }}>
-                            <button 
+                            <button
                                 onClick={toggleTema}
                                 style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 24px', borderRadius: '16px', background: 'var(--white)', border: '1px solid var(--border)', cursor: 'pointer', fontWeight: 700, color: 'var(--t1)' }}
                             >
@@ -514,7 +514,7 @@ export function Ajustes() {
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                             {group.items.map((item, idx) => (
                                 <div key={item.id}>
-                                    <button 
+                                    <button
                                         onClick={() => {
                                             setActiveTab(item.tab!);
                                             setMobileDetailType(item.id);
@@ -538,7 +538,7 @@ export function Ajustes() {
                 ))}
 
                 <div style={{ marginTop: '20px', padding: '0 8px' }}>
-                    <button 
+                    <button
                         onClick={guardarNombre}
                         style={{ width: '100%', padding: '18px', borderRadius: '40px', background: 'var(--bg-card)', color: 'var(--t1)', border: '2px solid var(--t1)', fontSize: '15px', fontWeight: 700, cursor: 'pointer', boxShadow: 'var(--shadow-sm)' }}>
                         Guardar Cambios
@@ -568,22 +568,22 @@ export function Ajustes() {
                         <ArrowLeft size={18} color="var(--t1)" />
                     </button>
                     <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--t1)' }}>
-                        {mobileDetailType === 'perfil' ? 'Perfil' : 
-                         mobileDetailType === 'cambio' ? 'Establecimientos' :
-                         mobileDetailType === 'divisas' ? 'Monedas' :
-                         activeTab === 'entradas' ? 'Categorías' :
-                         activeTab === 'salidas' ? 'Categorías' : 'Ajustes'}
+                        {mobileDetailType === 'perfil' ? 'Perfil' :
+                            mobileDetailType === 'cambio' ? 'Establecimientos' :
+                                mobileDetailType === 'divisas' ? 'Monedas' :
+                                    activeTab === 'entradas' ? 'Categorías' :
+                                        activeTab === 'salidas' ? 'Categorías' : 'Ajustes'}
                     </h2>
                 </div>
             ) : (
-                <TopBar 
-                    title="" 
-                    heading="Ajustes Generales" 
+                <TopBar
+                    title=""
+                    heading="Ajustes Generales"
                     subtitle="Gestión de preferencias del sistema"
                     hideCurrencyToggle={true}
                 />
             )}
-            
+
             <div className="page-content" style={{ margin: '0 auto', width: '100%', paddingTop: isMobile ? '16px' : '0' }}>
                 <div className={isMobile ? "" : "settings-card"} style={{ paddingTop: isMobile ? '0' : '16px' }}>
                     {!isMobile && renderNav()}
@@ -610,8 +610,8 @@ export function Ajustes() {
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                         {estabsList.map(est => (
-                                            <div 
-                                                key={est.id} 
+                                            <div
+                                                key={est.id}
                                                 onClick={() => cambiarEstablecimiento(est.id)}
                                                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', borderRadius: '16px', border: est.id === activeEstId ? '2px solid var(--green-main)' : '1px solid var(--border)', background: 'white' }}
                                             >
