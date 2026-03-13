@@ -63,6 +63,10 @@ export class SyncService {
         if (profile) {
             await db.config.put({ clave: 'nombreUsuario', valor: profile.username });
             await db.config.put({ clave: 'moneda', valor: profile.default_currency });
+            // Restaurar monedas activas si existen
+            if (profile.default_currency) {
+                await db.config.put({ clave: 'monedasActivas', valor: [profile.default_currency] });
+            }
             if (profile.avatar_url) await db.config.put({ clave: 'avatarUsuario', valor: profile.avatar_url });
         }
     }
@@ -117,12 +121,12 @@ export class SyncService {
             .maybeSingle();
 
         if (existing) {
-            this.updateLocalEstServerId(existing.id, existing.nombre);
-            // Sincronizar configuración local con el servidor
-            await db.config.put({ clave: 'nombreEstablecimiento', valor: existing.nombre });
-            if (existing.tipo_produccion) {
-                await db.config.put({ clave: 'tipoProduccion', valor: existing.tipo_produccion });
-            }
+            await this.updateLocalEstServerId(existing.id, existing.nombre);
+            // Sincronizar configuración local con el servidor inmediatamente
+            await Promise.all([
+                db.config.put({ clave: 'nombreEstablecimiento', valor: existing.nombre }),
+                existing.tipo_produccion ? db.config.put({ clave: 'tipoProduccion', valor: existing.tipo_produccion }) : Promise.resolve()
+            ]);
             return existing.id;
         }
 
@@ -181,13 +185,20 @@ export class SyncService {
         return created.id;
     }
 
-    private updateLocalEstServerId(serverId: string, nombre: string) {
-        // En caso de login limpio, esto reconstruye ruralit_establecimientos
+    private async updateLocalEstServerId(serverId: string, nombre: string) {
+        const estabs = JSON.parse(localStorage.getItem('ruralit_establecimientos') || '[]');
         const activeDbName = localStorage.getItem('activeEstDB') || 'RuralitDB';
-        const item = { id: activeDbName, nombre, server_id: serverId };
         
-        // Guardamos solo el activo actual de forma limpia
-        localStorage.setItem('ruralit_establecimientos', JSON.stringify([item]));
+        const index = estabs.findIndex((e: any) => e.id === activeDbName);
+        if (index >= 0) {
+            estabs[index] = { ...estabs[index], server_id: serverId, nombre };
+        } else {
+            estabs.push({ id: activeDbName, nombre, server_id: serverId });
+        }
+        
+        localStorage.setItem('ruralit_establecimientos', JSON.stringify(estabs));
+        // Aseguramos que el nombre local en IndexedDB sea consistente
+        await db.config.put({ clave: 'nombreEstablecimiento', valor: nombre });
     }
 
     async updateEstablecimientoType(serverId: string, type: string) {
@@ -309,7 +320,11 @@ export class SyncService {
                 if (!existeLocal) {
                     // Buscar la categoría local por server_id
                     const catLocal = await db.categorias.where('server_id').equals(r.categoria_id).first();
-                    if (!catLocal) continue;
+                    
+                    if (!catLocal) {
+                        console.warn(`⚠️ Saltando movimiento ${r.id}: Categoría remota ${r.categoria_id} no encontrada localmente.`);
+                        continue;
+                    }
 
                     await db.movimientos.add({
                         monto: r.monto,
