@@ -663,21 +663,19 @@ export function Ajustes() {
                                             Guardar Rubro
                                         </button>
                                         <div style={{ height: '1px', background: 'var(--border-sm)', margin: '8px 0' }}></div>
-                                        <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%' }}>
-                                            <button 
-                                                className="btn-secondary" 
-                                                style={{ fontSize: '13px', padding: '12px 20px', background: '#FFFFFF', color: '#1A1A1A', border: '1px solid #E5E7EB' }}
-                                                onClick={async () => {
-                                                    if(confirm('¿Deseas sincronizar las categorías sugeridas? Esto eliminará las predefinidas que NO estés usando.')) {
-                                                        await inicializarCategorias(tipoProduccion, true);
-                                                        showToast('Categorías sincronizadas');
-                                                        cargar();
-                                                    }
-                                                }}
-                                            >
-                                                Sincronizar Categorías
-                                            </button>
-                                        </div>
+                                        <button 
+                                            className="btn-secondary" 
+                                            style={{ fontSize: '13px', padding: '14px' }}
+                                            onClick={async () => {
+                                                if(confirm('¿Deseas sincronizar las categorías sugeridas? Esto eliminará las predefinidas que NO estés usando.')) {
+                                                    await inicializarCategorias(tipoProduccion, true);
+                                                    showToast('Categorías sincronizadas');
+                                                    cargar();
+                                                }
+                                            }}
+                                        >
+                                            Sincronizar Categorías Sugeridas
+                                        </button>
                                     </div>
                                 </div>
                             ) : (
