@@ -323,19 +323,21 @@ export function Ajustes() {
                                      </button>
                                  ))}
                             </div>
-                            <button 
-                                className="btn-secondary" 
-                                style={{ fontSize: '12px', alignSelf: 'flex-start' }}
-                                onClick={async () => {
-                                    if(confirm('¿Deseas sincronizar las categorías sugeridas? Esto eliminará las categorías predefinidas que NO estés usando.')) {
-                                        await inicializarCategorias(tipoProduccion, true);
-                                        showToast('Categorías sincronizadas');
-                                        cargar();
-                                    }
-                                }}
-                            >
-                                Cargar categorías sugeridas
-                            </button>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%', marginTop: '4px' }}>
+                                <button 
+                                    className="btn-secondary" 
+                                    style={{ fontSize: '12px', background: '#FFFFFF', color: '#1A1A1A', border: '1px solid #E5E7EB', padding: '10px 16px' }}
+                                    onClick={async () => {
+                                        if(confirm('¿Deseas sincronizar las categorías sugeridas? Esto eliminará las categorías predefinidas que NO estés usando.')) {
+                                            await inicializarCategorias(tipoProduccion, true);
+                                            showToast('Categorías sincronizadas');
+                                            cargar();
+                                        }
+                                    }}
+                                >
+                                    Cargar categorías sugeridas
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -661,19 +663,21 @@ export function Ajustes() {
                                             Guardar Rubro
                                         </button>
                                         <div style={{ height: '1px', background: 'var(--border-sm)', margin: '8px 0' }}></div>
-                                        <button 
-                                            className="btn-secondary" 
-                                            style={{ fontSize: '13px', padding: '14px' }}
-                                            onClick={async () => {
-                                                if(confirm('¿Deseas sincronizar las categorías sugeridas? Esto eliminará las predefinidas que NO estés usando.')) {
-                                                    await inicializarCategorias(tipoProduccion, true);
-                                                    showToast('Categorías sincronizadas');
-                                                    cargar();
-                                                }
-                                            }}
-                                        >
-                                            Sincronizar Categorías Sugeridas
-                                        </button>
+                                        <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%' }}>
+                                            <button 
+                                                className="btn-secondary" 
+                                                style={{ fontSize: '13px', padding: '12px 20px', background: '#FFFFFF', color: '#1A1A1A', border: '1px solid #E5E7EB' }}
+                                                onClick={async () => {
+                                                    if(confirm('¿Deseas sincronizar las categorías sugeridas? Esto eliminará las predefinidas que NO estés usando.')) {
+                                                        await inicializarCategorias(tipoProduccion, true);
+                                                        showToast('Categorías sincronizadas');
+                                                        cargar();
+                                                    }
+                                                }}
+                                            >
+                                                Sincronizar Categorías
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             ) : (
