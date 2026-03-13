@@ -158,12 +158,6 @@ export function Ajustes() {
         if (u) setNombreUsuario(u.valor as string);
         const m = await db.config.get('monedasActivas');
         if (m && Array.isArray(m.valor)) setMonedasActivas(m.valor as Moneda[]);
-        const t = await db.config.get('tema');
-        if (t?.valor === 'dark') {
-            document.documentElement.setAttribute('data-theme', 'dark');
-        } else {
-            document.documentElement.setAttribute('data-theme', 'light');
-        }
     };
 
     useEffect(() => { void cargar(); }, []);

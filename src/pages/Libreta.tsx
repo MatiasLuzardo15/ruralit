@@ -45,6 +45,14 @@ export function Libreta() {
     const [ctxOpen, setCtxOpen] = useState<number | null>(null);
     const { moneda } = useMonedas();
 
+    // Mobile Detection
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     const categorias = useLiveQuery(() => db.categorias.toArray(), []) ?? [];
     const catMap = new Map<number, Categoria>(categorias.map(c => [c.id!, c]));
 
@@ -191,57 +199,110 @@ export function Libreta() {
                             <p style={{ color: 'var(--t3)', fontSize: '15px', fontWeight: 500 }}>Modifica los filtros o inicia un nuevo registro.</p>
                         </div>
                     ) : (
-                        <div style={{ overflowX: 'auto', margin: '0 -16px', padding: '0 16px' }}>
-                            <table style={{ width: '100%', minWidth: '800px', borderCollapse: 'collapse', textAlign: 'left' }}>
-                                <thead>
-                                    <tr>
-                                        <th style={{ padding: '0 16px 16px', color: 'var(--t3)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border)' }}>Clasificación</th>
-                                        <th style={{ padding: '0 16px 16px', color: 'var(--t3)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border)' }}>Nota / Detalle</th>
-                                        <th style={{ padding: '0 16px 16px', color: 'var(--t3)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border)' }}>Fecha de Registro</th>
-                                        <th style={{ padding: '0 16px 16px', color: 'var(--t3)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>Monto Operación</th>
-                                        <th style={{ width: '40px', borderBottom: '1px solid var(--border)' }}></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filtrados.map((mov, i) => {
-                                        const cat = catMap.get(mov.categoriaId);
-                                        const ing = mov.tipo === 'ingreso';
-                                        const isCtxOpen = ctxOpen === mov.id;
-                                        return (
-                                            <tr key={mov.id} onClick={() => !isCtxOpen && setCtxOpen(null)} style={{ borderBottom: i === filtrados.length - 1 ? 'none' : '1px solid var(--border-sm)', transition: 'background 0.1s', cursor: 'default' }} onMouseOver={e => e.currentTarget.style.background = 'var(--bg)'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                        /* RESPONSIVE DATA DISPLAY */
+                        !isMobile ? (
+                            <div style={{ overflowX: 'auto', margin: '0 -16px', padding: '0 16px' }}>
+                                <table style={{ width: '100%', minWidth: '800px', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                    <thead>
+                                        <tr>
+                                            <th style={{ padding: '0 16px 16px', color: 'var(--t3)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border)' }}>Clasificación</th>
+                                            <th style={{ padding: '0 16px 16px', color: 'var(--t3)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border)' }}>Nota / Detalle</th>
+                                            <th style={{ padding: '0 16px 16px', color: 'var(--t3)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border)' }}>Fecha de Registro</th>
+                                            <th style={{ padding: '0 16px 16px', color: 'var(--t3)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>Monto Operación</th>
+                                            <th style={{ width: '40px', borderBottom: '1px solid var(--border)' }}></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {filtrados.map((mov, i) => {
+                                            const cat = catMap.get(mov.categoriaId);
+                                            const ing = mov.tipo === 'ingreso';
+                                            const isCtxOpen = ctxOpen === mov.id;
+                                            return (
+                                                <tr key={mov.id} onClick={() => !isCtxOpen && setCtxOpen(null)} style={{ borderBottom: i === filtrados.length - 1 ? 'none' : '1px solid var(--border-sm)', transition: 'background 0.1s', cursor: 'default' }} onMouseOver={e => e.currentTarget.style.background = 'var(--bg)'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                                                    <td style={{ padding: '20px 16px' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                                            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: ing ? 'var(--green-light)' : 'var(--red-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
+                                                                {cat?.icono ?? '📦'}
+                                                            </div>
+                                                            <div>
+                                                                <p style={{ fontWeight: 600, fontSize: '14px', color: 'var(--t1)' }}>{cat?.nombre ?? 'General'}</p>
+                                                                <p style={{ fontSize: '12px', color: 'var(--t3)', marginTop: '2px', fontWeight: 500 }}>{ing ? 'Venta' : 'Compra'}</p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
 
-                                                <td style={{ padding: '20px 16px' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                                        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: ing ? 'var(--green-light)' : 'var(--red-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
-                                                            {cat?.icono ?? '📦'}
-                                                        </div>
-                                                        <div>
-                                                            <p style={{ fontWeight: 600, fontSize: '14px', color: 'var(--t1)' }}>{cat?.nombre ?? 'General'}</p>
-                                                            <p style={{ fontSize: '12px', color: 'var(--t3)', marginTop: '2px', fontWeight: 500 }}>{ing ? 'Venta' : 'Compra'}</p>
-                                                        </div>
+                                                    <td style={{ padding: '20px 16px', color: 'var(--t2)', fontSize: '14px' }}>
+                                                        {mov.nota ? mov.nota : <span style={{ color: 'var(--t3)' }}>Sin observaciones</span>}
+                                                    </td>
+
+                                                    <td style={{ padding: '20px 16px', color: 'var(--t2)', fontSize: '14px', fontWeight: 500 }}>
+                                                        {formatFechaCorta(mov.fecha)}
+                                                    </td>
+
+                                                    <td style={{ padding: '20px 16px', textAlign: 'right' }}>
+                                                        <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '15px', color: ing ? 'var(--green-main)' : 'var(--t1)', letterSpacing: '-0.5px' }}>
+                                                            {ing ? '' : '-'}{formatMonto(mov.monto, mov.moneda)}
+                                                        </span>
+                                                    </td>
+
+                                                    <td style={{ padding: '20px 16px', position: 'relative', textAlign: 'right' }} onClick={e => e.stopPropagation()}>
+                                                        <button onClick={() => setCtxOpen(isCtxOpen ? null : (mov.id ?? null))} style={{ padding: '6px', borderRadius: '8px', color: 'var(--t2)', background: 'transparent', border: 'none', cursor: 'pointer' }} onMouseOver={e => e.currentTarget.style.background = 'var(--gray-100)'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                                                            <MoreHorizontal size={18} />
+                                                        </button>
+                                                        {isCtxOpen && (
+                                                            <ContextMenu
+                                                                onClose={() => setCtxOpen(null)}
+                                                                onEditar={() => { setMovEd(mov); setTipo(mov.tipo); setCtxOpen(null); }}
+                                                                onEliminar={() => { setCtxOpen(null); void eliminar(mov); }}
+                                                            />
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                {filtrados.map((mov) => {
+                                    const cat = catMap.get(mov.categoriaId);
+                                    const ing = mov.tipo === 'ingreso';
+                                    const isCtxOpen = ctxOpen === mov.id;
+
+                                    return (
+                                        <div 
+                                            key={mov.id} 
+                                            onClick={() => !isCtxOpen && setCtxOpen(null)}
+                                            style={{ 
+                                                background: 'var(--white)', 
+                                                borderRadius: '20px', 
+                                                border: '1px solid var(--border-sm)', 
+                                                padding: '20px',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: '16px',
+                                                position: 'relative'
+                                            }}
+                                        >
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                                    <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: ing ? 'var(--green-light)' : 'var(--red-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
+                                                        {cat?.icono ?? '📦'}
                                                     </div>
-                                                </td>
-
-                                                <td style={{ padding: '20px 16px', color: 'var(--t2)', fontSize: '14px' }}>
-                                                    {mov.nota ? mov.nota : <span style={{ color: 'var(--t3)' }}>Sin observaciones</span>}
-                                                </td>
-
-                                                <td style={{ padding: '20px 16px', color: 'var(--t2)', fontSize: '14px', fontWeight: 500 }}>
-                                                    {formatFechaCorta(mov.fecha)}
-                                                </td>
-
-                                                <td style={{ padding: '20px 16px', textAlign: 'right' }}>
-                                                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '15px', color: ing ? 'var(--green-main)' : 'var(--t1)', letterSpacing: '-0.5px' }}>
-                                                        {ing ? '' : '-'}{formatMonto(mov.monto, mov.moneda)}
+                                                    <div>
+                                                        <p style={{ fontWeight: 700, fontSize: '15px', color: 'var(--t1)' }}>{cat?.nombre ?? 'General'}</p>
+                                                        <p style={{ fontSize: '13px', color: 'var(--t3)', fontWeight: 600 }}>{formatFechaCorta(mov.fecha)}</p>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                                                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '18px', color: ing ? 'var(--green-main)' : 'var(--t1)', letterSpacing: '-0.5px' }}>
+                                                        {ing ? '+' : '-'}{formatMonto(mov.monto, mov.moneda)}
                                                     </span>
-                                                </td>
-
-                                                {/* ⋮ Menú */}
-                                                <td style={{ padding: '20px 16px', position: 'relative', textAlign: 'right' }} onClick={e => e.stopPropagation()}>
-                                                    <button onClick={() => setCtxOpen(isCtxOpen ? null : (mov.id ?? null))} style={{ padding: '6px', borderRadius: '8px', color: 'var(--t2)', background: 'transparent', border: 'none', cursor: 'pointer' }} onMouseOver={e => e.currentTarget.style.background = 'var(--gray-100)'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                                                    <button onClick={(e) => { e.stopPropagation(); setCtxOpen(isCtxOpen ? null : (mov.id ?? null)); }} style={{ padding: '8px', borderRadius: '10px', color: 'var(--t3)', background: 'var(--gray-50)', border: 'none', cursor: 'pointer' }}>
                                                         <MoreHorizontal size={18} />
                                                     </button>
-
                                                     {isCtxOpen && (
                                                         <ContextMenu
                                                             onClose={() => setCtxOpen(null)}
@@ -249,14 +310,21 @@ export function Libreta() {
                                                             onEliminar={() => { setCtxOpen(null); void eliminar(mov); }}
                                                         />
                                                     )}
-                                                </td>
+                                                </div>
+                                            </div>
 
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
+                                            {mov.nota && (
+                                                <div style={{ borderTop: '1px solid var(--gray-50)', paddingTop: '12px' }}>
+                                                    <p style={{ fontSize: '13px', color: 'var(--t2)', lineHeight: 1.4, fontWeight: 500 }}>
+                                                        {mov.nota}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )
                     )}
                 </div>
             </div>

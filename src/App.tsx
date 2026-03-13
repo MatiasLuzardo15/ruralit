@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import db from './db/database';
 import { Sidebar, BottomNav, type Tab } from './components/BottomNav';
@@ -11,6 +11,17 @@ import { Ajustes } from './pages/Ajustes';
 function App() {
     const [tab, setTab] = useState<Tab>('inicio');
     const [collapsed, setCollapsed] = useState(false);
+
+    // Cargar tema al iniciar la app
+    useEffect(() => {
+        db.config.get('tema').then(t => {
+            if (t?.valor === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        });
+    }, []);
 
     const establecimiento = useLiveQuery(
         () => db.config.get('nombreEstablecimiento').then(r => r?.valor ?? 'Mi Establecimiento'),
