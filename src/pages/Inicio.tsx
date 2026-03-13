@@ -144,11 +144,11 @@ export function Inicio() {
 
     let maxI = 0, idMaxI = '';
     dicIngresos.forEach((v: number, k: string) => { if (v > maxI) { maxI = v; idMaxI = k; } });
-    if (idMaxI !== '') catMayorIngreso = catMap.get(idMaxI)?.nombre || "ingreso";
+    if (idMaxI !== '') catMayorIngreso = catMap.get(idMaxI)?.nombre || (idMaxI === 'null' ? "Sin categoría" : "Ingreso");
 
     let maxG = 0, idMaxG = '';
     dicGastos.forEach((v: number, k: string) => { if (v > maxG) { maxG = v; idMaxG = k; } });
-    if (idMaxG !== '') catMayorGasto = catMap.get(idMaxG)?.nombre || "gasto";
+    if (idMaxG !== '') catMayorGasto = catMap.get(idMaxG)?.nombre || (idMaxG === 'null' ? "Sin categoría" : "Gasto");
 
     let mensajeEstado = "Sin movimientos en el mes.";
     if (entradas > 0 || salidas > 0) {

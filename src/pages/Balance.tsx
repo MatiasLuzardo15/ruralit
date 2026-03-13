@@ -222,7 +222,7 @@ function AnalysisSection({ bal, prevBal, itemsE, itemsS, movs, type, moneda, cat
     if (itemsS.length > 0 && itemsS[0].pct > 40) {
         insights.push({
             type: 'warning',
-            text: `Tus egresos están concentrados. El ${itemsS[0].pct.toFixed(0)}% del total es en "${itemsS[0].cat.nombre}". Monitorear esto es clave para tus costos productivos.`
+            text: `Tus egresos están concentrados. El ${itemsS[0].pct.toFixed(0)}% del total es en "${itemsS[0].cat.nombre || 'Sin categoría'}". Monitorear esto es clave para tus costos productivos.`
         });
     }
 
@@ -262,8 +262,6 @@ function AnalysisSection({ bal, prevBal, itemsE, itemsS, movs, type, moneda, cat
 
     if (insights.length === 0 && type !== 'anual') return null;
 
-    const topGasto = [...movs].filter(m => m.tipo === 'gasto').sort((a, b) => b.monto - a.monto)[0];
-    const topIngreso = [...movs].filter(m => m.tipo === 'ingreso').sort((a, b) => b.monto - a.monto)[0];
     const qtyIngreso = movs.filter(m => m.tipo === 'ingreso').length;
     const freeMargin = bal.ingresos > 0 ? (bal.neto / bal.ingresos) * 100 : 0;
 
@@ -303,13 +301,13 @@ function AnalysisSection({ bal, prevBal, itemsE, itemsS, movs, type, moneda, cat
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '16px' }}>
                         <div>
                             <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 600, marginBottom: '4px' }}>Top Gasto</p>
-                            <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)' }}>{topGasto ? formatMonto(topGasto.monto, moneda) : '-'}</p>
-                            <p style={{ fontSize: '12px', color: 'var(--red-soft)', fontWeight: 600 }}>{topGasto ? catMap.get(String(topGasto.categoriaId))?.nombre : '-'}</p>
+                            <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)' }}>{itemsS.length > 0 ? formatMonto(itemsS[0].monto, moneda) : '-'}</p>
+                            <p style={{ fontSize: '12px', color: 'var(--red-soft)', fontWeight: 600 }}>{itemsS.length > 0 ? (itemsS[0].cat.nombre || 'Sin categoría') : '-'}</p>
                         </div>
                         <div>
                             <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 600, marginBottom: '4px' }}>Top Ingreso</p>
-                            <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)' }}>{topIngreso ? formatMonto(topIngreso.monto, moneda) : '-'}</p>
-                            <p style={{ fontSize: '12px', color: 'var(--green-main)', fontWeight: 600 }}>{topIngreso ? catMap.get(String(topIngreso.categoriaId))?.nombre : '-'}</p>
+                            <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)' }}>{itemsE.length > 0 ? formatMonto(itemsE[0].monto, moneda) : '-'}</p>
+                            <p style={{ fontSize: '12px', color: 'var(--green-main)', fontWeight: 600 }}>{itemsE.length > 0 ? (itemsE[0].cat.nombre || 'Sin categoría') : '-'}</p>
                         </div>
                         <div>
                             <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 600, marginBottom: '4px' }}>Margen Libre</p>

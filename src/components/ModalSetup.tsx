@@ -71,7 +71,7 @@ export function ModalSetup({ onComplete, initialName = '' }: Props) {
                 background: 'rgba(255, 255, 255, 0.03)', 
                 backdropFilter: 'blur(30px) saturate(150%)',
                 WebkitBackdropFilter: 'blur(30px) saturate(150%)',
-                borderRadius: '40px', width: '100%', maxWidth: '520px', 
+                borderRadius: '40px', width: '100%', maxWidth: '640px', 
                 padding: '48px', border: '1px solid rgba(255, 255, 255, 0.1)',
                 boxShadow: '0 40px 100px rgba(0,0,0,0.6)', 
                 position: 'relative', overflow: 'hidden',

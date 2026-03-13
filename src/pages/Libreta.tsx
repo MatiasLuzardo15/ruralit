@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Search, ChevronDown, Download, MoreHorizontal, Pencil, Trash2, Filter, ChevronLeft, ChevronRight, Printer } from 'lucide-react';
+import { Search, ChevronDown, Download, MoreHorizontal, Pencil, Trash2, Filter, ChevronLeft, ChevronRight, Printer, TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import type { Movimiento, Categoria, TipoMovimiento } from '../types';
 import { formatMonto, formatFechaCorta, formatMesLabel } from '../utils/helpers';
 import { ModalRegistrar } from '../components/ModalRegistrar';
@@ -42,7 +42,7 @@ export function Libreta() {
     const [tipoModal, setTipo] = useState<TipoMovimiento | null>(null);
     const [key, setKey] = useState(0);
     const [ctxOpen, setCtxOpen] = useState<number | string | null>(null);
-    const { moneda } = useMonedas();
+    const { moneda, monedasActivas } = useMonedas();
 
     // Mobile Detection
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -71,7 +71,7 @@ export function Libreta() {
             ]);
 
             setCats(catsData);
-            setMov(movsData.filter(m => (m.moneda || 'UYU') === moneda));
+            setMov(movsData); // No filtramos por moneda, queremos ver TODO
         } catch (e) {
             console.error('Error cargando Libreta:', e);
         } finally {
@@ -97,8 +97,15 @@ export function Libreta() {
         return cat?.nombre.toLowerCase().includes(q) || mov.nota?.toLowerCase().includes(q) || String(mov.monto).includes(q);
     });
 
-    const entradas = filtrados.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + m.monto, 0);
-    const salidas = filtrados.filter(m => m.tipo === 'gasto').reduce((s, m) => s + m.monto, 0);
+    // Cálculos unificados por divisa
+    const totalesPorMoneda = (monedasActivas as string[]).map(m => {
+        const porDivisa = filtrados.filter(mov => (mov.moneda || 'UYU') === m);
+        return {
+            moneda: m,
+            ingresos: porDivisa.filter(mov => mov.tipo === 'ingreso').reduce((s, mov) => s + mov.monto, 0),
+            gastos: porDivisa.filter(mov => mov.tipo === 'gasto').reduce((s, mov) => s + mov.monto, 0)
+        };
+    });
 
     const cerrar = () => { setTipo(null); setMovEd(undefined); };
 
@@ -132,22 +139,86 @@ export function Libreta() {
                 heading="Reporte General"
                 subtitle="Visualizá y modificá todo el historial"
                 actions={topbarActions}
+                hideCurrencyToggle={true}
             />
 
             <div className="page-content" style={{ maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
 
                 {/* ── BIG FLOATING CARD ── */}
-                <div style={{ background: 'var(--white)', borderRadius: '32px', padding: '40px', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                <div style={{ background: 'var(--white)', borderRadius: '32px', padding: isMobile ? '24px 20px' : '40px', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column', gap: isMobile ? '24px' : '32px' }}>
 
-                    {/* CABECERA DE RESUMEN (Métricas Grandes) */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
-                        <div>
-                            <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Ingresos Totales</p>
-                            <p style={{ fontSize: '36px', fontWeight: 800, color: 'var(--green-main)', letterSpacing: '-1.5px', fontFamily: 'var(--font-mono)' }}>{formatMonto(entradas, moneda)}</p>
+                    {/* CABECERA DE RESUMEN: ADAPTATIVA (Desktop Espacioso / Móvil Ultra-Compacto) */}
+                    <div style={{ background: 'var(--bg)', borderRadius: '24px', padding: isMobile ? '20px' : '24px', border: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: isMobile ? '16px' : '24px' }}>
+                            <Wallet size={16} color="var(--green-main)" strokeWidth={2.5} />
+                            <h3 style={{ fontSize: '13px', fontWeight: 800, color: 'var(--t1)', textTransform: 'uppercase', letterSpacing: '1px' }}>Resumen de Operaciones</h3>
                         </div>
-                        <div style={{ paddingLeft: '24px', borderLeft: '1px solid var(--border-sm)' }}>
-                            <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Gastos Totales</p>
-                            <p style={{ fontSize: '36px', fontWeight: 800, color: 'var(--red-soft)', letterSpacing: '-1.5px', fontFamily: 'var(--font-mono)' }}>{formatMonto(salidas, moneda)}</p>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '16px' : '20px' }}>
+                            {totalesPorMoneda.map((t: any, idx: number) => {
+                                const balance = t.ingresos - t.gastos;
+                                const isPos = balance >= 0;
+
+                                if (isMobile) {
+                                    /* ─── DISEÑO MÓVIL: RURAL COMPACT ─── */
+                                    return (
+                                        <div key={t.moneda} style={{ 
+                                            display: 'flex', flexDirection: 'column', gap: '12px',
+                                            paddingTop: idx > 0 ? '16px' : '0',
+                                            borderTop: idx > 0 ? '1px solid var(--border)' : 'none'
+                                        }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <span style={{ fontSize: '12px', fontWeight: 900, color: 'var(--white)', background: 'var(--t1)', padding: '3px 10px', borderRadius: '8px' }}>{t.moneda}</span>
+                                                    <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--t2)', textTransform: 'uppercase' }}>Neto</span>
+                                                </div>
+                                                <p style={{ fontSize: '18px', fontWeight: 800, color: isPos ? 'var(--green-main)' : 'var(--red-soft)', letterSpacing: '-0.5px', fontFamily: 'var(--font-mono)' }}>
+                                                    {isPos ? '+' : ''}{formatMonto(balance, t.moneda)}
+                                                </p>
+                                            </div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: 'var(--white)', borderRadius: '16px', padding: '12px 16px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-xs)' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                    <span style={{ fontSize: '9px', fontWeight: 800, color: 'var(--t3)', textTransform: 'uppercase' }}>Ventas</span>
+                                                    <p style={{ fontSize: '14px', fontWeight: 800, color: 'var(--t1)' }}>{formatMonto(t.ingresos, t.moneda)}</p>
+                                                </div>
+                                                <div style={{ display: 'flex', flexDirection: 'column', borderLeft: '1px solid var(--border)', paddingLeft: '12px' }}>
+                                                    <span style={{ fontSize: '9px', fontWeight: 800, color: 'var(--t3)', textTransform: 'uppercase' }}>Compras</span>
+                                                    <p style={{ fontSize: '14px', fontWeight: 800, color: 'var(--red-soft)' }}>{formatMonto(t.gastos, t.moneda)}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+
+                                /* ─── DISEÑO DESKTOP: PRO DASHBOARD (ANCHO) ─── */
+                                return (
+                                    <div key={t.moneda} style={{ 
+                                        display: 'grid', gridTemplateColumns: '120px repeat(3, 1fr)', gap: '24px', alignItems: 'center',
+                                        paddingTop: idx > 0 ? '20px' : '0',
+                                        borderTop: idx > 0 ? '1px solid var(--border)' : 'none'
+                                    }}>
+                                        <div>
+                                            <span style={{ fontSize: '14px', fontWeight: 900, color: 'var(--t1)', background: 'var(--white)', padding: '6px 14px', borderRadius: '10px', boxShadow: 'var(--shadow-xs)', border: '1px solid var(--border-sm)' }}>
+                                                {t.moneda}
+                                            </span>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                            <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Ingresos (Ventas)</span>
+                                            <p style={{ fontSize: '22px', fontWeight: 800, color: 'var(--green-main)', letterSpacing: '-0.5px', fontFamily: 'var(--font-mono)' }}>{formatMonto(t.ingresos, t.moneda)}</p>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                            <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Gastos (Compras)</span>
+                                            <p style={{ fontSize: '22px', fontWeight: 800, color: 'var(--red-soft)', letterSpacing: '-0.5px', fontFamily: 'var(--font-mono)' }}>{formatMonto(t.gastos, t.moneda)}</p>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'right' }}>
+                                            <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Balance Neto</span>
+                                            <p style={{ fontSize: '22px', fontWeight: 800, color: isPos ? 'var(--t1)' : 'var(--red-soft)', letterSpacing: '-0.5px', fontFamily: 'var(--font-mono)' }}>
+                                                {isPos ? '+' : ''}{formatMonto(balance, t.moneda)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -247,7 +318,7 @@ export function Libreta() {
                                                                 {cat?.icono ?? '📦'}
                                                             </div>
                                                             <div>
-                                                                <p style={{ fontWeight: 600, fontSize: '14px', color: 'var(--t1)' }}>{cat?.nombre ?? 'General'}</p>
+                                                                <p style={{ fontWeight: 600, fontSize: '14px', color: 'var(--t1)' }}>{cat?.nombre ?? 'Sin categoría'}</p>
                                                                 <p style={{ fontSize: '12px', color: 'var(--t3)', marginTop: '2px', fontWeight: 500 }}>{ing ? 'Venta' : 'Compra'}</p>
                                                             </div>
                                                         </div>
@@ -268,7 +339,7 @@ export function Libreta() {
                                                     </td>
 
                                                     <td style={{ padding: '20px 16px', position: 'relative', textAlign: 'right' }} onClick={e => e.stopPropagation()}>
-                                                        <button onClick={() => setCtxOpen(isCtxOpen ? null : (mov.id ?? null))} style={{ padding: '6px', borderRadius: '8px', color: 'var(--t2)', background: 'transparent', border: 'none', cursor: 'pointer' }} onMouseOver={e => e.currentTarget.style.background = 'var(--gray-100)'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                                                        <button onClick={() => setCtxOpen(isCtxOpen ? null : (mov.id ?? null))} style={{ padding: '6px', borderRadius: '8px', color: 'var(--t2)', background: 'transparent', border: 'none', cursor: 'pointer' }} onMouseOver={e => e.currentTarget.style.background = 'var(--bg)'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
                                                             <MoreHorizontal size={18} />
                                                         </button>
                                                         {isCtxOpen && (
@@ -313,7 +384,7 @@ export function Libreta() {
                                                         {cat?.icono ?? '📦'}
                                                     </div>
                                                     <div>
-                                                        <p style={{ fontWeight: 700, fontSize: '15px', color: 'var(--t1)' }}>{cat?.nombre ?? 'General'}</p>
+                                                        <p style={{ fontWeight: 700, fontSize: '15px', color: 'var(--t1)' }}>{cat?.nombre ?? 'Sin categoría'}</p>
                                                         <p style={{ fontSize: '13px', color: 'var(--t3)', fontWeight: 600 }}>{formatFechaCorta(mov.fecha)}</p>
                                                     </div>
                                                 </div>
