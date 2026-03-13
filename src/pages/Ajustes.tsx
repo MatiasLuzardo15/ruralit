@@ -856,23 +856,7 @@ export function Ajustes({ user }: AjustesProps) {
                     </div>
                 ))}
 
-                <div style={{ marginTop: '20px', padding: '0 8px', display: 'flex', gap: '12px' }}>
-                    <button
-                        onClick={guardarPerfil}
-                        style={{ flex: 2, padding: '18px', borderRadius: '40px', background: 'var(--green-main)', color: 'white', border: 'none', fontSize: '15px', fontWeight: 700, cursor: 'pointer', boxShadow: 'var(--shadow-md)' }}>
-                        Guardar Perfil
-                    </button>
-                    {user && (
-                        <button
-                            onClick={logout}
-                            style={{ flex: 1, padding: '16px', borderRadius: '40px', background: 'transparent', color: 'var(--red-soft)', border: '1px solid var(--red-soft)', fontSize: '14px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                            title="Cerrar Sesión"
-                        >
-                            <LogOut size={18} />
-                        </button>
-                    )}
-                </div>
-                <p style={{ textAlign: 'center', fontSize: '12px', color: 'var(--t3)', marginTop: '20px', fontWeight: 600 }}>Ruralit v1 beta</p>
+                <p style={{ textAlign: 'center', fontSize: '12px', color: 'var(--t3)', marginTop: '40px', fontWeight: 600 }}>Ruralit v1 beta</p>
             </div>
         );
     };
