@@ -513,6 +513,7 @@ export function Ajustes() {
                 title: 'CUENTA',
                 items: [
                     { id: 'perfil', label: 'Información del Perfil', icon: User, tab: 'establecimiento' as TabKey },
+                    { id: 'produccion', label: 'Tipo de Producción', icon: LayoutGrid, tab: 'establecimiento' as TabKey },
                     { id: 'cambio', label: 'Cambio de Establecimiento', icon: Building2, tab: 'establecimiento' as TabKey }
                 ]
             },
@@ -600,10 +601,11 @@ export function Ajustes() {
                     </button>
                     <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--t1)' }}>
                         {mobileDetailType === 'perfil' ? 'Perfil' :
-                            mobileDetailType === 'cambio' ? 'Establecimientos' :
-                                mobileDetailType === 'divisas' ? 'Monedas' :
-                                    activeTab === 'entradas' ? 'Categorías' :
-                                        activeTab === 'salidas' ? 'Categorías' : 'Ajustes'}
+                            mobileDetailType === 'produccion' ? 'Producción' :
+                                mobileDetailType === 'cambio' ? 'Establecimientos' :
+                                    mobileDetailType === 'divisas' ? 'Monedas' :
+                                        activeTab === 'entradas' ? 'Categorías' :
+                                            activeTab === 'salidas' ? 'Categorías' : 'Ajustes'}
                     </h2>
                 </div>
             ) : (
@@ -631,6 +633,47 @@ export function Ajustes() {
                                         <input type="text" value={nombreUsuario} onChange={e => setNombreUsuario(e.target.value)} placeholder="Tu Nombre" style={{ padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px', background: 'var(--white)', color: 'var(--t1)' }} />
                                         <input type="text" value={nombreEstab} onChange={e => setNombre(e.target.value)} placeholder="Nombre Comercial" style={{ padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px', background: 'var(--white)', color: 'var(--t1)' }} />
                                         <button className="btn-primary" onClick={guardarNombre} style={{ marginTop: '12px', padding: '16px', borderRadius: '14px' }}>Actualizar Perfil</button>
+                                    </div>
+                                </div>
+                            ) : mobileDetailType === 'produccion' ? (
+                                <div className="settings-grid-row" style={{ gridTemplateColumns: '1fr', border: 'none' }}>
+                                    <div className="settings-row-info">
+                                        <h3>Tipo de Producción</h3>
+                                        <p>Elegí tu rubro principal para tener las categorías adecuadas.</p>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                            {(['Ganadería', 'Lechería', 'Agricultura', 'Contratista', 'Ovina', 'Mixto'] as TipoProduccion[]).map(t => (
+                                                <button
+                                                    key={t}
+                                                    onClick={() => setTipoProduccion(t)}
+                                                    style={{ padding: '16px 8px', borderRadius: '14px', border: tipoProduccion === t ? '2px solid var(--green-main)' : '1px solid var(--border)', background: tipoProduccion === t ? 'var(--green-light)' : 'var(--white)', color: 'var(--t1)', fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+                                                >
+                                                    {t === 'Contratista' ? 'Servicios' : t}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <button 
+                                            className="btn-primary" 
+                                            onClick={guardarNombre}
+                                            style={{ padding: '16px', borderRadius: '14px' }}
+                                        >
+                                            Guardar Rubro
+                                        </button>
+                                        <div style={{ height: '1px', background: 'var(--border-sm)', margin: '8px 0' }}></div>
+                                        <button 
+                                            className="btn-secondary" 
+                                            style={{ fontSize: '13px', padding: '14px' }}
+                                            onClick={async () => {
+                                                if(confirm('¿Deseas cargar las categorías sugeridas para ' + tipoProduccion + '?')) {
+                                                    await inicializarCategorias(tipoProduccion);
+                                                    showToast('Categorías sincronizadas');
+                                                    cargar();
+                                                }
+                                            }}
+                                        >
+                                            Sincronizar Categorías Sugeridas
+                                        </button>
                                     </div>
                                 </div>
                             ) : (
