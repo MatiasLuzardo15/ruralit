@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { Home, BookOpen, BarChart2, Settings2, MoreVertical, ChevronDown, Check, ChevronLeft, ChevronRight, LayoutPanelLeft } from 'lucide-react';
 
 export type Tab = 'inicio' | 'libreta' | 'balance' | 'ajustes';
@@ -9,7 +8,7 @@ import logo from '../ruralit.png';
 import { supabase } from '../lib/supabase';
 import { User } from '@supabase/supabase-js';
 import { LogOut, User as UserIcon } from 'lucide-react';
-import { db } from '../db/database';
+import { dataService } from '../lib/dataService';
 
 interface EstItem { id: string; nombre: string; }
 
@@ -33,24 +32,29 @@ export function Sidebar({ activo, onChange, establecimiento, collapsed, setColla
     const [estabs, setEstabs] = useState<EstItem[]>([]);
     const selectorRef = useRef<HTMLDivElement>(null);
     
-    // Configuración de perfil reactiva
-    const avatar = useLiveQuery(async () => {
-        const row = await db.config.get('avatarUsuario');
-        return (row?.valor as string) || '👨‍🌾';
-    }, []);
+    const [avatar, setAvatar] = useState('👨‍🌾');
+    const [nombreUsuario, setNombreUsuario] = useState('');
 
-    const nombreUsuario = useLiveQuery(async () => {
-        const row = await db.config.get('nombreUsuario');
-        return row?.valor as string;
+    const loadProfile = () => {
+        dataService.getProfile().then(p => {
+            if (p) {
+                if (p.avatar_url !== undefined && p.avatar_url !== null) setAvatar(p.avatar_url);
+                if (p.username !== undefined && p.username !== null) setNombreUsuario(p.username);
+            }
+        });
+    };
+
+    useEffect(() => {
+        loadProfile();
+        
+        window.addEventListener('ruralit_profile_updated', loadProfile);
+        return () => window.removeEventListener('ruralit_profile_updated', loadProfile);
     }, []);
 
     useEffect(() => {
-        try {
-            const list = JSON.parse(localStorage.getItem('ruralit_establecimientos') || '[]');
-            setEstabs(list);
-        } catch (e) {
-            console.error('Error loading establishments', e);
-        }
+        dataService.getEstablecimientos().then(list => {
+            setEstabs(list.map(e => ({ id: String(e.id), nombre: e.nombre })));
+        });
     }, []);
 
     useEffect(() => {
@@ -64,7 +68,7 @@ export function Sidebar({ activo, onChange, establecimiento, collapsed, setColla
     }, []);
 
     const switchEstab = (e: EstItem) => {
-        localStorage.setItem('activeEstDB', e.id);
+        localStorage.setItem('activeEstDB_uuid', e.id);
         window.location.reload();
     };
 

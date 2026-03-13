@@ -1,16 +1,15 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
 import {
     Wallet, TrendingUp, ArrowUpRight, ArrowDownRight, BookOpen, Plus, Minus, Send, Search,
     Calculator, Clock, Printer
 } from 'lucide-react';
-import db from '../db/database';
 import type { Movimiento, Categoria, TipoMovimiento } from '../types';
 import { formatMonto, formatFechaCorta, formatMesLabel, parseRegistroRapido, hoy, MONEDAS } from '../utils/helpers';
-import {  } from 'lucide-react';
+import { dataService } from '../lib/dataService';
 import { ModalRegistrar } from '../components/ModalRegistrar';
 import { TopBar } from '../components/TopBar';
 import { useMonedas } from '../utils/useMoneda';
+import { showToast } from '../components/Toast';
 
 export function Inicio() {
     const [tipoModal, setTipo] = useState<TipoMovimiento | null>(null);
@@ -20,45 +19,61 @@ export function Inicio() {
     const { moneda, monedasActivas, changeMoneda } = useMonedas();
     const [textoRapido, setTextoRapido] = useState('');
 
-    const categorias = useLiveQuery(() => db.categorias.toArray(), []) ?? [];
-    const catMap = new Map<number, Categoria>(categorias.map(c => [c.id!, c]));
-
-    const nombreUsuario = useLiveQuery(
-        () => db.config.get('nombreUsuario').then(r => (r?.valor as string) || 'Usuario'),
-        []
-    );
+    const [categorias, setCats] = useState<Categoria[]>([]);
+    const [nombreUsuario, setNombreUsuario] = useState('Usuario');
+    const [estabNombre, setEstabNombre] = useState('Mi Establecimiento');
+    const [loadingData, setLoadingData] = useState(true);
+    const catMap = new Map<string, Categoria>(categorias.map(c => [String(c.id), c]));
 
     const now = new Date();
     const iniMes = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
     const finMes = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
     const mesLabel = formatMesLabel(now.getFullYear(), now.getMonth());
 
-    const mesActualRaw = useLiveQuery(
-        () => db.movimientos.where('fecha').between(iniMes, finMes, true, true).toArray(),
-        [key]
-    ) ?? [];
+    const [mesActual, setMesActual] = useState<Movimiento[]>([]);
 
-    const mesActual = mesActualRaw.filter(m => (m.moneda || 'UYU') === moneda);
+    const cargarData = useCallback(async (force: boolean = false) => {
+        setLoadingData(true);
+        try {
+            const activeId = localStorage.getItem('activeEstDB_uuid');
+            if (!activeId) return;
 
-    const entradas = mesActual.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + m.monto, 0);
-    const salidas = mesActual.filter(m => m.tipo === 'gasto').reduce((s, m) => s + m.monto, 0);
-    const saldo = entradas - salidas;
-    const nMov = mesActual.length;
+            const [prof, estab, catsData] = await Promise.all([
+                dataService.getProfile(),
+                dataService.getEstablecimientoActivo(),
+                dataService.getCategorias(activeId, force)
+            ]);
 
-    const cargarUltimos = useCallback(async () => {
-        const d = await db.movimientos.orderBy('creado_en').reverse().limit(100).toArray();
-        setUltimos(d.filter(m => (m.moneda || 'UYU') === moneda).slice(0, 6));
-    }, [key, moneda]);
+            if (prof) setNombreUsuario(prof.username || 'Usuario');
+            if (estab) setEstabNombre(estab.nombre);
+            setCats(catsData);
 
-    useEffect(() => { void cargarUltimos(); }, [cargarUltimos]);
+            const movs = await dataService.getMovimientos(activeId, { from: iniMes, to: finMes }, force);
+            const filtered = movs.filter(m => (m.moneda || 'UYU') === moneda);
+            setMesActual(filtered);
+            setUltimos(movs.filter(m => (m.moneda || 'UYU') === moneda).slice(0, 6));
+        } catch (e) {
+            console.error('Error cargando Inicio:', e);
+        } finally {
+            setLoadingData(false);
+        }
+    }, [moneda, iniMes, finMes]);
 
-    const onGuardado = () => {
-        setKey(k => k + 1);
-        setTextoRapido(''); // Limpiar si venía de texto rápido
-    };
+    useEffect(() => { 
+        void cargarData(); 
+
+        const handleDataChange = () => void cargarData(true);
+        window.addEventListener('ruralit_data_changed', handleDataChange);
+        return () => window.removeEventListener('ruralit_data_changed', handleDataChange);
+    }, [cargarData]);
 
     const cerrar = () => { setTipo(null); setMovEd(undefined); };
     const editar = (m: Movimiento) => { setMovEd(m); setTipo(m.tipo); };
+
+    const onGuardado = () => {
+        // Al guardar cerramos y refrescamos
+        cerrar();
+    };
 
     const handleRegistroRapido = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -68,41 +83,72 @@ export function Inicio() {
             return;
         }
 
-        // Guardar directo rápido (menos de 5 segs)
+        const activeId = localStorage.getItem('activeEstDB_uuid');
+        if (!activeId) {
+            showToast('Error: No hay establecimiento seleccionado');
+            return;
+        }
+
+        if (!parsed.categoriaId) {
+            alert('No pude identificar la categoría. Por favor, especifícala mejor o asegúrate de que existan categorías configuradas.');
+            return;
+        }
+
         const nMovimiento: Omit<Movimiento, 'id'> = {
             tipo: parsed.tipo,
             monto: parsed.monto,
-            categoriaId: parsed.categoriaId || 0,
+            categoriaId: parsed.categoriaId,
             fecha: hoy(),
             creado_en: new Date().toISOString(),
             nota: parsed.nota,
             moneda: moneda
         };
-        await db.movimientos.add(nMovimiento as Movimiento);
-        onGuardado();
+
+        // ACCIÓN INSTANTÁNEA
+        const originalText = textoRapido;
+        setTextoRapido(''); // Limpiar inmediatamente
+        showToast('Guardando registro...');
+        
+        // Ejecutar en segundo plano
+        (async () => {
+            try {
+                const res = await dataService.addMovimiento(activeId, nMovimiento);
+                console.log('Registro rápido exitoso:', res);
+                showToast('¡Guardado!');
+                // Forzamos la recarga de datos frescos
+                void cargarData(true);
+            } catch (e) {
+                console.error('Error en registro rápido:', e);
+                setTextoRapido(originalText); // Restauramos el texto si falló
+                showToast('Error al guardar. Revisa tu conexión.');
+            }
+        })();
     };
 
-    const pctGastos = entradas > 0 ? Math.min((salidas / entradas) * 100, 100) : 0;
+    const entradas = mesActual.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + m.monto, 0);
+    const salidas = mesActual.filter(m => m.tipo === 'gasto').reduce((s, m) => s + m.monto, 0);
+    const saldo = entradas - salidas;
+    const nMov = mesActual.length;
 
-    // Análisis sin IA
+    const dicIngresos = new Map<string, number>();
+    const dicGastos = new Map<string, number>();
+
+    mesActual.forEach(m => {
+        const catIdStr = String(m.categoriaId);
+        if (m.tipo === 'ingreso') dicIngresos.set(catIdStr, (dicIngresos.get(catIdStr) || 0) + m.monto);
+        if (m.tipo === 'gasto') dicGastos.set(catIdStr, (dicGastos.get(catIdStr) || 0) + m.monto);
+    });
+
     let catMayorIngreso = "";
     let catMayorGasto = "";
 
-    const dicIngresos = new Map<number, number>();
-    const dicGastos = new Map<number, number>();
+    let maxI = 0, idMaxI = '';
+    dicIngresos.forEach((v: number, k: string) => { if (v > maxI) { maxI = v; idMaxI = k; } });
+    if (idMaxI !== '') catMayorIngreso = catMap.get(idMaxI)?.nombre || "ingreso";
 
-    mesActual.forEach(m => {
-        if (m.tipo === 'ingreso') dicIngresos.set(m.categoriaId, (dicIngresos.get(m.categoriaId) || 0) + m.monto);
-        if (m.tipo === 'gasto') dicGastos.set(m.categoriaId, (dicGastos.get(m.categoriaId) || 0) + m.monto);
-    });
-
-    let maxI = 0, idMaxI = -1;
-    dicIngresos.forEach((v, k) => { if (v > maxI) { maxI = v; idMaxI = k; } });
-    if (idMaxI !== -1) catMayorIngreso = catMap.get(idMaxI)?.nombre || "ingreso";
-
-    let maxG = 0, idMaxG = -1;
-    dicGastos.forEach((v, k) => { if (v > maxG) { maxG = v; idMaxG = k; } });
-    if (idMaxG !== -1) catMayorGasto = catMap.get(idMaxG)?.nombre || "gasto";
+    let maxG = 0, idMaxG = '';
+    dicGastos.forEach((v: number, k: string) => { if (v > maxG) { maxG = v; idMaxG = k; } });
+    if (idMaxG !== '') catMayorGasto = catMap.get(idMaxG)?.nombre || "gasto";
 
     let mensajeEstado = "Sin movimientos en el mes.";
     if (entradas > 0 || salidas > 0) {
@@ -117,10 +163,12 @@ export function Inicio() {
     else if (hora >= 12 && hora < 20) saludo = 'Buenas tardes';
     else saludo = 'Buenas noches';
 
+    const pctGastos = entradas > 0 ? Math.min((salidas / entradas) * 100, 100) : 0;
+
     return (
         <div className="page-in">
             <TopBar
-                title="Mi Establecimiento"
+                title={estabNombre}
                 heading={`${saludo}, ${nombreUsuario}`}
                 subtitle={`Resumen financiero al ${formatFechaCorta(new Date().toISOString().split('T')[0])}`}
                 hideCurrencyToggle
@@ -260,7 +308,7 @@ export function Inicio() {
                     ) : (
                         <div className="card-surface" style={{ padding: '8px 12px' }}>
                             {ultimos.map(mov => {
-                                const cat = catMap.get(mov.categoriaId);
+                                const cat = catMap.get(String(mov.categoriaId));
                                 const ing = mov.tipo === 'ingreso';
                                 return (
                                     <div key={mov.id} className="mobile-tx-row" onClick={() => editar(mov)} style={{ borderBottom: '1px solid var(--border-sm)' }}>

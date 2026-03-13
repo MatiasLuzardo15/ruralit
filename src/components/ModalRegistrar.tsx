@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowUpRight, ArrowDownRight, X, Calendar, Edit3, Trash2, ChevronDown, Check, Plus } from 'lucide-react';
 import type { Movimiento, Categoria, TipoMovimiento, Moneda } from '../types';
-import db from '../db/database';
+import { dataService } from '../lib/dataService';
 import { hoy, MONEDAS } from '../utils/helpers';
 import { showToast } from './Toast';
 import { useMonedas } from '../utils/useMoneda';
@@ -34,8 +34,18 @@ function CurSelector({ value, onChange, allowed }: { value: Moneda; onChange: (m
 export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuardado }: Props) {
     const { moneda: monedaGlobal, monedasActivas } = useMonedas();
     const [monto, setMonto] = useState('');
-    const [moneda, setMoneda] = useState<Moneda>(movimientoEditar?.moneda ?? monedaGlobal);
-    const [catId, setCatId] = useState<number | null>(null);
+    const [moneda, setMoneda] = useState<Moneda>('UYU');
+
+    useEffect(() => {
+        if (movimientoEditar?.moneda) {
+            setMoneda(movimientoEditar.moneda);
+        } else if (monedasActivas.includes(monedaGlobal)) {
+            setMoneda(monedaGlobal);
+        } else if (monedasActivas.length > 0) {
+            setMoneda(monedasActivas[0]);
+        }
+    }, [movimientoEditar, monedaGlobal, monedasActivas]);
+    const [catId, setCatId] = useState<string | number | null>(null);
     const [nota, setNota] = useState('');
     const [fecha, setFecha] = useState(hoy());
     const [cats, setCats] = useState<Categoria[]>([]);
@@ -51,7 +61,12 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
     const colorPrimario = ing ? 'var(--green-main)' : 'var(--red-soft)';
 
     useEffect(() => {
-        db.categorias.where('tipo').equals(tipoInicial).toArray().then(setCats);
+        const activeId = localStorage.getItem('activeEstDB_uuid');
+        if (activeId) {
+            dataService.getCategorias(activeId).then(all => {
+                setCats(all.filter(c => c.tipo === tipoInicial));
+            });
+        }
 
         if (movimientoEditar) {
             setMonto(String(movimientoEditar.monto));
@@ -61,8 +76,9 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
             setFecha(movimientoEditar.fecha);
         } else {
             setMonto('');
+            setCatId(null);
         }
-    }, [movimientoEditar, tipoInicial]);
+    }, [movimientoEditar, tipoInicial, monedaGlobal]);
 
     const guardar = async () => {
         const m = Number(monto);
@@ -70,33 +86,62 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
             showToast('Ingresa monto y categoría');
             return;
         }
-        setSaving(true);
-        try {
-            const data: Omit<Movimiento, 'id'> = {
-                tipo: tipoInicial, monto: m, moneda,
-                categoriaId: catId, nota: nota.trim() || undefined,
-                fecha, creado_en: new Date().toISOString(),
-            };
-            if (esEdit && movimientoEditar?.id !== undefined) {
-                await db.movimientos.update(movimientoEditar.id, data);
-                showToast('Actualizado');
-            } else {
-                await db.movimientos.add(data as Movimiento);
-                showToast('Registrado');
+
+        const activeId = localStorage.getItem('activeEstDB_uuid');
+        if (!activeId) return;
+
+        // ACCIÓN INSTANTÁNEA: Avisamos al usuario y cerramos el modal de inmediato
+        const data: Omit<Movimiento, 'id'> = {
+            tipo: tipoInicial, monto: m, moneda,
+            categoriaId: catId, nota: nota.trim() || undefined,
+            fecha, creado_en: new Date().toISOString(),
+        };
+
+        // Cerramos el modal primero para dar sensación de velocidad instantánea
+        onGuardado?.(); 
+        onClose();
+        showToast(esEdit ? 'Actualizando...' : 'Registrando...');
+
+        // Ejecutamos la promesa en segundo plano
+        (async () => {
+            try {
+                if (esEdit && movimientoEditar?.id !== undefined) {
+                    await dataService.updateMovimiento(String(movimientoEditar.id), data);
+                    showToast('¡Listo! Actualizado');
+                } else {
+                    await dataService.addMovimiento(activeId, data);
+                    showToast('¡Listo! Registrado');
+                }
+                // Notificamos de nuevo por si se necesita refrescar datos frescos
+                onGuardado?.();
+            } catch (e) {
+                console.error(e);
+                showToast('Error al guardar en la nube');
             }
-            onGuardado?.(); onClose();
-        } finally { setSaving(false); }
+        })();
     };
 
     const handleCreateCat = async () => {
         if (!newCatName.trim()) return;
+        const activeId = localStorage.getItem('activeEstDB_uuid');
+        if (!activeId) return;
+
         setSaving(true);
         try {
-            const id = await db.categorias.add({ nombre: newCatName.trim(), tipo: tipoInicial, icono: newCatIcon, esPredefinida: false, color: '#999' });
-            setCats(await db.categorias.where('tipo').equals(tipoInicial).toArray());
-            setCatId(id);
+            const newCat = await dataService.addCategoria(activeId, {
+                nombre: newCatName.trim(),
+                tipo: tipoInicial,
+                icono: newCatIcon,
+                esPredefinida: false,
+                color: '#999'
+            });
+            const all = await dataService.getCategorias(activeId);
+            setCats(all.filter(c => c.tipo === tipoInicial));
+            setCatId(newCat.id!);
             setCreatingCat(false);
             setNewCatName('');
+        } catch (e) {
+            showToast('Error al crear categoría');
         } finally { setSaving(false); }
     };
 
@@ -143,7 +188,7 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
                         
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                             {cats.map(cat => {
-                                const selected = catId === cat.id;
+                                const selected = String(catId) === String(cat.id);
                                 return (
                                     <button 
                                         key={cat.id} 
@@ -205,7 +250,7 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
                 {/* ── FOOTER DE ACCIONES ── */}
                 <div style={{ padding: '24px 32px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-sm)' }}>
                     {esEdit ? (
-                        <button onClick={async () => { if(confirm('¿Seguro que deseas eliminar el registro?')){ await db.movimientos.delete(movimientoEditar.id!); onGuardado?.(); onClose(); } }} style={{ padding: '12px', borderRadius: '12px', background: 'var(--red-light)', color: 'var(--red-soft)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <button onClick={async () => { if(confirm('¿Seguro que deseas eliminar el registro?')){ await dataService.deleteMovimiento(String(movimientoEditar.id!)); onGuardado?.(); onClose(); } }} style={{ padding: '12px', borderRadius: '12px', background: 'var(--red-light)', color: 'var(--red-soft)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <Trash2 size={18} />
                         </button>
                     ) : <div/>}

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Mail, Lock, Loader2, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { showToast } from '../components/Toast';
-import { syncService } from '../lib/sync';
 
 export function Login() {
     const [view, setView] = useState<'login' | 'signup'>('login');
@@ -32,7 +31,6 @@ export function Login() {
                 if (error) throw error;
                 showToast('Cuenta creada. Revisa tu email.');
             }
-            syncService.syncEverything();
         } catch (error: any) {
             showToast(error.message || 'Ocurrió un error');
         } finally {

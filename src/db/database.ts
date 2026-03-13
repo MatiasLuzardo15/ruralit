@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import type { Movimiento, Categoria, ConfigItem } from '../types';
+import { dataService } from '../lib/dataService';
 
 const activeDbName = localStorage.getItem('activeEstDB') || 'RuralitDB';
 
@@ -14,7 +15,7 @@ export type TipoProduccion = 'Ganadería' | 'Lechería' | 'Agricultura' | 'Contr
 export const CATEGORIAS_POR_TIPO: Record<TipoProduccion, Omit<Categoria, 'id'>[]> = {
     'Ganadería': [
         // Entradas
-        { nombre: 'Venta de hacienda', tipo: 'ingreso', icono: '🐄', color: '#2E7D32', esPredefinida: true },
+        { nombre: 'Venta de animales', tipo: 'ingreso', icono: '🐄', color: '#2E7D32', esPredefinida: true },
         { nombre: 'Venta de terneros', tipo: 'ingreso', icono: '🐂', color: '#2E7D32', esPredefinida: true },
         { nombre: 'Venta de vacas', tipo: 'ingreso', icono: '🐄', color: '#2E7D32', esPredefinida: true },
         { nombre: 'Venta de toros', tipo: 'ingreso', icono: '🐃', color: '#2E7D32', esPredefinida: true },
@@ -181,7 +182,7 @@ export const CATEGORIAS_POR_TIPO: Record<TipoProduccion, Omit<Categoria, 'id'>[]
     ],
     'Mixto': [
         // Basado en sugerencia "Ruralia v1" (Pocas categorías al principio)
-        { nombre: 'Venta de hacienda', tipo: 'ingreso', icono: '🐄', color: '#2E7D32', esPredefinida: true },
+        { nombre: 'Venta de animales', tipo: 'ingreso', icono: '🐄', color: '#2E7D32', esPredefinida: true },
         { nombre: 'Venta de leche', tipo: 'ingreso', icono: '🥛', color: '#1565C0', esPredefinida: true },
         { nombre: 'Venta de granos', tipo: 'ingreso', icono: '🌾', color: '#F9A825', esPredefinida: true },
         { nombre: 'Arrendamiento cobrado', tipo: 'ingreso', icono: '🏠', color: '#1565C0', esPredefinida: true },
@@ -200,32 +201,27 @@ export const CATEGORIAS_POR_TIPO: Record<TipoProduccion, Omit<Categoria, 'id'>[]
     ]
 };
 
-export async function inicializarCategorias(tipo: TipoProduccion, limpiar: boolean = false) {
-    if (limpiar) {
-        // Obtenemos los IDs de categorías que tienen movimientos asociados
-        const movimientos = await db.movimientos.toArray();
-        const idsEnUso = new Set(movimientos.map(m => m.categoriaId));
+export async function inicializarCategorias(tipo: TipoProduccion, forzarNuevas: boolean = false) {
+    const activeId = localStorage.getItem('activeEstDB_uuid');
+    if (!activeId) return;
 
-        // Borramos solo las categorías predefinidas que NO están en uso
-        // Usamos filter porque es posible que el índice esPredefinida sea nuevo
-        await db.categorias
-            .filter(c => c.esPredefinida === true && !idsEnUso.has(c.id!))
-            .delete();
-    }
+    // Obtenemos categorías actuales en la nube para no duplicar
+    const actuales = await dataService.getCategorias(activeId);
+    const nombresNormalizados = actuales.map(c => c.nombre.trim().toLowerCase());
 
     const todas = CATEGORIAS_POR_TIPO[tipo] || [];
     
     for (const cat of todas) {
-        const existe = await db.categorias.where('nombre').equals(cat.nombre).first();
-        if (!existe) {
-            await db.categorias.add(cat as Categoria);
+        // Solo la agregamos si el nombre no existe ya
+        if (!nombresNormalizados.includes(cat.nombre.trim().toLowerCase())) {
+            await dataService.addCategoria(activeId, cat);
         }
     }
 }
 
 export class RuralitDatabase extends Dexie {
-    movimientos!: Table<Movimiento, number>;
-    categorias!: Table<Categoria, number>;
+    movimientos!: Table<Movimiento, number | string>;
+    categorias!: Table<Categoria, number | string>;
     config!: Table<ConfigItem, string>;
 
     constructor() {
@@ -264,11 +260,6 @@ export const db = new RuralitDatabase();
 
 db.on('ready', async () => {
     // Ya no cargamos categorías por defecto aquí si queremos usar el setup flow
-    // pero mantenemos los fixes de nombres por compatibilidad
-    const c1 = await db.categorias.where('nombre').equals('Hacienda (venta)').first();
-    if (c1) await db.categorias.update(c1.id!, { nombre: 'Venta de animales' });
-    const c2 = await db.categorias.where('nombre').equals('Hacienda (compra)').first();
-    if (c2) await db.categorias.update(c2.id!, { nombre: 'Compra de animales' });
 
     const nombreExistente = await db.config.get('nombreEstablecimiento');
     if (!nombreExistente) {

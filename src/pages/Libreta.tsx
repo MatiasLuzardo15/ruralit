@@ -1,12 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { Search, ChevronDown, Download, MoreHorizontal, Pencil, Trash2, Filter, ChevronLeft, ChevronRight, Printer } from 'lucide-react';
-import db from '../db/database';
 import type { Movimiento, Categoria, TipoMovimiento } from '../types';
 import { formatMonto, formatFechaCorta, formatMesLabel } from '../utils/helpers';
 import { ModalRegistrar } from '../components/ModalRegistrar';
 import { TopBar } from '../components/TopBar';
 import { showToast } from '../components/Toast';
+import { dataService } from '../lib/dataService';
 import { useMonedas } from '../utils/useMoneda';
 
 /* ─── Context menu ⋮ ─────────────────────────────────────── */
@@ -42,7 +41,7 @@ export function Libreta() {
     const [movEditar, setMovEd] = useState<Movimiento | undefined>();
     const [tipoModal, setTipo] = useState<TipoMovimiento | null>(null);
     const [key, setKey] = useState(0);
-    const [ctxOpen, setCtxOpen] = useState<number | null>(null);
+    const [ctxOpen, setCtxOpen] = useState<number | string | null>(null);
     const { moneda } = useMonedas();
 
     // Mobile Detection
@@ -53,17 +52,40 @@ export function Libreta() {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const categorias = useLiveQuery(() => db.categorias.toArray(), []) ?? [];
-    const catMap = new Map<number, Categoria>(categorias.map(c => [c.id!, c]));
+    const [categorias, setCats] = useState<Categoria[]>([]);
+    const catMap = new Map<string, Categoria>(categorias.map(c => [String(c.id), c]));
+    const [loading, setLoading] = useState(true);
 
-    const cargar = useCallback(async () => {
-        const ini = new Date(anio, mes, 1).toISOString().split('T')[0];
-        const fin = new Date(anio, mes + 1, 0).toISOString().split('T')[0];
-        const data = await db.movimientos.where('fecha').between(ini, fin, true, true).toArray();
-        setMov(data.filter(m => (m.moneda || 'UYU') === moneda).sort((a, b) => b.fecha.localeCompare(a.fecha)));
-    }, [anio, mes, key, moneda]);
+    const cargar = useCallback(async (force: boolean = false) => {
+        setLoading(true);
+        try {
+            const activeId = localStorage.getItem('activeEstDB_uuid');
+            if (!activeId) return;
 
-    useEffect(() => { void cargar(); }, [cargar]);
+            const [catsData, movsData] = await Promise.all([
+                dataService.getCategorias(activeId, force),
+                dataService.getMovimientos(activeId, {
+                    from: new Date(anio, mes, 1).toISOString().split('T')[0],
+                    to: new Date(anio, mes + 1, 0).toISOString().split('T')[0]
+                }, force)
+            ]);
+
+            setCats(catsData);
+            setMov(movsData.filter(m => (m.moneda || 'UYU') === moneda));
+        } catch (e) {
+            console.error('Error cargando Libreta:', e);
+        } finally {
+            setLoading(false);
+        }
+    }, [anio, mes, moneda]);
+
+    useEffect(() => { 
+        void cargar(); 
+
+        const handleDataChange = () => void cargar(true);
+        window.addEventListener('ruralit_data_changed', handleDataChange);
+        return () => window.removeEventListener('ruralit_data_changed', handleDataChange);
+    }, [cargar]);
 
     const filtrados = movimientos.filter(mov => {
         if (filtroTipo !== 'todos' && mov.tipo !== filtroTipo) return false;
@@ -71,7 +93,7 @@ export function Libreta() {
 
         if (!busqueda.trim()) return true;
         const q = busqueda.toLowerCase().trim();
-        const cat = catMap.get(mov.categoriaId);
+        const cat = catMap.get(String(mov.categoriaId));
         return cat?.nombre.toLowerCase().includes(q) || mov.nota?.toLowerCase().includes(q) || String(mov.monto).includes(q);
     });
 
@@ -82,7 +104,7 @@ export function Libreta() {
 
     const eliminar = async (mov: Movimiento) => {
         if (mov.id !== undefined) {
-            await db.movimientos.delete(mov.id);
+            await dataService.deleteMovimiento(String(mov.id));
             showToast('Movimiento eliminado');
             setKey(k => k + 1);
         }
@@ -152,7 +174,7 @@ export function Libreta() {
                             <select value={filtroCat} onChange={e => setFiltroCat(e.target.value)} style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', appearance: 'none', background: 'var(--bg-input)', color: 'var(--t1)', cursor: 'pointer' }}>
                                 <option value="todas">Cualquier Categoría</option>
                                 {categorias.filter(c => filtroTipo === 'todos' || c.tipo === filtroTipo).map(c => (
-                                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                                    <option key={String(c.id)} value={String(c.id)}>{c.nombre}</option>
                                 ))}
                             </select>
                             <ChevronDown size={16} style={{ position: 'absolute', top: '16px', right: '16px', color: 'var(--t3)', pointerEvents: 'none' }} />
@@ -214,7 +236,7 @@ export function Libreta() {
                                     </thead>
                                     <tbody>
                                         {filtrados.map((mov, i) => {
-                                            const cat = catMap.get(mov.categoriaId);
+                                            const cat = catMap.get(String(mov.categoriaId));
                                             const ing = mov.tipo === 'ingreso';
                                             const isCtxOpen = ctxOpen === mov.id;
                                             return (
@@ -266,7 +288,7 @@ export function Libreta() {
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                 {filtrados.map((mov) => {
-                                    const cat = catMap.get(mov.categoriaId);
+                                    const cat = catMap.get(String(mov.categoriaId));
                                     const ing = mov.tipo === 'ingreso';
                                     const isCtxOpen = ctxOpen === mov.id;
 

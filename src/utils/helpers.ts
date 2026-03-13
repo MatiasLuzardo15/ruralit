@@ -121,69 +121,91 @@ export const calcularBalance = (movimientos: Movimiento[]): BalanceMes => {
 
 export const hoy = (): string => new Date().toISOString().split('T')[0];
 
-export const parseRegistroRapido = (texto: string, categorias: Categoria[]): { tipo: 'ingreso' | 'gasto', monto: number, categoriaId: number | null, nota: string } | null => {
+export const parseRegistroRapido = (texto: string, categorias: Categoria[]): { tipo: 'ingreso' | 'gasto', monto: number, categoriaId: string | number | null, nota: string } | null => {
     if (!texto.trim()) return null;
     
-    // Normalizamos texto para quitar acentos y transformar a minúsculas
     const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
     const txt = normalize(texto);
 
-    let tipo: 'ingreso' | 'gasto' = 'gasto'; // por defecto
-    const palabrasGasto = ['gaste', 'pague', 'compre', 'gasto', 'compra', 'salida', 'pagamos', 'compramos', 'estación de servicio', 'retiro'];
-    const palabrasIngreso = ['vendi', 'cobre', 'ingrese', 'ingreso', 'venta', 'entrada', 'vendimos', 'cobramos', 'deposito'];
+    // 1. Determinar Tipo
+    let tipo: 'ingreso' | 'gasto' = 'gasto';
+    const palabrasGasto = ['gaste', 'pague', 'compre', 'gasto', 'compra', 'salida', 'pagamos', 'compramos', 'retiro', 'pago', 'factura', 'cuota'];
+    const palabrasIngreso = ['vendi', 'cobre', 'ingrese', 'ingreso', 'venta', 'entrada', 'vendimos', 'cobramos', 'deposito', 'cobro', 'liquidar', 'cheque'];
 
-    // Utilizamos regex para comprobar que la palabra clave encaja en los límites de la palabra (\b) y evitar falsos positivos
     const checkKw = (kws: string[]) => kws.some(kw => new RegExp(`\\b${normalize(kw)}\\b`, 'i').test(txt));
 
-    if (checkKw(palabrasGasto)) tipo = 'gasto';
     if (checkKw(palabrasIngreso)) tipo = 'ingreso';
+    else if (checkKw(palabrasGasto)) tipo = 'gasto';
 
-    // Extracción de número robusto permitiendo coma o punto para decimales (ej. 1500.50 o 1500,50)
-    const matchMoneda = txt.match(/\b\d+([.,]\d+)?\b/);
-    if (!matchMoneda) return null; // se necesita al menos un monto
-    const monto = parseFloat(matchMoneda[0].replace(',', '.'));
+    // 2. Extraer Monto
+    const matchMonto = txt.match(/\b\d+([.,]\d+)?\b/);
+    if (!matchMonto) return null; 
+    const monto = parseFloat(matchMonto[0].replace(',', '.'));
 
-    let categoriaId: number | null = null;
-    let fallbackCatId: number | null = null;
+    let categoriaId: string | number | null = null;
+
+    // 3. Prioridad 1: Buscar si el NOMBRE de alguna categoría está explícitamente en el texto
+    // Ordenamos por longitud de nombre descendente para que "Venta de animales" gane a "Venta"
+    const catsDelTipo = categorias.filter(c => c.tipo === tipo);
+    const sortedCats = [...catsDelTipo].sort((a, b) => b.nombre.length - a.nombre.length);
     
-    // Diccionarios robustos de palabras clave
-    if (tipo === 'gasto') {
-        const keywordMapGasto = [
-            { key: 'Sanidad', words: ['vet', 'veterinaria', 'remedio', 'vacuna', 'sanidad', 'medicamento', 'antibiotico', 'desparasitante', 'inyeccion'] },
-            { key: 'Combustible', words: ['nafta', 'gasoil', 'diesel', 'combustible', 'gasolina', 'estacion', 'bencina'] },
-            { key: 'Alimentación', words: ['racion', 'fardo', 'comida', 'pasto', 'alimentacion', 'maiz', 'avena', 'suplemento', 'rollo', 'alfalfa', 'sorgo'] },
-            { key: 'Compra de animales', words: ['vaca', 'vacas', 'ternero', 'terneros', 'novillo', 'novillos', 'hacienda', 'animales', 'toro', 'toros', 'vaquillona', 'tambo'] },
-            { key: 'Sem', words: ['semilla', 'semillas', 'agroquimico', 'fertilizante', 'herbicida', 'insecticida', 'fungicida', 'urea', 'glifosato'] },
-            { key: 'Mano de obra', words: ['peon', 'sueldo', 'jornal', 'mano de obra', 'empleado', 'empleados', 'salario', 'aguinaldo', 'capataz', 'trabajador'] },
-            { key: 'Reparaciones', words: ['reparacion', 'arreglo', 'taller', 'repuesto', 'mecanico', 'goma', 'cubierta', 'alambre', 'pique', 'varilla'] }
-        ];
+    // Palabras genéricas que no deben disparar un match por sí solas
+    const palabrasGenericas = ['venta', 'compra', 'gasto', 'ingreso', 'entrada', 'salida', 'otros', 'otras', 'pago', 'cobro'];
 
-        for (const map of keywordMapGasto) {
-            if (checkKw(map.words)) {
-                categoriaId = categorias.find(c => c.nombre.includes(map.key) || c.nombre === map.key)?.id ?? null;
-                if (categoriaId) break;
-            }
-        }
-        fallbackCatId = categorias.find(c => c.nombre === 'Otros gastos')?.id ?? null;
+    const catPorNombre = sortedCats.find(c => {
+        const nom = normalize(c.nombre);
+        // Si el nombre de la categoría es una palabra genérica, ignoramos este paso
+        if (palabrasGenericas.includes(nom)) return false;
+        
+        // 1. Coincidencia exacta/contenida (ej: "venta de leche" -> "leche")
+        if (txt.includes(nom)) return true;
 
+        // 2. Coincidencia de palabra significativa (ej: "novillos" -> "Venta de novillos")
+        // Filtramos palabras de la categoría que sean cortas o genéricas
+        const palabrasSignificativas = nom.split(' ').filter(w => w.length > 3 && !palabrasGenericas.includes(w));
+        return palabrasSignificativas.some(w => new RegExp(`\\b${w}\\b`, 'i').test(txt));
+    });
+
+    if (catPorNombre) {
+        categoriaId = catPorNombre.id!;
     } else {
-        const keywordMapIngreso = [
-            { key: 'Venta de animales', words: ['vaca', 'vacas', 'ternero', 'terneros', 'novillo', 'novillos', 'hacienda', 'animales', 'toro', 'toros', 'vaquillona', 'tambo'] },
-            { key: 'Leche', words: ['leche', 'queso', 'lacteo', 'lacteos', 'manteca', 'suero', 'crema'] },
-            { key: 'Granos', words: ['grano', 'granos', 'soja', 'trigo', 'maiz', 'forraje', 'sorgo', 'girasol', 'avena', 'cebada'] },
-            { key: 'Lana', words: ['lana', 'cuero', 'cueros', 'oveja', 'ovejas', 'cordero', 'corderos', 'vellon', 'esquila'] }
+        // 4. Prioridad 2: Diccionario de palabras clave (Mapeo Semántico)
+        const keywordMap = [
+            { key: 'Leche', words: ['leche', 'queso', 'lacteo', 'manteca', 'suero', 'tambo', 'remitente', 'conaprole', 'indlacol'] },
+            { key: 'Animales', words: ['vaca', 'vacas', 'ternero', 'terneros', 'novillo', 'novillos', 'animal', 'toro', 'vaquillona', 'oveja', 'lana', 'cordero', 'borrego', 'capon', 'lanar', 'ovino', 'bovino', 'hacienda', 'vaquillonas'] },
+            { key: 'Sanidad', words: ['vet', 'veterinaria', 'remedio', 'vacuna', 'sanidad', 'medicamento', 'antibiotico', 'jeringa', 'desparasitante', 'aftosa', 'iia', 'inseminacion', 'carbunco'] },
+            { key: 'Combustible', words: ['nafta', 'gasoil', 'diesel', 'combustible', 'gasolina', 'estacion', 'bencina', 'premium', 'gasóleo'] },
+            { key: 'Alimentación', words: ['racion', 'fardo', 'comida', 'pasto', 'maiz', 'avena', 'suplemento', 'rollo', 'alfalfa', 'proteina', 'silaje', 'concentrado', 'grano', 'semilla'] },
+            { key: 'Granos', words: ['soja', 'trigo', 'sorgo', 'girasol', 'cebada', 'cosecha', 'trilla', 'flete', 'granos', 'silobolsa'] },
+            { key: 'Reparaciones', words: ['reparacion', 'arreglo', 'taller', 'repuesto', 'mecanico', 'goma', 'cubierta', 'alambre', 'pique', 'varilla', 'tornillo', 'herramienta', 'ferreteria', 'pintura', 'tractor', 'arado', 'herrería'] },
+            { key: 'Mano de obra', words: ['peon', 'sueldo', 'jornal', 'empleado', 'salario', 'personal', 'aguinaldo', 'bps', 'pago', 'obrero'] },
         ];
 
-        for (const map of keywordMapIngreso) {
+        for (const map of keywordMap) {
             if (checkKw(map.words)) {
-                categoriaId = categorias.find(c => c.nombre.includes(map.key) || c.nombre === map.key)?.id ?? null;
-                if (categoriaId) break;
+                const found = catsDelTipo.find(c => {
+                    const nom = normalize(c.nombre);
+                    return nom.includes(normalize(map.key)) || normalize(map.key).includes(nom);
+                });
+                if (found) {
+                    categoriaId = found.id!;
+                    break;
+                }
             }
         }
-        fallbackCatId = categorias.find(c => c.nombre === 'Otras entradas')?.id ?? null;
     }
 
-    if (!categoriaId) categoriaId = fallbackCatId;
+    // 5. Prioridad 3: Fallback inteligente a "Otros"
+    if (!categoriaId) {
+        const fallbacks = ['otros', 'otras', 'general', 'varios', 'diversos'];
+        const catFallback = catsDelTipo.find(c => fallbacks.some(f => normalize(c.nombre).includes(f)));
+        if (catFallback) categoriaId = catFallback.id!;
+    }
+
+    // 6. Último recurso: Primera categoría del tipo
+    if (!categoriaId && catsDelTipo.length > 0) {
+        categoriaId = catsDelTipo[0].id!;
+    }
 
     return { tipo, monto, categoriaId, nota: texto.charAt(0).toUpperCase() + texto.slice(1) };
 };

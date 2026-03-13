@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Building2, ArrowRight, TrendingUp, Milk, Sprout, LayoutGrid, Settings2, User, Loader2, Sparkles } from 'lucide-react';
-import db, { type TipoProduccion, inicializarCategorias } from '../db/database';
+import { type TipoProduccion, inicializarCategorias } from '../db/database';
 import { showToast } from './Toast';
-import { syncService } from '../lib/sync';
+import { supabase } from '../lib/supabase';
+import { dataService } from '../lib/dataService';
 
 interface Props {
     onComplete: () => void;
@@ -29,21 +30,25 @@ export function ModalSetup({ onComplete, initialName = '' }: Props) {
         if (!nombre.trim()) return showToast('Ingresá el nombre');
         setLoading(true);
         try {
-            // Guardar localmente
-            await db.config.put({ clave: 'nombreEstablecimiento', valor: nombre.trim() });
-            await db.config.put({ clave: 'tipoProduccion', valor: tipo });
+            let id = localStorage.getItem('activeEstDB_uuid');
             
-            // Inicializar categorías sugeridas
-            await inicializarCategorias(tipo, true);
-            
-            // Sincronizar con Supabase
-            const serverId = await db.getEstablecimientoServerId();
-            if (serverId) {
-                await syncService.updateEstablecimientoType(serverId, tipo);
+            if (id) {
+                // Actualizar existente
+                await dataService.updateEstablecimiento(id, {
+                    nombre: nombre.trim(),
+                    tipo_produccion: tipo
+                });
+            } else {
+                // Crear nuevo (para usuarios nuevos)
+                const nuevo = await dataService.addEstablecimiento(nombre.trim(), tipo);
+                id = String(nuevo.id);
+                localStorage.setItem('activeEstDB_uuid', id);
             }
-            
-            // Forzar sincronización completa inmediata
-            await syncService.syncNow();
+
+            // Inicializar categorías sugeridas en la nube
+            if (id) {
+                await inicializarCategorias(tipo, true);
+            }
             
             showToast('¡Configuración lista!');
             onComplete();

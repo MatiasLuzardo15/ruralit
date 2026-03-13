@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { createPortal } from 'react-dom';
-import { Plus, Pencil, Trash2, Check, X, Settings2, Building2, Coins, LayoutGrid, AlertCircle, ChevronRight, ArrowLeft, ArrowUpRight, ArrowDownLeft, User, HelpCircle, Moon, Sun, Cloud, CloudOff, LogOut } from 'lucide-react';
-import type { Categoria, TipoMovimiento, Moneda } from '../types';
-import db, { type TipoProduccion, inicializarCategorias } from '../db/database';
+import { Plus, Pencil, Trash2, Check, X, Settings2, Building2, Coins, LayoutGrid, AlertCircle, ChevronRight, ArrowLeft, ArrowUpRight, ArrowDownLeft, User, HelpCircle, Moon, Sun, Cloud, CloudOff, LogOut, Loader2 } from 'lucide-react';
+import type { Categoria, TipoMovimiento, Moneda, Establecimiento } from '../types';
+import { MONEDAS } from '../utils/helpers';
+import { dataService } from '../lib/dataService';
+import { useMonedas } from '../utils/useMoneda';
+import { type TipoProduccion, inicializarCategorias } from '../db/database';
 import { showToast } from '../components/Toast';
 import { TopBar } from '../components/TopBar';
-import { MONEDAS } from '../utils/helpers';
-import { syncService } from '../lib/sync';
 
 const CATEGORY_ICONS = [
     '🐄', '🌾', '🚜', '💰', '📉', '📈', '📦', '🛒', '🔧', '⛽',
@@ -19,7 +20,7 @@ const CATEGORY_ICONS = [
 const AVATAR_OPTIONS = [
     '👨‍🌾', '👩‍🌾', '🤠', '🧔', '👩', '👨', '🧑‍🌾', '👷', '👨‍🔧', '🕵️',
     '🌵', '🌊', '🏔️', '🏕️', '🧉', '🐕', '🏇', '🦊', '🦉', '✨',
-    '👔', '🧑‍💼', '👩‍💼', '🧥', '🧢', '🕶️', '🏔️', '🏠', '🚀', '⭐'
+    '👔', '🧑‍💼', '👩‍💼', '🧥', '🧢', '🕶️', '🏠', '🚀', '⭐', '🚜'
 ];
 
 interface CatForm { nombre: string; tipo: TipoMovimiento; icono: string; }
@@ -133,7 +134,7 @@ function CurrencyModal({ current, onClose, onSave }: { current: Moneda[], onClos
 }
 
 // ── Components ─────────────────────────────────────────────
-type TabKey = 'perfil' | 'establecimiento' | 'divisas' | 'entradas' | 'salidas' | 'sistema';
+type TabKey = 'perfil' | 'establecimiento' | 'divisas' | 'entradas' | 'salidas' | 'seguridad' | 'sistema';
 
 interface AjustesProps {
     user?: SupabaseUser | null;
@@ -148,6 +149,10 @@ export function Ajustes({ user }: AjustesProps) {
     const [tipoProduccion, setTipoProduccion] = useState<TipoProduccion>('Ganadería');
     const [activeTab, setActiveTab] = useState<TabKey>('establecimiento');
     const [saving, setSaving] = useState(false);
+    
+    // States for multi-establishment
+    const [activeEstId, setActiveEstId] = useState<string | null>(localStorage.getItem('activeEstDB_uuid'));
+    const [estabsList, setEstabsList] = useState<Establecimiento[]>([]);
 
     // Modals state
     const [showCatModal, setShowCatModal] = useState<'add' | 'edit' | false>(false);
@@ -165,47 +170,80 @@ export function Ajustes({ user }: AjustesProps) {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    const [loadingData, setLoadingData] = useState(true);
+
     const cargar = async () => {
-        setCats(await db.categorias.orderBy('nombre').toArray());
-        const n = await db.config.get('nombreEstablecimiento');
-        if (n) setNombre(n.valor as string);
-        const u = await db.config.get('nombreUsuario');
-        if (u) setNombreUsuario(u.valor as string);
-        const av = await db.config.get('avatarUsuario');
-        if (av) setAvatarEmoji(av.valor as string);
-        const m = await db.config.get('monedasActivas');
-        if (m && Array.isArray(m.valor)) setMonedasActivas(m.valor as Moneda[]);
-        const t = await db.config.get('tipoProduccion');
-        if (t) setTipoProduccion(t.valor as TipoProduccion);
+        let activeId = localStorage.getItem('activeEstDB_uuid');
+        
+        // Si no hay ID en localStorage, intentamos obtenerlo de Supabase
+        if (!activeId) {
+            const activeEstab = await dataService.getEstablecimientoActivo();
+            if (activeEstab) {
+                activeId = String(activeEstab.id);
+            }
+        }
+        
+        if (!activeId) {
+            setLoadingData(false);
+            return;
+        }
+        setActiveEstId(activeId);
+
+        try {
+            // Limpiamos estados antes de cargar para evitar "fantasmas"
+            setNombre('');
+            setTipoProduccion('Ganadería');
+
+            const [catsData, prof, estab, monedas, allEstabs] = await Promise.all([
+                dataService.getCategorias(activeId),
+                dataService.getProfile(),
+                dataService.getEstablecimientoActivo(),
+                dataService.getMonedasActivas(activeId),
+                dataService.getEstablecimientos()
+            ]);
+
+            setCats(catsData);
+            setEstabsList(allEstabs);
+            if (prof) {
+                setNombreUsuario(prof.username || '');
+                setAvatarEmoji(prof.avatar_url || '👨‍🌾');
+            }
+            if (estab) {
+                setNombre(estab.nombre);
+                // Aseguramos que el tipo coincida exactamente con las opciones o sea Ganadería
+                const tipoValidado = (estab.tipo_produccion || 'Ganadería') as TipoProduccion;
+                setTipoProduccion(tipoValidado);
+            }
+            if (monedas) {
+                setMonedasActivas(monedas);
+            }
+        } catch (e) {
+            console.error('Error cargando ajustes:', e);
+        } finally {
+            setLoadingData(false);
+        }
     };
 
-    useEffect(() => { void cargar(); }, []);
+    useEffect(() => { 
+        void cargar(); 
+        
+        const handleProfileUpdate = () => {
+            void cargar();
+        };
+        window.addEventListener('ruralit_profile_updated', handleProfileUpdate);
+        return () => window.removeEventListener('ruralit_profile_updated', handleProfileUpdate);
+    }, []);
 
     const logout = async () => {
-        if (confirm('¿Cerrar sesión? Se sincronizarán tus últimos cambios y se limpiará la memoria local.')) {
+        if (confirm('¿Cerrar sesión? Se limpiará la memoria local.')) {
             setSaving(true);
             try {
-                // 1. FORZAR Sincronización final antes de borrar nada
-                showToast('Sincronizando cambios finales...');
-                await syncService.syncNow();
-                
-                // 2. Cerrar sesión en Supabase
                 await supabase.auth.signOut();
-                
-                // 3. Limpiar base de datos local
-                await db.delete();
-                
-                // 4. Limpiar localStorage
-                localStorage.removeItem('ruralit_establecimientos');
-                localStorage.removeItem('activeEstDB');
+                localStorage.removeItem('activeEstDB_uuid');
                 localStorage.removeItem('ruralit_theme');
-                
-                showToast('Sesión cerrada y datos protegidos');
-                setTimeout(() => {
-                    window.location.href = '/';
-                }, 1000);
+                showToast('Sesión cerrada');
+                setTimeout(() => { window.location.href = '/'; }, 1000);
             } catch (error) {
-                console.error('Error al cerrar sesión:', error);
                 showToast('Error al cerrar sesión');
             } finally {
                 setSaving(false);
@@ -213,33 +251,33 @@ export function Ajustes({ user }: AjustesProps) {
         }
     };
 
-    const guardarNombre = async () => {
+    const guardarPerfil = async () => {
         setSaving(true);
         try {
-            await db.config.put({ clave: 'nombreEstablecimiento', valor: nombreEstab });
-            await db.config.put({ clave: 'nombreUsuario', valor: nombreUsuario });
-            await db.config.put({ clave: 'avatarUsuario', valor: avatarEmoji });
-            await db.config.put({ clave: 'tipoProduccion', valor: tipoProduccion });
-            
-            // Sincronizar con Supabase si está logueado
-            if (user) {
-                try {
-                    await syncService.updateProfile(nombreUsuario, monedasActivas[0] || 'UYU', avatarEmoji);
-                    // Sincronización completa para asegurar que el establecimiento se actualiza
-                    await syncService.syncEverything();
-                } catch (e) {
-                    console.error('Error sincronizando perfil:', e);
-                }
-            }
+            await dataService.updateProfile(nombreUsuario, avatarEmoji);
+            showToast('Perfil actualizado');
+        } catch (e) {
+            showToast('Error al guardar perfil');
+        } finally {
+            setSaving(false);
+        }
+    };
 
-            try {
-                const activeId = localStorage.getItem('activeEstDB') || 'RuralitDB';
-                const estabs = JSON.parse(localStorage.getItem('ruralit_establecimientos') || '[]');
-                const updated = estabs.map((e: any) => e.id === activeId ? { ...e, nombre: nombreEstab } : e);
-                localStorage.setItem('ruralit_establecimientos', JSON.stringify(updated));
-            } catch (e) { }
-            
-            showToast('Datos actualizados');
+    const guardarEstablecimiento = async () => {
+        setSaving(true);
+        const activeId = localStorage.getItem('activeEstDB_uuid');
+        if (!activeId) return;
+
+        try {
+            await dataService.updateEstablecimiento(activeId, {
+                nombre: nombreEstab,
+                tipo_produccion: tipoProduccion
+            });
+            showToast('Establecimiento actualizado');
+            // Recargamos los datos para asegurar sincronía
+            void cargar();
+        } catch (e) {
+            showToast('Error al guardar');
         } finally {
             setSaving(false);
         }
@@ -247,14 +285,22 @@ export function Ajustes({ user }: AjustesProps) {
 
     const handleSaveCat = async (data: CatForm) => {
         if (!data.nombre.trim()) return showToast('Escribí un nombre');
+        const activeId = localStorage.getItem('activeEstDB_uuid');
+        if (!activeId) return;
 
         if (showCatModal === 'edit' && editCatData) {
-            await db.categorias.update(editCatData.id!, { nombre: data.nombre.trim(), icono: data.icono });
+            await dataService.updateCategoria(String(editCatData.id), {
+                nombre: data.nombre.trim(),
+                icono: data.icono
+            });
             showToast('Categoría actualizada');
         } else {
-            await db.categorias.add({
-                nombre: data.nombre.trim(), tipo: data.tipo, icono: data.icono,
-                color: data.tipo === 'ingreso' ? '#16a34a' : '#dc2626', esPredefinida: false,
+            await dataService.addCategoria(activeId, {
+                nombre: data.nombre.trim(),
+                tipo: data.tipo,
+                icono: data.icono,
+                color: data.tipo === 'ingreso' ? '#16a34a' : '#dc2626',
+                esPredefinida: false
             });
             showToast('Categoría creada');
         }
@@ -263,51 +309,82 @@ export function Ajustes({ user }: AjustesProps) {
     };
 
     const handleSaveCur = async (selected: Moneda[]) => {
-        setMonedasActivas(selected);
-        await db.config.put({ clave: 'monedasActivas', valor: selected });
-        showToast('Divisas actualizadas');
-        setShowCurModal(false);
+        const activeId = localStorage.getItem('activeEstDB_uuid');
+        if (!activeId) return;
+        
+        setSaving(true);
+        try {
+            await dataService.updateMonedasActivas(activeId, selected);
+            setMonedasActivas(selected);
+            showToast('Divisas actualizadas');
+            setShowCurModal(false);
+            
+            const currentView = localStorage.getItem('ruralia_moneda_view') as Moneda;
+            if (!selected.includes(currentView)) {
+                localStorage.setItem('ruralia_moneda_view', selected[0]);
+                window.dispatchEvent(new CustomEvent('moneda_changed', { detail: selected[0] }));
+            }
+        } catch (e) {
+            showToast('Error al actualizar divisas');
+        } finally {
+            setSaving(false);
+        }
     };
 
     const eliminarCat = async (cat: Categoria) => {
-        const usos = await db.movimientos.where('categoriaId').equals(cat.id!).count();
-        if (usos > 0) return showToast(`Usada en ${usos} movimientos, no se puede eliminar`);
-        await db.categorias.delete(cat.id!);
-        showToast('Eliminada');
-        void cargar();
+        if (confirm('¿Deseas eliminar esta categoría?')) {
+            await dataService.deleteCategoria(String(cat.id || ''));
+            showToast('Eliminada');
+            void cargar();
+        }
     };
-
-    let estabsList = [{ id: 'RuralitDB', nombre: 'Mi Establecimiento' }];
-    try { estabsList = JSON.parse(localStorage.getItem('ruralit_establecimientos') || '[]'); } catch (e) { }
-    const activeEstId = localStorage.getItem('activeEstDB') || 'RuralitDB';
 
     const cambiarEstablecimiento = (id: string) => {
         if (id === activeEstId) return;
-        localStorage.setItem('activeEstDB', id);
-        window.location.reload();
+        dataService.clearCache();
+        localStorage.setItem('activeEstDB_uuid', id);
+        setActiveEstId(id);
+        void cargar();
     };
 
-    const crearNuevoEstablecimiento = () => {
+    const crearNuevoEstablecimiento = async () => {
         const nuevoNombre = prompt('Ingresá el nombre del nuevo establecimiento:');
         if (!nuevoNombre || !nuevoNombre.trim()) return;
 
-        const newId = 'RuralitDB_' + Date.now();
-        const nuevaLista = [...estabsList, { id: newId, nombre: nuevoNombre.trim() }];
-        localStorage.setItem('ruralit_establecimientos', JSON.stringify(nuevaLista));
-
-        localStorage.setItem('activeEstDB', newId);
-        window.location.reload();
+        setSaving(true);
+        try {
+            const data = await dataService.addEstablecimiento(nuevoNombre.trim());
+            dataService.clearCache();
+            localStorage.setItem('activeEstDB_uuid', String(data.id));
+            window.location.reload();
+        } catch (error) {
+            showToast('Error al crear');
+        } finally {
+            setSaving(false);
+        }
     };
 
-    const toggleTema = async () => {
+    const eliminarEstablecimiento = async (id: string, nombre: string) => {
+        if (id === activeEstId) return showToast('No puedes eliminar el activo');
+        if (!confirm(`¿Seguro que deseas eliminar "${nombre}"? Esta acción no se puede deshacer.`)) return;
+
+        setSaving(true);
+        try {
+            await dataService.deleteEstablecimiento(id);
+            showToast('Eliminado');
+            void cargar();
+        } catch (error) {
+            showToast('Error al eliminar');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const toggleTema = () => {
         const current = document.documentElement.getAttribute('data-theme') || 'light';
         const nuevo = current === 'light' ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', nuevo);
-        
-        // Guardamos en ambos lugares: localStorage para global y db.config para local
         localStorage.setItem('ruralit_theme', nuevo);
-        await db.config.put({ clave: 'tema', valor: nuevo });
-        
         showToast(`Modo ${nuevo === 'dark' ? 'oscuro' : 'claro'} activado`);
     };
 
@@ -404,7 +481,7 @@ export function Ajustes({ user }: AjustesProps) {
                                 </div>
                             )}
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                <button className="btn-primary" onClick={guardarNombre} disabled={saving} style={{ flex: 1 }}>
+                                <button className="btn-primary" onClick={guardarPerfil} disabled={saving} style={{ flex: 1 }}>
                                     {saving ? 'Guardando...' : 'Guardar Perfil'}
                                 </button>
                                 {user && (
@@ -478,14 +555,14 @@ export function Ajustes({ user }: AjustesProps) {
                                     className="btn-secondary" 
                                     style={{ fontSize: '12px', background: '#FFFFFF', color: '#1A1A1A', border: '1px solid #E5E7EB', padding: '10px 16px' }}
                                     onClick={async () => {
-                                        if(confirm('¿Deseas sincronizar las categorías sugeridas? Esto eliminará las categorías predefinidas que NO estés usando.')) {
+                                        if(confirm('¿Deseas combinar las categorías sugeridas? Esto agregará las categorías faltantes del nuevo rubro sin borrar tus registros actuales.')) {
                                             await inicializarCategorias(tipoProduccion, true);
-                                            showToast('Categorías sincronizadas');
+                                            showToast('Categorías combinadas correctamente');
                                             cargar();
                                         }
                                     }}
                                 >
-                                    Cargar categorías sugeridas
+                                    Combinar categorías sugeridas
                                 </button>
                             </div>
                         </div>
@@ -500,9 +577,9 @@ export function Ajustes({ user }: AjustesProps) {
                             <div className="settings-visual-grid">
                                 {estabsList.map(est => (
                                     <div
-                                        key={est.id}
-                                        onClick={() => cambiarEstablecimiento(est.id)}
-                                        className={`settings-visual-card ${est.id === activeEstId ? 'active' : ''}`}
+                                        key={String(est.id)}
+                                        onClick={() => cambiarEstablecimiento(String(est.id))}
+                                        className={`settings-visual-card ${String(est.id) === activeEstId ? 'active' : ''}`}
                                     >
                                         <div className="settings-visual-img">
                                             <Building2 size={32} color={est.id === activeEstId ? 'var(--green-main)' : 'var(--t3)'} strokeWidth={1.5} />
@@ -516,6 +593,14 @@ export function Ajustes({ user }: AjustesProps) {
                                             <h4>{est.nombre}</h4>
                                             <p>{est.id === activeEstId ? 'Activo actualmente' : 'Presiona para entrar'}</p>
                                         </div>
+                                        {est.id !== activeEstId && (
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); eliminarEstablecimiento(String(est.id), est.nombre); }}
+                                                style={{ position: 'absolute', top: '12px', right: '12px', background: 'var(--red-light)', color: 'var(--red-soft)', border: 'none', borderRadius: '50%', padding: '6px', cursor: 'pointer', display: 'flex' }}
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        )}
                                     </div>
                                 ))}
                                 <div
@@ -536,8 +621,10 @@ export function Ajustes({ user }: AjustesProps) {
                     </div>
 
                     <div className="settings-actions">
-                        <button className="btn-secondary">Cancelar</button>
-                        <button className="btn-primary" onClick={guardarNombre}>Guardar Cambios</button>
+                        <button className="btn-secondary" onClick={() => setActiveTab('perfil')}>Volver</button>
+                        <button className="btn-primary" onClick={guardarEstablecimiento} disabled={saving}>
+                            {saving ? 'Guardando...' : 'Guardar Cambios'}
+                        </button>
                     </div>
                 </div>
             );
@@ -747,9 +834,9 @@ export function Ajustes({ user }: AjustesProps) {
 
                 <div style={{ marginTop: '20px', padding: '0 8px', display: 'flex', gap: '12px' }}>
                     <button
-                        onClick={guardarNombre}
+                        onClick={guardarPerfil}
                         style={{ flex: 2, padding: '18px', borderRadius: '40px', background: 'var(--green-main)', color: 'white', border: 'none', fontSize: '15px', fontWeight: 700, cursor: 'pointer', boxShadow: 'var(--shadow-md)' }}>
-                        Guardar Cambios
+                        Guardar Perfil
                     </button>
                     {user && (
                         <button
@@ -765,6 +852,14 @@ export function Ajustes({ user }: AjustesProps) {
             </div>
         );
     };
+
+    if (loadingData) {
+        return (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg)' }}>
+                <Loader2 className="spinning" size={32} color="var(--green-main)" />
+            </div>
+        );
+    }
 
     if (isMobile && mobileView === 'menu') {
         return (
@@ -856,7 +951,7 @@ export function Ajustes({ user }: AjustesProps) {
                                             <ChevronRight size={16} color="var(--t3)" />
                                         </button>
                                     </div>
-                                    <button className="btn-primary" onClick={guardarNombre} disabled={saving} style={{ padding: '18px', borderRadius: '14px' }}>
+                                    <button className="btn-primary" onClick={guardarPerfil} disabled={saving} style={{ padding: '18px', borderRadius: '14px' }}>
                                         {saving ? 'Guardando...' : 'Actualizar Perfil'}
                                     </button>
                                 </div>
@@ -870,7 +965,7 @@ export function Ajustes({ user }: AjustesProps) {
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
                                         <input type="text" value={nombreEstab} onChange={e => setNombre(e.target.value)} placeholder="Nombre Comercial" style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px', background: 'var(--bg-input)', color: 'var(--t1)' }} />
-                                        <button className="btn-primary" onClick={guardarNombre} disabled={saving} style={{ padding: '18px', borderRadius: '14px' }}>
+                                        <button className="btn-primary" onClick={guardarEstablecimiento} disabled={saving} style={{ padding: '18px', borderRadius: '14px' }}>
                                             {saving ? 'Guardando...' : 'Guardar Nombre'}
                                         </button>
                                     </div>
@@ -895,7 +990,7 @@ export function Ajustes({ user }: AjustesProps) {
                                         </div>
                                         <button 
                                             className="btn-primary" 
-                                            onClick={guardarNombre}
+                                            onClick={guardarEstablecimiento}
                                             style={{ padding: '16px', borderRadius: '14px' }}
                                         >
                                             Guardar Rubro
@@ -925,15 +1020,15 @@ export function Ajustes({ user }: AjustesProps) {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                         {estabsList.map(est => (
                                             <div
-                                                key={est.id}
-                                                onClick={() => cambiarEstablecimiento(est.id)}
-                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', borderRadius: '16px', border: est.id === activeEstId ? '2px solid var(--green-main)' : '1px solid var(--border)', background: est.id === activeEstId ? 'var(--green-light)' : 'var(--bg-card)' }}
+                                                key={String(est.id)}
+                                                onClick={() => cambiarEstablecimiento(String(est.id))}
+                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', borderRadius: '16px', border: String(est.id) === activeEstId ? '2px solid var(--green-main)' : '1px solid var(--border)', background: String(est.id) === activeEstId ? 'var(--green-light)' : 'var(--bg-card)' }}
                                             >
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                                     <Building2 size={20} color={est.id === activeEstId ? 'var(--green-main)' : 'var(--t3)'} />
                                                     <span style={{ fontWeight: 700, color: 'var(--t1)' }}>{est.nombre}</span>
                                                 </div>
-                                                {est.id === activeEstId && <Check size={16} color="var(--green-main)" />}
+                                                {String(est.id) === activeEstId && <Check size={16} color="var(--green-main)" />}
                                             </div>
                                         ))}
                                         <button onClick={crearNuevoEstablecimiento} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '16px', borderRadius: '16px', border: '1px dashed var(--t3)', background: 'transparent', color: 'var(--t2)', fontWeight: 600, justifyContent: 'center' }}>

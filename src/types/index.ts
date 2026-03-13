@@ -5,7 +5,7 @@ export type Moneda = 'ARS' | 'USD' | 'EUR' | 'BRL' | 'UYU' | 'CLP' | 'COP' | 'PY
 
 
 export interface Categoria {
-    id?: number;
+    id?: number | string;
     nombre: string;
     tipo: TipoMovimiento;
     icono: string;
@@ -16,7 +16,7 @@ export interface Categoria {
 }
 
 export interface Movimiento {
-    id?: number;
+    id?: number | string;
     establecimientoId?: string; // UUID de Supabase
     tipo: TipoMovimiento;
     monto: number;
@@ -32,9 +32,11 @@ export interface Movimiento {
 
 // ─── Interfaces Futuras (Arquitectura) ──────────────────────────────────────────────────
 export interface Establecimiento {
-    id?: number;
+    id?: number | string;
     nombre: string;
     ubicacion?: string;
+    tipo_produccion?: string;
+    monedas_activas?: string[];
 }
 
 export interface Recordatorio {

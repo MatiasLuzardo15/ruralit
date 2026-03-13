@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import db from './db/database';
 import { Sidebar, BottomNav, type Tab } from './components/BottomNav';
 import { Toast } from './components/Toast';
 import { Inicio } from './pages/Inicio';
@@ -11,75 +9,52 @@ import { ModalSetup } from './components/ModalSetup';
 import { Login } from './pages/Login';
 import { User } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
-import { syncService } from './lib/sync';
+import { dataService } from './lib/dataService';
+import { Establecimiento } from './types';
 
 function App() {
     const [tab, setTab] = useState<Tab>('inicio');
     const [collapsed, setCollapsed] = useState(false);
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const [activeEstab, setActiveEstab] = useState<Establecimiento | null>(null);
+    const [showSetup, setShowSetup] = useState(false);
 
     // Cargar tema y sesión al iniciar la app
     useEffect(() => {
-        // Primero intentamos leer de localStorage para consistencia entre establecimientos
         const savedTheme = localStorage.getItem('ruralit_theme');
         if (savedTheme === 'dark') {
             document.documentElement.setAttribute('data-theme', 'dark');
-        } else if (savedTheme === 'light') {
-            document.documentElement.setAttribute('data-theme', 'light');
         } else {
-            // Si no hay en localStorage, probamos con IndexedDB (fallback legacy)
-            db.config.get('tema').then(t => {
-                if (t?.valor === 'dark') {
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                    localStorage.setItem('ruralit_theme', 'dark');
-                }
-            });
+            document.documentElement.setAttribute('data-theme', 'light');
         }
 
         // Escuchar cambios de sesión
-        supabase.auth.getSession().then(async ({ data: { session } }) => {
-            const newUser = session?.user ?? null;
-            setUser(newUser);
-            if (newUser) {
-                // PRIMERO: Bajar configuración (para evitar el popup de bienvenida)
-                await syncService.syncConfigOnly();
-                // SEGUNDO: El resto en segundo plano
-                syncService.syncEverything();
-            }
-            // Pequeño delay para que useLiveQuery se entere de los cambios en DB
-            setTimeout(() => setLoading(false), 300);
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setUser(session?.user ?? null);
+            setLoading(false);
         });
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            const newUser = session?.user ?? null;
-            setUser(newUser);
-            if (newUser) {
-                await syncService.syncConfigOnly();
-                syncService.syncEverything();
-            }
-            setTimeout(() => setLoading(false), 300);
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+            setLoading(false);
         });
 
         return () => subscription.unsubscribe();
     }, []);
 
-    // Verificar si falta configuración inicial
-    const tipoProduccion = useLiveQuery(() => db.config.get('tipoProduccion'), []);
-    const [showSetup, setShowSetup] = useState(false);
-
     useEffect(() => {
-        if (user && tipoProduccion === null) {
-            setShowSetup(true);
-        } else if (tipoProduccion) {
-            setShowSetup(false);
+        if (user) {
+            dataService.getEstablecimientoActivo().then(estab => {
+                setActiveEstab(estab);
+                if (!estab || !estab.tipo_produccion) {
+                    setShowSetup(true);
+                } else {
+                    setShowSetup(false);
+                }
+            });
         }
-    }, [tipoProduccion, user]);
-
-    const establecimiento = useLiveQuery(
-        () => db.config.get('nombreEstablecimiento').then(r => r?.valor ?? 'Mi Establecimiento'),
-        []
-    );
+    }, [user, tab]); // Re-check when user or tab changes
 
     if (loading) return null;
     if (!user) return <Login />;
@@ -89,7 +64,7 @@ function App() {
             <Sidebar 
                 activo={tab} 
                 onChange={setTab} 
-                establecimiento={establecimiento} 
+                establecimiento={activeEstab?.nombre || 'Mi Establecimiento'} 
                 collapsed={collapsed} 
                 setCollapsed={setCollapsed}
                 user={user}
@@ -102,7 +77,7 @@ function App() {
             </main>
             <BottomNav activo={tab} onChange={setTab} />
             <Toast />
-            {showSetup && <ModalSetup onComplete={() => setShowSetup(false)} initialName={establecimiento === 'Mi Establecimiento' ? '' : establecimiento} />}
+            {showSetup && <ModalSetup onComplete={() => { setShowSetup(false); window.location.reload(); }} initialName={activeEstab?.nombre === 'Mi Establecimiento' ? '' : activeEstab?.nombre} />}
         </div>
     );
 }

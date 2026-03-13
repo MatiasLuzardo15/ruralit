@@ -1,22 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import { ChevronLeft, ChevronRight, ChevronDown, X, BarChart2, TrendingUp, TrendingDown, Divide, AlertTriangle, CheckCircle, Info, Calendar, Download, Printer } from 'lucide-react';
-import db from '../db/database';
 import type { Movimiento, Categoria, TipoMovimiento } from '../types';
 import { formatMonto, formatMesLabel, calcularBalance, formatFechaCorta, getTrimestreInfo } from '../utils/helpers';
 import { TopBar } from '../components/TopBar';
 import { ModalRegistrar } from '../components/ModalRegistrar';
+import { dataService } from '../lib/dataService';
 import { useMonedas } from '../utils/useMoneda';
 
 const PAL_E = ['#cddc39', '#8bc34a', '#4caf50', '#009688'];
 const PAL_S = ['#f44336', '#ff9800', '#ff5722', '#795548'];
 
-interface CatItem { cat: Categoria; monto: number; pct: number; }
+interface CatItem { cat: Partial<Categoria> & { id: string | number }; monto: number; pct: number; }
 
 // ── Horizontal category bars ──────────────
-function HorzBars({ items, palette, onCatClick }: { items: CatItem[]; palette: string[]; onCatClick: (cat: Categoria) => void }) {
+function HorzBars({ items, palette, onCatClick }: { items: CatItem[]; palette: string[]; onCatClick: (cat: any) => void }) {
     const { moneda } = useMonedas();
     if (!items.length) return <p style={{ fontSize: '14px', color: 'var(--t3)', textAlign: 'center', padding: '24px 0' }}>Faltan datos para mostrar.</p>;
 
@@ -211,7 +210,7 @@ interface AnalysisData {
     movs: Movimiento[];
     type: 'mensual' | 'trimestral' | 'anual';
     moneda: string;
-    catMap: Map<number, Categoria>;
+    catMap: Map<string, Categoria>;
     periodLabel: string;
 }
 
@@ -305,12 +304,12 @@ function AnalysisSection({ bal, prevBal, itemsE, itemsS, movs, type, moneda, cat
                         <div>
                             <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 600, marginBottom: '4px' }}>Top Gasto</p>
                             <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)' }}>{topGasto ? formatMonto(topGasto.monto, moneda) : '-'}</p>
-                            <p style={{ fontSize: '12px', color: 'var(--red-soft)', fontWeight: 600 }}>{topGasto ? catMap.get(topGasto.categoriaId)?.nombre : '-'}</p>
+                            <p style={{ fontSize: '12px', color: 'var(--red-soft)', fontWeight: 600 }}>{topGasto ? catMap.get(String(topGasto.categoriaId))?.nombre : '-'}</p>
                         </div>
                         <div>
                             <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 600, marginBottom: '4px' }}>Top Ingreso</p>
                             <p style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)' }}>{topIngreso ? formatMonto(topIngreso.monto, moneda) : '-'}</p>
-                            <p style={{ fontSize: '12px', color: 'var(--green-main)', fontWeight: 600 }}>{topIngreso ? catMap.get(topIngreso.categoriaId)?.nombre : '-'}</p>
+                            <p style={{ fontSize: '12px', color: 'var(--green-main)', fontWeight: 600 }}>{topIngreso ? catMap.get(String(topIngreso.categoriaId))?.nombre : '-'}</p>
                         </div>
                         <div>
                             <p style={{ fontSize: '12px', color: 'var(--t3)', fontWeight: 600, marginBottom: '4px' }}>Margen Libre</p>
@@ -383,8 +382,8 @@ export function Balance() {
     const [editMov, setEditMov] = useState<{ mov: Movimiento; tipo: TipoMovimiento } | null>(null);
     const [key, setKey] = useState(0);
 
-    const categorias = useLiveQuery(() => db.categorias.toArray(), []) ?? [];
-    const catMap = new Map<number, Categoria>(categorias.map(c => [c.id!, c]));
+    const [categorias, setCats] = useState<Categoria[]>([]);
+    const catMap = new Map<string, Categoria>(categorias.map(c => [String(c.id), c]));
     const { moneda, monedasActivas, changeMoneda } = useMonedas();
 
     const CurrencyTabs = () => (
@@ -408,29 +407,38 @@ export function Balance() {
     );
 
     const cargarData = useCallback(async () => {
+        const activeId = localStorage.getItem('activeEstDB_uuid');
+        if (!activeId) return;
+
+        // Load categories if not loaded
+        if (categorias.length === 0) {
+            const c = await dataService.getCategorias(activeId);
+            setCats(c);
+        }
+
         if (vista === 'mensual') {
             const ini = new Date(anio, mes, 1).toISOString().split('T')[0];
             const fin = new Date(anio, mes + 1, 0).toISOString().split('T')[0];
-            const mesRows = await db.movimientos.where('fecha').between(ini, fin, true, true).toArray();
+            const mesRows = await dataService.getMovimientos(activeId, { from: ini, to: fin });
             setMovsMes(mesRows);
 
             let pm = mes - 1, pa = anio;
             if (pm < 0) { pm = 11; pa--; }
             const pIni = new Date(pa, pm, 1).toISOString().split('T')[0];
             const pFin = new Date(pa, pm + 1, 0).toISOString().split('T')[0];
-            const prevRows = await db.movimientos.where('fecha').between(pIni, pFin, true, true).toArray();
+            const prevRows = await dataService.getMovimientos(activeId, { from: pIni, to: pFin });
             setMovsPrev(prevRows);
         } else if (vista === 'trimestral') {
             const { inicio, fin } = getTrimestreInfo(new Date(anio, mes, 1));
-            const trimRows = await db.movimientos.where('fecha').between(inicio, fin, true, true).toArray();
+            const trimRows = await dataService.getMovimientos(activeId, { from: inicio, to: fin });
             setMovsTrim(trimRows);
         } else {
             const ini = new Date(anio, 0, 1).toISOString().split('T')[0];
             const fin = new Date(anio, 11, 31).toISOString().split('T')[0];
-            const anioRows = await db.movimientos.where('fecha').between(ini, fin, true, true).toArray();
+            const anioRows = await dataService.getMovimientos(activeId, { from: ini, to: fin });
             setMovsAnio(anioRows);
         }
-    }, [anio, mes, vista, key]);
+    }, [anio, mes, vista, key, categorias.length]);
 
     useEffect(() => { void cargarData(); }, [cargarData]);
 
@@ -438,16 +446,16 @@ export function Balance() {
     const navTrim = (d: -1 | 1) => { let m = mes + (d * 3), a = anio; if (m < 0) { m = 9; a--; } if (m > 11) { m = 0; a++; } setMes(m); setAnio(a); };
 
     const buildCatItems = (tipo: 'ingreso' | 'gasto', dataset: Movimiento[]): CatItem[] => {
-        const fil = dataset.filter(m => m.tipo === tipo), total = fil.reduce((s, m) => s + m.monto, 0);
-        const bc = new Map<number, number>();
-        fil.forEach(m => bc.set(m.categoriaId, (bc.get(m.categoriaId) ?? 0) + m.monto));
-        return [...bc.entries()].map(([id, t]) => ({
-            cat: catMap.get(id) ?? { id, nombre: 'Sin cat.', tipo, icono: '📦', esPredefinida: false, color: '' },
+        const fil = dataset.filter(m => m.tipo === tipo && (m.moneda || 'UYU') === moneda), total = fil.reduce((s, m) => s + m.monto, 0);
+        const dict = new Map<string, number>();
+        fil.forEach(m => dict.set(String(m.categoriaId), (dict.get(String(m.categoriaId)) ?? 0) + m.monto));
+        return [...dict.entries()].map(([id, t]) => ({
+            cat: (catMap.get(id) as any) ?? { id, nombre: 'Sin cat.', tipo, icono: '📦', esPredefinida: false, color: '' },
             monto: t, pct: total > 0 ? (t / total) * 100 : 0,
         })).sort((a, b) => b.monto - a.monto);
     };
 
-    const openCat = (cat: Categoria, dataset: Movimiento[]) => setCatModal({ cat, movs: dataset.filter(m => m.categoriaId === cat.id) });
+    const openCat = (cat: Categoria, dataset: Movimiento[]) => setCatModal({ cat, movs: dataset.filter(m => String(m.categoriaId) === String(cat.id)) });
 
     const topbarActions = (
         <div className="balance-selectors-wrap">

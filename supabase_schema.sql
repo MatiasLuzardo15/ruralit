@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS public.establecimientos (
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   nombre TEXT NOT NULL,
   tipo_produccion TEXT NOT NULL,
+  monedas_activas TEXT[] DEFAULT '{UYU}',
   creado_en TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
