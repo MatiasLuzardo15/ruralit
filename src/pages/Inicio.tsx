@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import db from '../db/database';
 import type { Movimiento, Categoria, TipoMovimiento } from '../types';
-import { formatMonto, formatFechaCorta, formatMesLabel, parseRegistroRapido, hoy } from '../utils/helpers';
+import { formatMonto, formatFechaCorta, formatMesLabel, parseRegistroRapido, hoy, MONEDAS } from '../utils/helpers';
 import {  } from 'lucide-react';
 import { ModalRegistrar } from '../components/ModalRegistrar';
 import { TopBar } from '../components/TopBar';
@@ -17,7 +17,7 @@ export function Inicio() {
     const [movEditar, setMovEd] = useState<Movimiento | undefined>();
     const [ultimos, setUltimos] = useState<Movimiento[]>([]);
     const [key, setKey] = useState(0);
-    const { moneda } = useMonedas();
+    const { moneda, monedasActivas, changeMoneda } = useMonedas();
     const [textoRapido, setTextoRapido] = useState('');
 
     const categorias = useLiveQuery(() => db.categorias.toArray(), []) ?? [];
@@ -123,16 +123,7 @@ export function Inicio() {
                 title="Mi Establecimiento"
                 heading={`${saludo}, ${nombreUsuario}`}
                 subtitle={`Resumen financiero al ${formatFechaCorta(new Date().toISOString().split('T')[0])}`}
-                actions={
-                    <button 
-                        onClick={() => window.print()}
-                        className="nav-arrow" 
-                        style={{ background: 'var(--blue-light)', color: 'var(--blue-main)', borderRadius: '12px', padding: '10px 14px' }} 
-                        title="Imprimir Resumen"
-                    >
-                        <Printer size={18} />
-                    </button>
-                }
+                hideCurrencyToggle
             />
 
             <div className="page-content" style={{ paddingBottom: 80 }}>
@@ -176,7 +167,25 @@ export function Inicio() {
                 <div style={{ marginBottom: 32 }}>
                     <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--t1)', letterSpacing: '-0.5px', marginBottom: 20 }}>Balance Mensual <span style={{ color: 'var(--t3)', fontSize: 14, fontWeight: 600 }}>({mesLabel})</span></h2>
 
-                    <div className="premium-card" style={{ padding: '0', overflow: 'hidden' }}>
+                    <div className="premium-card" style={{ padding: '0', overflow: 'hidden', position: 'relative' }}>
+                        {monedasActivas.length > 1 && (
+                            <div style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 10, background: 'var(--bg-input)', borderRadius: '10px', display: 'flex', padding: '3px', border: '1px solid var(--border-sm)' }}>
+                                {monedasActivas.map(m => (
+                                    <button 
+                                        key={m} 
+                                        onClick={() => changeMoneda(m)} 
+                                        style={{ 
+                                            padding: '4px 10px', borderRadius: '7px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
+                                            background: m === moneda ? 'var(--white)' : 'transparent',
+                                            color: m === moneda ? 'var(--t1)' : 'var(--t3)',
+                                            border: 'none',
+                                            boxShadow: m === moneda ? 'var(--shadow-xs)' : 'none'
+                                        }}>
+                                        {m}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                         <div className="balance-grid">
                             {/* SALDO TOTAL */}
                             <div className="res-mobile-stack balance-item-main">
@@ -237,102 +246,7 @@ export function Inicio() {
                         </div>
                     </div>
                 </div>
-                                {/* ── MONITOR DE LIQUIDEZ (DISPONIBILIDAD A FIN DE PERIODO) ── */}
-                {(() => {
-                    const todayStr = hoy();
-                    
-                    // Lógica de Liquidez: Separar por fecha (Pasado/Hoy vs Futuro)
-                    const movimientosPasadoHoy = mesActual.filter(m => m.fecha <= todayStr);
-                    const movimientosFuturos = mesActual.filter(m => m.fecha > todayStr);
-
-                    const saldoHoy = movimientosPasadoHoy.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + m.monto, 0) - 
-                                     movimientosPasadoHoy.filter(m => m.tipo === 'gasto').reduce((s, m) => s + m.monto, 0);
-                    
-                    const cobrosPendientes = movimientosFuturos.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + m.monto, 0);
-                    const pagosPendientes = movimientosFuturos.filter(m => m.tipo === 'gasto').reduce((s, m) => s + m.monto, 0);
-                    
-                    const cajaProyectada = saldoHoy + cobrosPendientes - pagosPendientes;
-                    
-                    // Indicador de "Reloj": Si los cobros pendientes son > 50% de la caja final, alertar sobre liquidez comprometida
-                    const muchaDependenciaCobros = cobrosPendientes > (Math.abs(cajaProyectada) * 0.5) && cobrosPendientes > 0;
-
-                    return (
-                        <div style={{ marginBottom: 40 }}>
-                            <div className="premium-card" style={{ border: '1px solid var(--border-rgba)', background: 'var(--bg-card)', padding: '24px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
-                                    <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--green-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-rgba)' }}>
-                                        <Wallet size={16} color="var(--green-main)" />
-                                    </div>
-                                    <div>
-                                        <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--t1)', marginBottom: 0 }}>Disponibilidad a Fin de Mes</h3>
-                                        <p style={{ fontSize: 11, color: 'var(--t3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monitor de Liquidez</p>
-                                    </div>
-                                </div>
-
-                                <div className="res-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px', alignItems: 'center' }}>
-                                    
-                                    {/* PRINCIPAL: CAJA PROYECTADA */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                        <p style={{ fontSize: 13, color: 'var(--t3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Caja Proyectada</p>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                            <h4 className="premium-amount" style={{ fontSize: 38, color: cajaProyectada < 0 ? 'var(--red-soft)' : '#064e3b', letterSpacing: '-1.5px', marginBottom: 0, lineHeight: 1 }}>
-                                                {formatMonto(Math.abs(cajaProyectada), moneda)}
-                                            </h4>
-                                            {muchaDependenciaCobros && (
-                                                <div title="Gran parte del saldo depende de cobros pendientes" style={{ padding: '4px', background: 'var(--red-light)', borderRadius: '50%', display: 'flex' }}>
-                                                    <Clock size={16} color="var(--red-soft)" />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div style={{ marginTop: 8, padding: '12px 16px', background: cajaProyectada >= 0 ? '#f0fdf4' : 'var(--red-light)', borderRadius: '12px', border: '1px solid var(--border-rgba)' }}>
-                                            <p style={{ fontSize: 13, color: cajaProyectada >= 0 ? '#166534' : 'var(--red-soft)', fontWeight: 500, lineHeight: 1.4, margin: 0 }}>
-                                                {cajaProyectada >= 0 
-                                                    ? 'Cuentas con liquidez suficiente para cubrir tus compromisos registrados.'
-                                                    : 'Atención: Los registros pendientes superan tu disponibilidad actual.'}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* DESGLOSE DE HITOS */}
-                                    <div style={{ background: 'var(--bg-input)', padding: '24px', borderRadius: '20px', border: '1px solid var(--border-rgba)' }}>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--t3)' }}></div>
-                                                    <span style={{ fontSize: 12, color: 'var(--t2)', fontWeight: 600 }}>Saldo Hoy</span>
-                                                </div>
-                                                <span style={{ fontSize: 13, fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--t1)' }}>{formatMonto(saldoHoy, moneda)}</span>
-                                            </div>
-                                            
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green-main)' }}></div>
-                                                    <span style={{ fontSize: 12, color: 'var(--t2)', fontWeight: 600 }}>(+) Por Cobrar</span>
-                                                </div>
-                                                <span style={{ fontSize: 13, fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--green-main)' }}>{formatMonto(cobrosPendientes, moneda)}</span>
-                                            </div>
-
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--red-soft)' }}></div>
-                                                    <span style={{ fontSize: 12, color: 'var(--t2)', fontWeight: 600 }}>(-) Por Pagar</span>
-                                                </div>
-                                                <span style={{ fontSize: 13, fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--red-soft)' }}>{formatMonto(pagosPendientes, moneda)}</span>
-                                            </div>
-
-                                            <div style={{ height: '1px', background: 'var(--border-rgba)', margin: '4px 0' }}></div>
-                                            
-                                            <p style={{ fontSize: 11, color: 'var(--t3)', fontWeight: 500, textAlign: 'center', margin: 0, fontStyle: 'italic' }}>
-                                                Basado en tus registros de cobros y pagos pendientes para este periodo.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    );
-                })()}
-
+                
                 {/* ── ÚLTIMOS REGISTROS (NIVEL 3) ── */}
                 <div>
                     <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--t1)', letterSpacing: '-0.5px', marginBottom: 16 }}>Movimientos Recientes</h2>

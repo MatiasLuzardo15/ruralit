@@ -7,7 +7,7 @@ import db from '../db/database';
 
 export const MONEDAS = {
     ARS: { simbolo: '$', label: 'Peso Arg.', flag: '🇦🇷' },
-    UYU: { simbolo: '$U', label: 'Peso Uru.', flag: '🇺🇾' },
+    UYU: { simbolo: 'UYU', label: 'Peso Uru.', flag: '🇺🇾' },
     CLP: { simbolo: '$', label: 'Peso Chi.', flag: '🇨🇱' },
     COP: { simbolo: '$', label: 'Peso Col.', flag: '🇨🇴' },
     PYG: { simbolo: '₲', label: 'Guaraní', flag: '🇵🇾' },

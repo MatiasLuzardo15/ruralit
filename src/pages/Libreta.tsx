@@ -122,7 +122,7 @@ export function Libreta() {
                     </div>
 
                     {/* SISTEMA DE FILTROS MODERNOS */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: 'var(--bg-card)', marginTop: '8px' }}>
+                    <div className="no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: 'var(--bg-card)', marginTop: '8px' }}>
                         <div style={{ position: 'relative' }}>
                             <label style={{ position: 'absolute', top: '-8px', left: '12px', background: 'var(--bg-card)', padding: '0 4px', fontSize: '11px', fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase' }}>Búsqueda Rápida</label>
                             <Search size={16} strokeWidth={2.5} style={{ position: 'absolute', top: '16px', left: '16px', color: 'var(--t3)' }} />
@@ -153,7 +153,7 @@ export function Libreta() {
 
                     {/* EXPORT ROW */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-sm)', paddingBottom: '16px' }}>
-                        <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--t2)', display: 'flex', alignItems: 'center', gap: '8px' }}><Filter size={16} /> Mostrando {filtrados.length} resultados</p>
+                        <p className="no-print" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--t2)', display: 'flex', alignItems: 'center', gap: '8px' }}><Filter size={16} /> Mostrando {filtrados.length} resultados</p>
                         <div style={{ display: 'flex', gap: '8px' }}>
                             <button
                                 onClick={() => {
