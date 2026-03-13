@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Building2, Check, ArrowRight, TrendingUp, Milk, Sprout, LayoutGrid } from 'lucide-react';
+import { Building2, Check, ArrowRight, TrendingUp, Milk, Sprout, LayoutGrid, Settings2, User } from 'lucide-react';
 import db, { type TipoProduccion, inicializarCategorias } from '../db/database';
 import { showToast } from './Toast';
 
@@ -16,10 +16,12 @@ export function ModalSetup({ onComplete, initialName = '' }: Props) {
     const [loading, setLoading] = useState(false);
 
     const tipos = [
-        { id: 'Ganadería', label: 'Ganadería', icon: TrendingUp, desc: 'Cría, recría o engorde de animales.' },
-        { id: 'Lechería', label: 'Lechería', icon: Milk, desc: 'Producción de leche y derivados.' },
+        { id: 'Ganadería', label: 'Ganadería', icon: TrendingUp, desc: 'Cría y engorde de animales.' },
+        { id: 'Lechería', label: 'Lechería', icon: Milk, desc: 'Producción de leche y tambo.' },
         { id: 'Agricultura', label: 'Agricultura', icon: Sprout, desc: 'Cultivos, granos y forrajes.' },
-        { id: 'Mixto', label: 'Mixto', icon: LayoutGrid, desc: 'Combinación de varios rubros.' },
+        { id: 'Contratista', label: 'Servicios', icon: Settings2, desc: 'Maquinaria y servicios rurales.' },
+        { id: 'Ovina', label: 'Ovina', icon: User, desc: 'Producción de lana y corderos.' },
+        { id: 'Mixto', label: 'Mixto', icon: LayoutGrid, desc: 'Varios rubros (Ganadería + Agro).' },
     ];
 
     const finalizar = async () => {
@@ -81,21 +83,25 @@ export function ModalSetup({ onComplete, initialName = '' }: Props) {
                             <p style={{ fontSize: '15px', color: 'var(--t3)', lineHeight: 1.5 }}>Esto nos permite precargar las categorías más útiles para tu caso.</p>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginTop: '10px' }}>
+                        <div className="custom-scroll" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginTop: '10px', maxHeight: '45vh', overflowY: 'auto', paddingRight: '8px' }}>
                             {tipos.map(t => {
                                 const selected = tipo === t.id;
                                 return (
                                     <button 
                                         key={t.id}
                                         onClick={() => setTipo(t.id as TipoProduccion)}
-                                        style={{ padding: '20px 16px', borderRadius: '20px', border: selected ? '2px solid var(--green-main)' : '1px solid var(--border-sm)', background: selected ? 'var(--green-light)' : 'var(--white)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', cursor: 'pointer', transition: 'all 0.2s', textAlign: 'center' }}
+                                        style={{ padding: '16px 12px', borderRadius: '20px', border: selected ? '2px solid var(--green-main)' : '1px solid var(--border-sm)', background: selected ? 'var(--green-light)' : 'var(--white)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', textAlign: 'center', position: 'relative' }}
                                     >
-                                        <t.icon size={24} color={selected ? 'var(--green-main)' : 'var(--t3)'} />
-                                        <div>
-                                            <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--t1)', marginBottom: '4px' }}>{t.label}</p>
-                                            <p style={{ fontSize: '11px', color: 'var(--t3)', lineHeight: 1.2 }}>{t.desc}</p>
+                                        <t.icon size={22} color={selected ? 'var(--green-main)' : 'var(--t3)'} />
+                                        <div style={{ minWidth: 0 }}>
+                                            <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--t1)', marginBottom: '2px' }}>{t.label}</p>
+                                            <p style={{ fontSize: '10px', color: 'var(--t3)', lineHeight: 1.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.desc}</p>
                                         </div>
-                                        {selected && <Check size={16} color="var(--green-main)" style={{ position: 'absolute', top: '12px', right: '12px' }} />}
+                                        {selected && (
+                                            <div style={{ position: 'absolute', top: '8px', right: '8px', background: 'var(--green-main)', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <Check size={10} color="white" strokeWidth={4} />
+                                            </div>
+                                        )}
                                     </button>
                                 );
                             })}

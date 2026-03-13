@@ -312,16 +312,16 @@ export function Ajustes() {
                             <p>Define el rubro principal para sugerir categorías apropiadas.</p>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px' }}>
-                                {(['Ganadería', 'Lechería', 'Agricultura', 'Mixto'] as TipoProduccion[]).map(t => (
-                                    <button
-                                        key={t}
-                                        onClick={() => setTipoProduccion(t)}
-                                        style={{ padding: '12px', borderRadius: '12px', border: tipoProduccion === t ? '2px solid var(--green-main)' : '1px solid var(--border)', background: tipoProduccion === t ? 'var(--green-light)' : 'var(--white)', color: 'var(--t1)', fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
-                                    >
-                                        {t}
-                                    </button>
-                                ))}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' }}>
+                                {(['Ganadería', 'Lechería', 'Agricultura', 'Contratista', 'Ovina', 'Mixto'] as TipoProduccion[]).map(t => (
+                                     <button
+                                         key={t}
+                                         onClick={() => setTipoProduccion(t)}
+                                         style={{ padding: '12px 8px', borderRadius: '12px', border: tipoProduccion === t ? '2px solid var(--green-main)' : '1px solid var(--border)', background: tipoProduccion === t ? 'var(--green-light)' : 'var(--white)', color: 'var(--t1)', fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+                                     >
+                                         {t === 'Contratista' ? 'Servicios' : t}
+                                     </button>
+                                 ))}
                             </div>
                             <button 
                                 className="btn-secondary" 

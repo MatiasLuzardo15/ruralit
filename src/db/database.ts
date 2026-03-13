@@ -9,47 +9,107 @@ if (!localStorage.getItem('ruralit_establecimientos')) {
 
 // ─── Tipos de Producción y Categorías ──────────────────────────────
 
-export type TipoProduccion = 'Ganadería' | 'Lechería' | 'Agricultura' | 'Mixto';
+export type TipoProduccion = 'Ganadería' | 'Lechería' | 'Agricultura' | 'Contratista' | 'Ovina' | 'Mixto';
 
 export const CATEGORIAS_POR_TIPO: Record<TipoProduccion, Omit<Categoria, 'id'>[]> = {
     'Ganadería': [
-        { nombre: 'Compra de animales', tipo: 'gasto', icono: '🐄', color: '#4E342E', esPredefinida: true },
-        { nombre: 'Sanidad / Veterinaria', tipo: 'gasto', icono: '💉', color: '#AD1457', esPredefinida: true },
-        { nombre: 'Alimentación / Ración', tipo: 'gasto', icono: '🌾', color: '#E65100', esPredefinida: true },
-        { nombre: 'Personal / Jornales', tipo: 'gasto', icono: '👷', color: '#6A1B9A', esPredefinida: true },
-        { nombre: 'Venta de animales', tipo: 'ingreso', icono: '🐄', color: '#2E7D32', esPredefinida: true },
-        { nombre: 'Lana / Cueros', tipo: 'ingreso', icono: '🦙', color: '#795548', esPredefinida: true },
+        // Entradas
+        { nombre: 'Venta de hacienda', tipo: 'ingreso', icono: '🐄', color: '#2E7D32', esPredefinida: true },
+        { nombre: 'Venta de terneros', tipo: 'ingreso', icono: '🐂', color: '#2E7D32', esPredefinida: true },
+        { nombre: 'Venta de vacas', tipo: 'ingreso', icono: '🐄', color: '#2E7D32', esPredefinida: true },
+        { nombre: 'Venta de toros', tipo: 'ingreso', icono: '🐃', color: '#2E7D32', esPredefinida: true },
+        { nombre: 'Venta de novillos', tipo: 'ingreso', icono: '🐄', color: '#2E7D32', esPredefinida: true },
+        { nombre: 'Venta de lana', tipo: 'ingreso', icono: '🧶', color: '#795548', esPredefinida: true },
+        { nombre: 'Arrendamiento de campo', tipo: 'ingreso', icono: '🌾', color: '#1565C0', esPredefinida: true },
+        { nombre: 'Servicios ganaderos', tipo: 'ingreso', icono: '🤝', color: '#F9A825', esPredefinida: true },
+        // Salidas
+        { nombre: 'Alimentación / ración', tipo: 'gasto', icono: '🌾', color: '#E65100', esPredefinida: true },
+        { nombre: 'Veterinaria', tipo: 'gasto', icono: '💉', color: '#AD1457', esPredefinida: true },
+        { nombre: 'Compra de ganado', tipo: 'gasto', icono: '🐄', color: '#4E342E', esPredefinida: true },
+        { nombre: 'Combustible', tipo: 'gasto', icono: '🚜', color: '#455A64', esPredefinida: true },
+        { nombre: 'Mano de obra', tipo: 'gasto', icono: '👷', color: '#6A1B9A', esPredefinida: true },
+        { nombre: 'Alambrados / Corrales', tipo: 'gasto', icono: '🚧', color: '#37474F', esPredefinida: true },
+        { nombre: 'Impuestos', tipo: 'gasto', icono: '📄', color: '#546E7A', esPredefinida: true },
+        { nombre: 'Otros gastos', tipo: 'gasto', icono: '📦', color: '#795548', esPredefinida: true },
     ],
     'Lechería': [
-        { nombre: 'Insumos Tambo', tipo: 'gasto', icono: '🪣', color: '#1976D2', esPredefinida: true },
-        { nombre: 'Sanidad / Inseminación', tipo: 'gasto', icono: '💉', color: '#AD1457', esPredefinida: true },
-        { nombre: 'Alimentación / Concentrados', tipo: 'gasto', icono: '🌾', color: '#E65100', esPredefinida: true },
-        { nombre: 'Electricidad / Energía', tipo: 'gasto', icono: '💡', color: '#FBC02D', esPredefinida: true },
-        { nombre: 'Venta de Leche', tipo: 'ingreso', icono: '🥛', color: '#1565C0', esPredefinida: true },
-        { nombre: 'Venta de animales', tipo: 'ingreso', icono: '🐄', color: '#2E7D32', esPredefinida: true },
+        // Entradas
+        { nombre: 'Venta de leche', tipo: 'ingreso', icono: '🥛', color: '#1565C0', esPredefinida: true },
+        { nombre: 'Bonificaciones industria', tipo: 'ingreso', icono: '💰', color: '#1565C0', esPredefinida: true },
+        { nombre: 'Venta de terneros', tipo: 'ingreso', icono: '🐂', color: '#1565C0', esPredefinida: true },
+        { nombre: 'Venta de vacas descarte', tipo: 'ingreso', icono: '🐄', color: '#1565C0', esPredefinida: true },
+        // Salidas
+        { nombre: 'Alimentación / ración', tipo: 'gasto', icono: '🌾', color: '#E65100', esPredefinida: true },
+        { nombre: 'Veterinaria', tipo: 'gasto', icono: '💉', color: '#AD1457', esPredefinida: true },
+        { nombre: 'Combustible', tipo: 'gasto', icono: '🚜', color: '#455A64', esPredefinida: true },
+        { nombre: 'Mantenimiento sala ordeñe', tipo: 'gasto', icono: '🔧', color: '#1E88E5', esPredefinida: true },
+        { nombre: 'Mano de obra', tipo: 'gasto', icono: '👷', color: '#6A1B9A', esPredefinida: true },
+        { nombre: 'Electricidad', tipo: 'gasto', icono: '💡', color: '#FBC02D', esPredefinida: true },
+        { nombre: 'Otros gastos', tipo: 'gasto', icono: '📦', color: '#795548', esPredefinida: true },
     ],
     'Agricultura': [
+        // Entradas
+        { nombre: 'Venta de granos', tipo: 'ingreso', icono: '🌾', color: '#F9A825', esPredefinida: true },
+        { nombre: 'Venta de soja', tipo: 'ingreso', icono: '🫘', color: '#F9A825', esPredefinida: true },
+        { nombre: 'Venta de maíz', tipo: 'ingreso', icono: '🌽', color: '#F9A825', esPredefinida: true },
+        { nombre: 'Servicios agrícolas', tipo: 'ingreso', icono: '🚜', color: '#F9A825', esPredefinida: true },
+        // Salidas
         { nombre: 'Semillas', tipo: 'gasto', icono: '🌱', color: '#558B2F', esPredefinida: true },
         { nombre: 'Fertilizantes / Químicos', tipo: 'gasto', icono: '🧪', color: '#00796B', esPredefinida: true },
+        { nombre: 'Combustible', tipo: 'gasto', icono: '🚜', color: '#455A64', esPredefinida: true },
+        { nombre: 'Reparación de maquinaria', tipo: 'gasto', icono: '🔧', color: '#37474F', esPredefinida: true },
+        { nombre: 'Mano de obra', tipo: 'gasto', icono: '👷', color: '#6A1B9A', esPredefinida: true },
         { nombre: 'Cosecha / Fletes', tipo: 'gasto', icono: '🚚', color: '#455A64', esPredefinida: true },
-        { nombre: 'Reparaciones Maquinaria', tipo: 'gasto', icono: '🔧', color: '#37474F', esPredefinida: true },
-        { nombre: 'Venta de Granos', tipo: 'ingreso', icono: '🌾', color: '#F9A825', esPredefinida: true },
-        { nombre: 'Venta de Forraje', tipo: 'ingreso', icono: '🌿', color: '#558B2F', esPredefinida: true },
+        { nombre: 'Otros gastos', tipo: 'gasto', icono: '📦', color: '#795548', esPredefinida: true },
     ],
-    'Mixto': [] // Se llenará con una mezcla o permitirá elegir
+    'Contratista': [
+        // Entradas
+        { nombre: 'Servicio de siembra', tipo: 'ingreso', icono: '🌱', color: '#1E88E5', esPredefinida: true },
+        { nombre: 'Servicio de cosecha', tipo: 'ingreso', icono: '🚜', color: '#1E88E5', esPredefinida: true },
+        { nombre: 'Servicio de fumigación', tipo: 'ingreso', icono: '🧪', color: '#1E88E5', esPredefinida: true },
+        { nombre: 'Servicios de maquinaria', tipo: 'ingreso', icono: '🔧', color: '#1E88E5', esPredefinida: true },
+        // Salidas
+        { nombre: 'Combustible', tipo: 'gasto', icono: '🚜', color: '#455A64', esPredefinida: true },
+        { nombre: 'Reparación de maquinaria', tipo: 'gasto', icono: '🔧', color: '#37474F', esPredefinida: true },
+        { nombre: 'Repuestos', tipo: 'gasto', icono: '🔩', color: '#37474F', esPredefinida: true },
+        { nombre: 'Mano de obra', tipo: 'gasto', icono: '👷', color: '#6A1B9A', esPredefinida: true },
+        { nombre: 'Seguros', tipo: 'gasto', icono: '🛡️', color: '#546E7A', esPredefinida: true },
+        { nombre: 'Otros gastos', tipo: 'gasto', icono: '📦', color: '#795548', esPredefinida: true },
+    ],
+    'Ovina': [
+        // Entradas
+        { nombre: 'Venta de corderos', tipo: 'ingreso', icono: '🐑', color: '#7E57C2', esPredefinida: true },
+        { nombre: 'Venta de lana', tipo: 'ingreso', icono: '🧶', color: '#7E57C2', esPredefinida: true },
+        { nombre: 'Venta de ovejas', tipo: 'ingreso', icono: '🐑', color: '#7E57C2', esPredefinida: true },
+        // Salidas
+        { nombre: 'Alimentación', tipo: 'gasto', icono: '🌾', color: '#E65100', esPredefinida: true },
+        { nombre: 'Veterinaria', tipo: 'gasto', icono: '💉', color: '#AD1457', esPredefinida: true },
+        { nombre: 'Mano de obra', tipo: 'gasto', icono: '👷', color: '#6A1B9A', esPredefinida: true },
+        { nombre: 'Otros gastos', tipo: 'gasto', icono: '📦', color: '#795548', esPredefinida: true },
+    ],
+    'Mixto': [
+        // Basad en lista "Ruralia v1" recomendada
+        { nombre: 'Venta de hacienda', tipo: 'ingreso', icono: '🐄', color: '#2E7D32', esPredefinida: true },
+        { nombre: 'Venta de leche', tipo: 'ingreso', icono: '🥛', color: '#1565C0', esPredefinida: true },
+        { nombre: 'Venta de granos', tipo: 'ingreso', icono: '🌾', color: '#F9A825', esPredefinida: true },
+        { nombre: 'Arrendamiento', tipo: 'ingreso', icono: '🏠', color: '#1565C0', esPredefinida: true },
+        { nombre: 'Servicios', tipo: 'ingreso', icono: '🤝', color: '#F9A825', esPredefinida: true },
+        { nombre: 'Subsidios', tipo: 'ingreso', icono: '🏛️', color: '#00796B', esPredefinida: true },
+        { nombre: 'Otros ingresos', tipo: 'ingreso', icono: '💰', color: '#F9A825', esPredefinida: true },
+        { nombre: 'Alimentación', tipo: 'gasto', icono: '🌾', color: '#E65100', esPredefinida: true },
+        { nombre: 'Veterinaria', tipo: 'gasto', icono: '💉', color: '#AD1457', esPredefinida: true },
+        { nombre: 'Combustible', tipo: 'gasto', icono: '🚜', color: '#455A64', esPredefinida: true },
+        { nombre: 'Mano de obra', tipo: 'gasto', icono: '👷', color: '#6A1B9A', esPredefinida: true },
+        { nombre: 'Insumos agrícolas', tipo: 'gasto', icono: '🌱', color: '#558B2F', esPredefinida: true },
+        { nombre: 'Arrendamiento', tipo: 'gasto', icono: '🏠', color: '#5D4037', esPredefinida: true },
+        { nombre: 'Impuestos', tipo: 'gasto', icono: '📄', color: '#546E7A', esPredefinida: true },
+        { nombre: 'Transporte', tipo: 'gasto', icono: '🚚', color: '#455A64', esPredefinida: true },
+        { nombre: 'Otros gastos', tipo: 'gasto', icono: '📦', color: '#795548', esPredefinida: true },
+    ]
 };
 
-const CATEGORIAS_COMUNES: Omit<Categoria, 'id'>[] = [
-    { nombre: 'Combustible', tipo: 'gasto', icono: '🚜', color: '#4E342E', esPredefinida: true },
-    { nombre: 'Reparaciones Estructura', tipo: 'gasto', icono: '🔨', color: '#37474F', esPredefinida: true },
-    { nombre: 'Mano de obra', tipo: 'gasto', icono: '👷', color: '#6A1B9A', esPredefinida: true },
-    { nombre: 'Otros gastos', tipo: 'gasto', icono: '📦', color: '#795548', esPredefinida: true },
-    { nombre: 'Otras entradas', tipo: 'ingreso', icono: '💰', color: '#F9A825', esPredefinida: true },
-];
-
 export async function inicializarCategorias(tipo: TipoProduccion) {
-    const especificas = CATEGORIAS_POR_TIPO[tipo] || [];
-    const todas = [...especificas, ...CATEGORIAS_COMUNES];
+    const todas = CATEGORIAS_POR_TIPO[tipo] || [];
     
     for (const cat of todas) {
         const existe = await db.categorias.where('nombre').equals(cat.nombre).first();
