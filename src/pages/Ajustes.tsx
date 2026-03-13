@@ -313,48 +313,6 @@ export function Ajustes({ user, onLoginClick }: AjustesProps) {
                         </div>
                     </div>
 
-                    <div className="settings-grid-row">
-                        <div className="settings-row-info">
-                            <h3>Nube y Sincronización</h3>
-                            <p>Respalda tus datos automáticamente en Supabase.</p>
-                        </div>
-                        <div>
-                            {user ? (
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--green-light)', padding: '16px 20px', borderRadius: '16px', border: '1px solid var(--green-main)' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                        <Cloud color="var(--green-main)" size={20} />
-                                        <div>
-                                            <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--green-main)' }}>Sesión Activa</p>
-                                            <p style={{ fontSize: '12px', color: 'var(--green-main)', opacity: 0.8 }}>{user.email}</p>
-                                        </div>
-                                    </div>
-                                    <button 
-                                        onClick={() => supabase.auth.signOut()}
-                                        style={{ background: 'white', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'var(--red-soft)', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                                    >
-                                        <LogOut size={14} /> Salir
-                                    </button>
-                                </div>
-                            ) : (
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg)', padding: '16px 20px', borderRadius: '16px', border: '1px solid var(--border)' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                        <CloudOff color="var(--t3)" size={20} />
-                                        <div>
-                                            <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--t1)' }}>Sin Sincronizar</p>
-                                            <p style={{ fontSize: '12px', color: 'var(--t3)' }}>Crea una cuenta para no perder tus datos.</p>
-                                        </div>
-                                    </div>
-                                    <button 
-                                        className="btn-primary" 
-                                        style={{ padding: '10px 16px', fontSize: '13px' }}
-                                        onClick={onLoginClick}
-                                    >
-                                        Conectar Nube
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
 
                     <div className="settings-grid-row">
                         <div className="settings-row-info">
@@ -518,6 +476,49 @@ export function Ajustes({ user, onLoginClick }: AjustesProps) {
         if (activeTab === 'sistema') {
             return (
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div className="settings-grid-row">
+                        <div className="settings-row-info">
+                            <h3>Nube y Sincronización</h3>
+                            <p>Respalda tus datos automáticamente en Supabase.</p>
+                        </div>
+                        <div>
+                            {user ? (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--green-light)', padding: '16px 20px', borderRadius: '16px', border: '1px solid var(--green-main)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <Cloud color="var(--green-main)" size={20} />
+                                        <div>
+                                            <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--green-main)' }}>Sesión Activa</p>
+                                            <p style={{ fontSize: '12px', color: 'var(--green-main)', opacity: 0.8 }}>{user.email}</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => supabase.auth.signOut()}
+                                        style={{ background: 'white', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'var(--red-soft)', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                                    >
+                                        <LogOut size={14} /> Salir
+                                    </button>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg)', padding: '16px 20px', borderRadius: '16px', border: '1px solid var(--border)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <CloudOff color="var(--t3)" size={20} />
+                                        <div>
+                                            <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--t1)' }}>Sin Sincronizar</p>
+                                            <p style={{ fontSize: '12px', color: 'var(--t3)' }}>Crea una cuenta para no perder tus datos.</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        className="btn-primary" 
+                                        style={{ padding: '10px 16px', fontSize: '13px' }}
+                                        onClick={onLoginClick}
+                                    >
+                                        Conectar Nube
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
                     <div className="settings-grid-row">
                         <div className="settings-row-info">
                             <h3>Apariencia</h3>
