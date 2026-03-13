@@ -35,7 +35,7 @@ export const exportToCSV = (data: any[], headers: string[], fileName: string) =>
 /**
  * Prepara los movimientos para exportar a CSV
  */
-export const exportMovimientosCSV = (movimientos: Movimiento[], catMap: Map<number, Categoria>, periodLabel: string) => {
+export const exportMovimientosCSV = (movimientos: Movimiento[], catMap: Map<number | string, Categoria>, periodLabel: string) => {
     const headers = ['Fecha', 'Tipo', 'Categoría', 'Nota', 'Monto', 'Moneda'];
 
     const data = movimientos.map(m => ({
@@ -86,7 +86,7 @@ export const exportBalanceSummaryCSV = (
 /**
  * Exportación completa de Balance que incluye detalle y resúmenes por moneda
  */
-export const exportBalanceFullCSV = (movimientos: Movimiento[], catMap: Map<number, Categoria>, periodLabel: string) => {
+export const exportBalanceFullCSV = (movimientos: Movimiento[], catMap: Map<number | string, Categoria>, periodLabel: string) => {
     const csvRows = [];
 
     // Título y Periodo
@@ -109,7 +109,7 @@ export const exportBalanceFullCSV = (movimientos: Movimiento[], catMap: Map<numb
 
         // Desglose por categoría en esta moneda
         csvRows.push('Categoría;Tipo;Total');
-        const cats = new Map<number, { nombre: string, ingreso: number, gasto: number }>();
+        const cats = new Map<number | string, { nombre: string, ingreso: number, gasto: number }>();
 
         movsCurr.forEach(m => {
             if (!cats.has(m.categoriaId)) {

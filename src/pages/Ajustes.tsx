@@ -2,18 +2,24 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { createPortal } from 'react-dom';
-import { Plus, Pencil, Trash2, Check, X, Settings2, Building2, Coins, LayoutGrid, AlertCircle, ChevronRight, ArrowLeft, User, HelpCircle, Moon, Sun, Cloud, CloudOff, LogOut } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, Settings2, Building2, Coins, LayoutGrid, AlertCircle, ChevronRight, ArrowLeft, ArrowUpRight, ArrowDownLeft, User, HelpCircle, Moon, Sun, Cloud, CloudOff, LogOut } from 'lucide-react';
 import type { Categoria, TipoMovimiento, Moneda } from '../types';
 import db, { type TipoProduccion, inicializarCategorias } from '../db/database';
 import { showToast } from '../components/Toast';
 import { TopBar } from '../components/TopBar';
 import { MONEDAS } from '../utils/helpers';
+import { syncService } from '../lib/sync';
 
-const EMOJIS_RURALES = [
-    '🐄', '🐑', '🐖', '🐓', '🐇', '🐎', '🦙', '🐐', '🐟', '🦆',
-    '🌾', '🌱', '🌿', '🍃', '🌻', '🌽', '🍎', '🍊', '🥛', '🌰',
-    '🚜', '🔧', '🪣', '💡', '🚰', '🏗️', '⛽', '🔩', '🪚', '⚙️',
-    '💉', '🐾', '📋', '🏪', '🤝', '💰', '📦', '🛖', '🌡️', '🫘',
+const CATEGORY_ICONS = [
+    '🐄', '🌾', '🚜', '💰', '📉', '📈', '📦', '🛒', '🔧', '⛽',
+    '🌽', '🍎', '🥛', '🧀', '🥩', '🐑', '🐖', '🐓', '🐎', '🌳',
+    '🏠', '🛖', '🏗️', '🛠️', '⚙️', '🖇️', '📋', '📅', '💡', '🤝'
+];
+
+const AVATAR_OPTIONS = [
+    '👨‍🌾', '👩‍🌾', '🤠', '🧔', '👩', '👨', '🧑‍🌾', '👷', '👨‍🔧', '🕵️',
+    '🌵', '🌊', '🏔️', '🏕️', '🧉', '🐕', '🏇', '🦊', '🦉', '✨',
+    '👔', '🧑‍💼', '👩‍💼', '🧥', '🧢', '🕶️', '🏔️', '🏠', '🚀', '⭐'
 ];
 
 interface CatForm { nombre: string; tipo: TipoMovimiento; icono: string; }
@@ -57,7 +63,7 @@ function CatModal({ mode, initData, onClose, onSave }: { mode: 'add' | 'edit', i
                     <div>
                         <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t2)', marginBottom: '8px', display: 'block' }}>Ícono Visual</label>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(40px, 1fr))', gap: '8px', maxHeight: '200px', overflowY: 'auto', paddingRight: '8px' }}>
-                            {EMOJIS_RURALES.map(e => (
+                            {CATEGORY_ICONS.map(e => (
                                 <button key={e} onClick={() => setForm(f => ({ ...f, icono: e }))} style={{ fontSize: '24px', padding: '8px', borderRadius: '12px', background: form.icono === e ? 'var(--green-light)' : 'var(--gray-50)', border: form.icono === e ? '2px solid var(--green-main)' : '2px solid transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.1s' }}>
                                     {e}
                                 </button>
@@ -127,20 +133,21 @@ function CurrencyModal({ current, onClose, onSave }: { current: Moneda[], onClos
 }
 
 // ── Components ─────────────────────────────────────────────
-type TabKey = 'establecimiento' | 'divisas' | 'entradas' | 'salidas' | 'sistema';
+type TabKey = 'perfil' | 'establecimiento' | 'divisas' | 'entradas' | 'salidas' | 'sistema';
 
 interface AjustesProps {
     user?: SupabaseUser | null;
-    onLoginClick?: () => void;
 }
 
-export function Ajustes({ user, onLoginClick }: AjustesProps) {
+export function Ajustes({ user }: AjustesProps) {
     const [cats, setCats] = useState<Categoria[]>([]);
     const [nombreEstab, setNombre] = useState('');
     const [nombreUsuario, setNombreUsuario] = useState('');
+    const [avatarEmoji, setAvatarEmoji] = useState('👨‍🌾');
     const [monedasActivas, setMonedasActivas] = useState<Moneda[]>(['UYU']);
     const [tipoProduccion, setTipoProduccion] = useState<TipoProduccion>('Ganadería');
     const [activeTab, setActiveTab] = useState<TabKey>('establecimiento');
+    const [saving, setSaving] = useState(false);
 
     // Modals state
     const [showCatModal, setShowCatModal] = useState<'add' | 'edit' | false>(false);
@@ -164,6 +171,8 @@ export function Ajustes({ user, onLoginClick }: AjustesProps) {
         if (n) setNombre(n.valor as string);
         const u = await db.config.get('nombreUsuario');
         if (u) setNombreUsuario(u.valor as string);
+        const av = await db.config.get('avatarUsuario');
+        if (av) setAvatarEmoji(av.valor as string);
         const m = await db.config.get('monedasActivas');
         if (m && Array.isArray(m.valor)) setMonedasActivas(m.valor as Moneda[]);
         const t = await db.config.get('tipoProduccion');
@@ -172,17 +181,44 @@ export function Ajustes({ user, onLoginClick }: AjustesProps) {
 
     useEffect(() => { void cargar(); }, []);
 
+    const logout = async () => {
+        if (confirm('¿Cerrar sesión?')) {
+            await supabase.auth.signOut();
+            showToast('Sesión cerrada');
+            window.location.reload();
+        }
+    };
+
     const guardarNombre = async () => {
-        await db.config.put({ clave: 'nombreEstablecimiento', valor: nombreEstab });
-        await db.config.put({ clave: 'nombreUsuario', valor: nombreUsuario });
-        await db.config.put({ clave: 'tipoProduccion', valor: tipoProduccion });
+        setSaving(true);
         try {
-            const activeId = localStorage.getItem('activeEstDB') || 'RuralitDB';
-            const estabs = JSON.parse(localStorage.getItem('ruralit_establecimientos') || '[]');
-            const updated = estabs.map((e: any) => e.id === activeId ? { ...e, nombre: nombreEstab } : e);
-            localStorage.setItem('ruralit_establecimientos', JSON.stringify(updated));
-        } catch (e) { }
-        showToast('Datos actualizados');
+            await db.config.put({ clave: 'nombreEstablecimiento', valor: nombreEstab });
+            await db.config.put({ clave: 'nombreUsuario', valor: nombreUsuario });
+            await db.config.put({ clave: 'avatarUsuario', valor: avatarEmoji });
+            await db.config.put({ clave: 'tipoProduccion', valor: tipoProduccion });
+            
+            // Sincronizar con Supabase si está logueado
+            if (user) {
+                try {
+                    await syncService.updateProfile(nombreUsuario, monedasActivas[0] || 'UYU', avatarEmoji);
+                    // Sincronización completa para asegurar que el establecimiento se actualiza
+                    await syncService.syncEverything();
+                } catch (e) {
+                    console.error('Error sincronizando perfil:', e);
+                }
+            }
+
+            try {
+                const activeId = localStorage.getItem('activeEstDB') || 'RuralitDB';
+                const estabs = JSON.parse(localStorage.getItem('ruralit_establecimientos') || '[]');
+                const updated = estabs.map((e: any) => e.id === activeId ? { ...e, nombre: nombreEstab } : e);
+                localStorage.setItem('ruralit_establecimientos', JSON.stringify(updated));
+            } catch (e) { }
+            
+            showToast('Datos actualizados');
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleSaveCat = async (data: CatForm) => {
@@ -243,28 +279,34 @@ export function Ajustes({ user, onLoginClick }: AjustesProps) {
         const current = document.documentElement.getAttribute('data-theme') || 'light';
         const nuevo = current === 'light' ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', nuevo);
+        
+        // Guardamos en ambos lugares: localStorage para global y db.config para local
+        localStorage.setItem('ruralit_theme', nuevo);
         await db.config.put({ clave: 'tema', valor: nuevo });
+        
         showToast(`Modo ${nuevo === 'dark' ? 'oscuro' : 'claro'} activado`);
     };
 
     const renderNav = () => {
-        const NAV_ITEMS: { id: TabKey, label: string }[] = [
-            { id: 'establecimiento', label: 'Establecimiento' },
-            { id: 'divisas', label: 'Monedas' },
-            { id: 'entradas', label: 'Entradas' },
-            { id: 'salidas', label: 'Salidas' },
-            { id: 'sistema', label: 'Sistema' }
+        const tabs: { id: TabKey, label: string, icon: any }[] = [
+            { id: 'perfil', label: 'Mi Perfil', icon: User },
+            { id: 'establecimiento', label: 'Establecimiento', icon: Building2 },
+            { id: 'divisas', label: 'Divisas', icon: Coins },
+            { id: 'entradas', label: 'Entradas', icon: ArrowUpRight },
+            { id: 'salidas', label: 'Salidas', icon: ArrowDownLeft },
+            { id: 'sistema', label: 'Sistema', icon: Settings2 },
         ];
 
         return (
             <div className="settings-nav">
-                {NAV_ITEMS.map(item => (
+                {tabs.map(t => (
                     <button
-                        key={item.id}
-                        onClick={() => setActiveTab(item.id)}
-                        className={`settings-nav-item ${activeTab === item.id ? 'active' : ''}`}
+                        key={t.id}
+                        className={`settings-nav-item ${activeTab === t.id ? 'active' : ''}`}
+                        onClick={() => setActiveTab(t.id)}
                     >
-                        {item.label}
+                        <t.icon size={20} />
+                        <span>{t.label}</span>
                     </button>
                 ))}
             </div>
@@ -299,17 +341,93 @@ export function Ajustes({ user, onLoginClick }: AjustesProps) {
             </div>
         );
 
+        if (activeTab === 'perfil') {
+            return (
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div className="settings-grid-row">
+                        <div className="settings-row-info">
+                            <h3>Gestión de Perfil</h3>
+                            <p>Actualiza tu identidad y los datos vinculados a tu cuenta en la nube.</p>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
+                            <div>
+                                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t2)', marginBottom: '8px', display: 'block' }}>Nombre de Usuario</label>
+                                <input type="text" value={nombreUsuario} onChange={e => setNombreUsuario(e.target.value)} placeholder="Ej: Matías" style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--t1)' }} />
+                            </div>
+                            <div style={{ marginTop: '8px' }}>
+                                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t2)', marginBottom: '8px', display: 'block' }}>Avatar (Emoji)</label>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(32px, 1fr))', gap: '4px', padding: '8px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--bg-input)' }}>
+                                    {AVATAR_OPTIONS.map(emoji => (
+                                        <button
+                                            key={emoji}
+                                            onClick={() => setAvatarEmoji(emoji)}
+                                            style={{ 
+                                                fontSize: '16px', padding: '4px', borderRadius: '6px', border: 'none', 
+                                                background: avatarEmoji === emoji ? 'var(--green-light)' : 'transparent',
+                                                boxShadow: avatarEmoji === emoji ? '0 0 0 1.5px var(--green-main)' : 'none',
+                                                cursor: 'pointer', transition: 'all 0.1s'
+                                            }}
+                                        >
+                                            {emoji}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            {user && (
+                                <div style={{ background: 'var(--gray-50)', padding: '16px', borderRadius: '16px', border: '1px solid var(--border)' }}>
+                                    <p style={{ fontSize: '11px', color: 'var(--t3)', marginBottom: '4px', textTransform: 'uppercase' }}>Sesión activa en</p>
+                                    <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--t1)' }}>{user.email}</p>
+                                </div>
+                            )}
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <button className="btn-primary" onClick={guardarNombre} disabled={saving} style={{ flex: 1 }}>
+                                    {saving ? 'Guardando...' : 'Guardar Perfil'}
+                                </button>
+                                {user && (
+                                    <button onClick={logout} disabled={saving} style={{ padding: '12px 20px', borderRadius: '14px', border: '1px solid var(--red-soft)', background: 'transparent', color: 'var(--red-soft)', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <LogOut size={16} /> Salir
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="settings-grid-row">
+                        <div className="settings-row-info">
+                            <h3>Apariencia</h3>
+                            <p>Elegí como ver Ruralit hoy.</p>
+                        </div>
+                        <button
+                            onClick={toggleTema}
+                            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', borderRadius: '16px', background: 'var(--bg-card)', border: '1px solid var(--border)', cursor: 'pointer', fontWeight: 700, color: 'var(--t1)', width: 'fit-content' }}
+                        >
+                            {typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark' ? (
+                                <><Sun size={18} /> Modo Claro</>
+                            ) : (
+                                <><Moon size={18} /> Modo Oscuro</>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
         if (activeTab === 'establecimiento') {
             return (
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <div className="settings-grid-row">
                         <div className="settings-row-info">
-                            <h3>Información del Perfil</h3>
-                            <p>Actualiza la información pública de tu cuenta.</p>
+                            <h3>Nombre Comercial</h3>
+                            <p>Este es el nombre principal que aparece en todos tus reportes.</p>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', width: '100%' }}>
-                            <input type="text" value={nombreUsuario} onChange={e => setNombreUsuario(e.target.value)} placeholder="Tu Nombre (Ej: Matías)" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', background: 'var(--white)', color: 'var(--t1)' }} />
-                            <input type="text" value={nombreEstab} onChange={e => setNombre(e.target.value)} placeholder="Nombre Comercial (Ej: La Esmeralda)" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', background: 'var(--white)', color: 'var(--t1)' }} />
+                        <div style={{ width: '100%' }}>
+                            <input 
+                                type="text" 
+                                value={nombreEstab} 
+                                onChange={e => setNombre(e.target.value)} 
+                                placeholder="Nombre del Establecimiento" 
+                                style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--t1)' }} 
+                            />
                         </div>
                     </div>
 
@@ -478,44 +596,21 @@ export function Ajustes({ user, onLoginClick }: AjustesProps) {
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <div className="settings-grid-row">
                         <div className="settings-row-info">
-                            <h3>Nube y Sincronización</h3>
-                            <p>Respalda tus datos automáticamente en Supabase.</p>
+                            <h3>Estado de la Cuenta</h3>
+                            <p>Información técnica y conectividad.</p>
                         </div>
                         <div>
-                            {user ? (
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--green-light)', padding: '16px 20px', borderRadius: '16px', border: '1px solid var(--green-main)' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                        <Cloud color="var(--green-main)" size={20} />
-                                        <div>
-                                            <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--green-main)' }}>Sesión Activa</p>
-                                            <p style={{ fontSize: '12px', color: 'var(--green-main)', opacity: 0.8 }}>{user.email}</p>
-                                        </div>
+                            <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '16px', padding: '16px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div>
+                                        <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--t1)' }}>{user ? 'Cuenta en la Nube' : 'Modo Offline'}</p>
+                                        <p style={{ fontSize: '12px', color: 'var(--t3)' }}>{user ? user.email : 'Tus datos solo viven en este navegador'}</p>
                                     </div>
-                                    <button 
-                                        onClick={() => supabase.auth.signOut()}
-                                        style={{ background: 'white', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'var(--red-soft)', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                                    >
-                                        <LogOut size={14} /> Salir
-                                    </button>
+                                    {user && (
+                                        <button onClick={logout} style={{ background: 'none', border: 'none', color: 'var(--red-soft)', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>Salir</button>
+                                    )}
                                 </div>
-                            ) : (
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg)', padding: '16px 20px', borderRadius: '16px', border: '1px solid var(--border)' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                        <CloudOff color="var(--t3)" size={20} />
-                                        <div>
-                                            <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--t1)' }}>Sin Sincronizar</p>
-                                            <p style={{ fontSize: '12px', color: 'var(--t3)' }}>Crea una cuenta para no perder tus datos.</p>
-                                        </div>
-                                    </div>
-                                    <button 
-                                        className="btn-primary" 
-                                        style={{ padding: '10px 16px', fontSize: '13px' }}
-                                        onClick={onLoginClick}
-                                    >
-                                        Conectar Nube
-                                    </button>
-                                </div>
-                            )}
+                            </div>
                         </div>
                     </div>
 
@@ -563,26 +658,30 @@ export function Ajustes({ user, onLoginClick }: AjustesProps) {
     const renderMobileMenu = () => {
         const groups = [
             {
-                title: 'CUENTA',
+                title: 'MI CUENTA',
                 items: [
-                    { id: 'perfil', label: 'Información del Perfil', icon: User, tab: 'establecimiento' as TabKey },
-                    { id: 'produccion', label: 'Tipo de Producción', icon: LayoutGrid, tab: 'establecimiento' as TabKey },
-                    { id: 'cambio', label: 'Cambio de Establecimiento', icon: Building2, tab: 'establecimiento' as TabKey }
+                    { id: 'perfil', label: 'Datos del Perfil', icon: User, tab: 'perfil' as TabKey },
+                    { id: 'produccion', label: 'Rubros y Producción', icon: LayoutGrid, tab: 'establecimiento' as TabKey },
                 ]
             },
             {
-                title: 'PREFERENCIAS',
+                title: 'ADMINISTRACIÓN',
                 items: [
-                    { id: 'divisas', label: 'Monedas y Divisas', icon: Coins, tab: 'divisas' as TabKey },
-                    { id: 'entradas', label: 'Categorías de Entradas', icon: LayoutGrid, tab: 'entradas' as TabKey },
-                    { id: 'salidas', label: 'Categorías de Salidas', icon: LayoutGrid, tab: 'salidas' as TabKey }
+                    { id: 'cambio', label: 'Mis Establecimientos', icon: Building2, tab: 'establecimiento' as TabKey },
+                    { id: 'divisas', label: 'Gestión de Monedas', icon: Coins, tab: 'divisas' as TabKey },
                 ]
             },
             {
-                title: 'SOPORTE',
+                title: 'CONTENIDO',
                 items: [
-                    { id: 'sistema', label: 'Sistema', icon: Settings2, tab: 'sistema' as TabKey },
-                    { id: 'ayuda', label: 'Centro de Ayuda', icon: HelpCircle, tab: 'sistema' as TabKey }
+                    { id: 'entradas', label: 'Categorías Entradas', icon: ArrowUpRight, tab: 'entradas' as TabKey },
+                    { id: 'salidas', label: 'Categorías Salidas', icon: ArrowDownLeft, tab: 'salidas' as TabKey }
+                ]
+            },
+            {
+                title: 'APLICACIÓN',
+                items: [
+                    { id: 'sistema', label: 'Sistema y Núcleo', icon: Settings2, tab: 'sistema' as TabKey }
                 ]
             }
         ];
@@ -622,14 +721,23 @@ export function Ajustes({ user, onLoginClick }: AjustesProps) {
                     </div>
                 ))}
 
-                <div style={{ marginTop: '20px', padding: '0 8px' }}>
+                <div style={{ marginTop: '20px', padding: '0 8px', display: 'flex', gap: '12px' }}>
                     <button
                         onClick={guardarNombre}
-                        style={{ width: '100%', padding: '18px', borderRadius: '40px', background: 'var(--bg-card)', color: 'var(--t1)', border: '2px solid var(--t1)', fontSize: '15px', fontWeight: 700, cursor: 'pointer', boxShadow: 'var(--shadow-sm)' }}>
+                        style={{ flex: 2, padding: '18px', borderRadius: '40px', background: 'var(--green-main)', color: 'white', border: 'none', fontSize: '15px', fontWeight: 700, cursor: 'pointer', boxShadow: 'var(--shadow-md)' }}>
                         Guardar Cambios
                     </button>
-                    <p style={{ textAlign: 'center', fontSize: '12px', color: 'var(--t3)', marginTop: '20px', fontWeight: 600 }}>Ruralit v5.2.0 • Agro Edition</p>
+                    {user && (
+                        <button
+                            onClick={logout}
+                            style={{ flex: 1, padding: '16px', borderRadius: '40px', background: 'transparent', color: 'var(--red-soft)', border: '1px solid var(--red-soft)', fontSize: '14px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            title="Cerrar Sesión"
+                        >
+                            <LogOut size={18} />
+                        </button>
+                    )}
                 </div>
+                <p style={{ textAlign: 'center', fontSize: '12px', color: 'var(--t3)', marginTop: '20px', fontWeight: 600 }}>Ruralit v1 beta</p>
             </div>
         );
     };
@@ -675,17 +783,72 @@ export function Ajustes({ user, onLoginClick }: AjustesProps) {
                     {!isMobile && renderNav()}
                     <div style={{ padding: isMobile ? '0 8px' : '0' }}>
                         {/* If mobile, we might want to filter what we show within establishment tab */}
-                        {isMobile && activeTab === 'establecimiento' ? (
+                        {isMobile && activeTab === 'perfil' ? (
+                            <div className="settings-grid-row" style={{ gridTemplateColumns: '1fr', border: 'none' }}>
+                                <div className="settings-row-info">
+                                    <h3>Información Personal</h3>
+                                    <p>Tus datos de acceso y perfil público.</p>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
+                                    <div>
+                                        <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--t3)', marginBottom: '8px', display: 'block' }}>TU NOMBRE</label>
+                                        <input type="text" value={nombreUsuario} onChange={e => setNombreUsuario(e.target.value)} placeholder="Ej: Matias" style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px', background: 'var(--bg-input)', color: 'var(--t1)' }} />
+                                    </div>
+                                    <div style={{ marginTop: '4px' }}>
+                                        <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--t3)', marginBottom: '6px', display: 'block' }}>TU AVATAR</label>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '8px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--bg-input)' }}>
+                                            {AVATAR_OPTIONS.map(emoji => (
+                                                <button
+                                                    key={emoji}
+                                                    onClick={() => setAvatarEmoji(emoji)}
+                                                    style={{ 
+                                                        fontSize: '18px', padding: '4px', borderRadius: '8px', border: 'none', 
+                                                        background: avatarEmoji === emoji ? 'var(--green-light)' : 'transparent',
+                                                        boxShadow: avatarEmoji === emoji ? '0 0 0 1.5px var(--green-main)' : 'none',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    {emoji}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    {user && (
+                                        <div style={{ background: 'var(--gray-50)', padding: '16px', borderRadius: '16px', border: '1px solid var(--border)' }}>
+                                            <p style={{ fontSize: '11px', fontWeight: 700, color: 'var(--t3)', marginBottom: '4px' }}>EMAIL ACTUAL</p>
+                                            <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--t1)' }}>{user.email}</p>
+                                        </div>
+                                    )}
+                                    <div style={{ padding: '0 0 20px' }}>
+                                        <h4 style={{ fontSize: '12px', fontWeight: 700, color: 'var(--t3)', marginBottom: '16px', textTransform: 'uppercase' }}>Apariencia</h4>
+                                        <button
+                                            onClick={toggleTema}
+                                            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', borderRadius: '16px', background: 'var(--bg-card)', border: '1px solid var(--border)', fontWeight: 600, color: 'var(--t1)' }}
+                                        >
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                {typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                                                <span>Modo {typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark' ? 'Claro' : 'Oscuro'}</span>
+                                            </div>
+                                            <ChevronRight size={16} color="var(--t3)" />
+                                        </button>
+                                    </div>
+                                    <button className="btn-primary" onClick={guardarNombre} disabled={saving} style={{ padding: '18px', borderRadius: '14px' }}>
+                                        {saving ? 'Guardando...' : 'Actualizar Perfil'}
+                                    </button>
+                                </div>
+                            </div>
+                        ) : isMobile && activeTab === 'establecimiento' ? (
                             mobileDetailType === 'perfil' ? (
                                 <div className="settings-grid-row" style={{ gridTemplateColumns: '1fr', border: 'none' }}>
                                     <div className="settings-row-info">
-                                        <h3>Información del Perfil</h3>
-                                        <p>Actualiza tu nombre y comercio.</p>
+                                        <h3>Nombre del Establecimiento</h3>
+                                        <p>Actualiza el nombre comercial de tu campo.</p>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
-                                        <input type="text" value={nombreUsuario} onChange={e => setNombreUsuario(e.target.value)} placeholder="Tu Nombre" style={{ padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px', background: 'var(--bg-input)', color: 'var(--t1)' }} />
-                                        <input type="text" value={nombreEstab} onChange={e => setNombre(e.target.value)} placeholder="Nombre Comercial" style={{ padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px', background: 'var(--bg-input)', color: 'var(--t1)' }} />
-                                        <button className="btn-primary" onClick={guardarNombre} style={{ marginTop: '12px', padding: '16px', borderRadius: '14px' }}>Actualizar Perfil</button>
+                                        <input type="text" value={nombreEstab} onChange={e => setNombre(e.target.value)} placeholder="Nombre Comercial" style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px', background: 'var(--bg-input)', color: 'var(--t1)' }} />
+                                        <button className="btn-primary" onClick={guardarNombre} disabled={saving} style={{ padding: '18px', borderRadius: '14px' }}>
+                                            {saving ? 'Guardando...' : 'Guardar Nombre'}
+                                        </button>
                                     </div>
                                 </div>
                             ) : mobileDetailType === 'produccion' ? (

@@ -1,14 +1,12 @@
--- RURALIA DATABASE SCHEMA (Migration from IndexedDB)
-
--- 1. Profiles Table
+-- 1. Tablas Principales
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   username TEXT,
   default_currency TEXT DEFAULT 'UYU',
+  avatar_url TEXT DEFAULT '👨‍🌾',
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 2. Establishments Table
 CREATE TABLE IF NOT EXISTS public.establecimientos (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -17,7 +15,6 @@ CREATE TABLE IF NOT EXISTS public.establecimientos (
   creado_en TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 3. Categories Table
 CREATE TABLE IF NOT EXISTS public.categorias (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   establecimiento_id UUID REFERENCES public.establecimientos(id) ON DELETE CASCADE,
@@ -29,7 +26,6 @@ CREATE TABLE IF NOT EXISTS public.categorias (
   creado_en TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 4. Movements Table
 CREATE TABLE IF NOT EXISTS public.movimientos (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   establecimiento_id UUID REFERENCES public.establecimientos(id) ON DELETE CASCADE NOT NULL,
@@ -41,31 +37,60 @@ CREATE TABLE IF NOT EXISTS public.movimientos (
   creado_en TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Row Level Security (RLS) - Basic Setup
+-- 2. Seguridad (RLS)
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.establecimientos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.categorias ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.movimientos ENABLE ROW LEVEL SECURITY;
 
--- Policies
-CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+-- Limpiar políticas existentes para evitar errores de duplicidad al re-ejecutar
+DO $$ 
+BEGIN
+    DROP POLICY IF EXISTS "Users can manage their own profile" ON public.profiles;
+    DROP POLICY IF EXISTS "Users can manage their establishments" ON public.establecimientos;
+    DROP POLICY IF EXISTS "Users can manage categories of their establishments" ON public.categorias;
+    DROP POLICY IF EXISTS "Users can manage movements of their establishments" ON public.movimientos;
+EXCEPTION
+    WHEN undefined_object THEN null;
+END $$;
 
-CREATE POLICY "Users can manage their establishments" ON public.establecimientos 
-  FOR ALL USING (auth.uid() = user_id);
+-- Crear Políticas de Acceso
+CREATE POLICY "Users can manage their own profile" ON public.profiles FOR ALL USING (auth.uid() = id);
+CREATE POLICY "Users can manage their establishments" ON public.establecimientos FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage categories of their establishments" ON public.categorias FOR ALL USING (
+    EXISTS (SELECT 1 FROM public.establecimientos WHERE id = categorias.establecimiento_id AND user_id = auth.uid())
+);
+CREATE POLICY "Users can manage movements of their establishments" ON public.movimientos FOR ALL USING (
+    EXISTS (SELECT 1 FROM public.establecimientos WHERE id = movimientos.establecimiento_id AND user_id = auth.uid())
+);
 
-CREATE POLICY "Users can manage categories of their establishments" ON public.categorias
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM public.establecimientos 
-      WHERE id = categorias.establecimiento_id AND user_id = auth.uid()
-    )
-  );
+-- 3. Funciones y Triggers Automáticos
 
-CREATE POLICY "Users can manage movements of their establishments" ON public.movimientos
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM public.establecimientos 
-      WHERE id = movimientos.establecimiento_id AND user_id = auth.uid()
-    )
-  );
+-- A. Crear perfil automáticamente al registrarse el usuario
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.profiles (id, username, default_currency, avatar_url)
+  VALUES (new.id, split_part(new.email, '@', 1), 'UYU', '👨‍🌾');
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- B. Actualizar automáticamente el campo 'updated_at' en perfiles
+CREATE OR REPLACE FUNCTION public.handle_updated_at()
+RETURNS trigger AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS on_profile_updated ON public.profiles;
+CREATE TRIGGER on_profile_updated
+  BEFORE UPDATE ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();

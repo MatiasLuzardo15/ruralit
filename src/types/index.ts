@@ -11,20 +11,22 @@ export interface Categoria {
     icono: string;
     color: string;
     esPredefinida: boolean;
+    server_id?: string;
+    updated_at?: string;
 }
 
 export interface Movimiento {
     id?: number;
-    establecimientoId?: number; // Para soporte futuro de múltiples establecimientos
+    establecimientoId?: string; // UUID de Supabase
     tipo: TipoMovimiento;
     monto: number;
     moneda?: Moneda;
-    categoriaId: number;
+    categoriaId: number | string;
     nota?: string;
     fecha: string; // YYYY-MM-DD
     creado_en: string; // ISO string
-    
-    // -- Futuros soportes --
+    server_id?: string;
+    updated_at?: string;
     comprobanteUrl?: string; // Para adjuntar fotos de comprobantes
 }
 

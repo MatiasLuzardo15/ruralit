@@ -241,12 +241,19 @@ export class RuralitDatabase extends Dexie {
             categorias: '++id, tipo, nombre',
             config: 'clave',
         });
-        // v4: Indexamos esPredefinida para limpiezas eficientes
-        this.version(4).stores({
-            movimientos: '++id, tipo, categoriaId, fecha, creado_en, moneda',
-            categorias: '++id, tipo, nombre, esPredefinida',
+        // v5: Soporte para Sincronización (server_id y updated_at)
+        this.version(5).stores({
+            movimientos: '++id, tipo, categoriaId, fecha, creado_en, moneda, server_id, updated_at',
+            categorias: '++id, tipo, nombre, esPredefinida, server_id, updated_at',
             config: 'clave',
         });
+    }
+
+    // Helper para obtener el ID de Supabase del establecimiento actual
+    async getEstablecimientoServerId(): Promise<string | null> {
+        const estabs = JSON.parse(localStorage.getItem('ruralit_establecimientos') || '[]');
+        const active = estabs.find((e: any) => e.id === activeDbName);
+        return active?.server_id || null;
     }
 }
 

@@ -7,6 +7,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase credentials not found. Check your .env.local file.');
 }
 
+console.log('Supabase Init:', { url: supabaseUrl });
+
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder'

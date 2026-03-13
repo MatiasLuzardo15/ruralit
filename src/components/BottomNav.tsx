@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { Home, BookOpen, BarChart2, Settings2, MoreVertical, ChevronDown, Check, ChevronLeft, ChevronRight, LayoutPanelLeft } from 'lucide-react';
 
 export type Tab = 'inicio' | 'libreta' | 'balance' | 'ajustes';
@@ -7,7 +8,8 @@ interface NavItem { id: Tab; label: string; Icon: typeof Home; }
 import logo from '../ruralit.png';
 import { supabase } from '../lib/supabase';
 import { User } from '@supabase/supabase-js';
-import { Cloud, CloudOff, LogOut, User as UserIcon } from 'lucide-react';
+import { LogOut, User as UserIcon } from 'lucide-react';
+import { db } from '../db/database';
 
 interface EstItem { id: string; nombre: string; }
 
@@ -24,13 +26,23 @@ interface Props {
     collapsed?: boolean; 
     setCollapsed?: (v: boolean) => void;
     user?: User | null;
-    onLoginClick?: () => void;
 }
 
-export function Sidebar({ activo, onChange, establecimiento, collapsed, setCollapsed, user, onLoginClick }: Props) {
+export function Sidebar({ activo, onChange, establecimiento, collapsed, setCollapsed, user }: Props) {
     const [showSelector, setShowSelector] = useState(false);
     const [estabs, setEstabs] = useState<EstItem[]>([]);
     const selectorRef = useRef<HTMLDivElement>(null);
+    
+    // Configuración de perfil reactiva
+    const avatar = useLiveQuery(async () => {
+        const row = await db.config.get('avatarUsuario');
+        return (row?.valor as string) || '👨‍🌾';
+    }, []);
+
+    const nombreUsuario = useLiveQuery(async () => {
+        const row = await db.config.get('nombreUsuario');
+        return row?.valor as string;
+    }, []);
 
     useEffect(() => {
         try {
@@ -114,40 +126,34 @@ export function Sidebar({ activo, onChange, establecimiento, collapsed, setColla
                         <Settings2 className="sidebar-item-icon" size={18} strokeWidth={1.5} />
                         {!collapsed && "Ajustes"}
                     </button>
-
-                    <div style={{ marginTop: '12px', padding: collapsed ? '0' : '0 12px' }}>
-                        {user ? (
+                    <div style={{ marginTop: '12px' }}>
+                        {user && (
                             <div style={{ 
-                                display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', 
-                                background: 'var(--green-light)', borderRadius: '12px', overflow: 'hidden' 
+                                display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', 
+                                background: 'rgba(0,0,0,0.03)', borderRadius: '12px', overflow: 'hidden',
+                                border: '1px solid var(--border-rgba)'
                             }}>
-                                <div style={{ minWidth: '32px', height: '32px', borderRadius: '50%', background: 'var(--green-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-                                    <Cloud size={16} />
+                                <div style={{ 
+                                    minWidth: '32px', height: '32px', borderRadius: '50%', 
+                                    background: 'var(--bg)', display: 'flex', alignItems: 'center', 
+                                    justifyContent: 'center', color: 'var(--t2)', 
+                                    border: '1px solid var(--border-sm)' 
+                                }}>
+                                    {avatar}
                                 </div>
                                 {!collapsed && (
                                     <div style={{ minWidth: 0, flex: 1 }}>
-                                        <p style={{ fontSize: '12px', fontWeight: 700, color: 'var(--green-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.email?.split('@')[0]}</p>
-                                        <p style={{ fontSize: '10px', color: 'var(--green-main)', opacity: 0.8 }}>Nube Activa</p>
+                                        <p style={{ fontSize: '12px', fontWeight: 700, color: 'var(--t1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.1 }}>
+                                            {nombreUsuario || user.email?.split('@')[0]}
+                                        </p>
+                                        <p style={{ fontSize: '9px', color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '2px' }}>Cuenta Ruralit</p>
                                     </div>
                                 )}
                             </div>
-                        ) : (
-                            <button 
-                                onClick={onLoginClick}
-                                style={{ 
-                                    width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', 
-                                    background: 'var(--gray-100)', borderRadius: '12px', border: 'none', cursor: 'pointer',
-                                    justifyContent: collapsed ? 'center' : 'flex-start'
-                                }}
-                            >
-                                <CloudOff size={16} color="var(--t3)" />
-                                {!collapsed && <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--t2)' }}>Usar Nube</span>}
-                            </button>
                         )}
                     </div>
                 </div>
             </div>
-
         </aside>
     );
 }

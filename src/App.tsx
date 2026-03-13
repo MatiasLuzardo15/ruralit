@@ -8,33 +8,48 @@ import { Libreta } from './pages/Libreta';
 import { Balance } from './pages/Balance';
 import { Ajustes } from './pages/Ajustes';
 import { ModalSetup } from './components/ModalSetup';
-import { AuthModal } from './components/AuthModal';
-import { supabase } from './lib/supabase';
+import { Login } from './pages/Login';
 import { User } from '@supabase/supabase-js';
+import { supabase } from './lib/supabase';
+import { syncService } from './lib/sync';
 
 function App() {
     const [tab, setTab] = useState<Tab>('inicio');
     const [collapsed, setCollapsed] = useState(false);
     const [user, setUser] = useState<User | null>(null);
-    const [showAuth, setShowAuth] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     // Cargar tema y sesión al iniciar la app
     useEffect(() => {
-        db.config.get('tema').then(t => {
-            if (t?.valor === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            } else {
-                document.documentElement.setAttribute('data-theme', 'light');
-            }
-        });
+        // Primero intentamos leer de localStorage para consistencia entre establecimientos
+        const savedTheme = localStorage.getItem('ruralit_theme');
+        if (savedTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        } else if (savedTheme === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+        } else {
+            // Si no hay en localStorage, probamos con IndexedDB (fallback legacy)
+            db.config.get('tema').then(t => {
+                if (t?.valor === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('ruralit_theme', 'dark');
+                }
+            });
+        }
 
         // Escuchar cambios de sesión
         supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ?? null);
+            const newUser = session?.user ?? null;
+            setUser(newUser);
+            if (newUser) syncService.syncEverything();
+            setLoading(false);
         });
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user ?? null);
+            const newUser = session?.user ?? null;
+            setUser(newUser);
+            if (newUser) syncService.syncEverything();
+            setLoading(false);
         });
 
         return () => subscription.unsubscribe();
@@ -55,6 +70,9 @@ function App() {
         []
     );
 
+    if (loading) return null;
+    if (!user) return <Login />;
+
     return (
         <div className={`app-root ${collapsed ? 'sidebar-collapsed' : ''}`}>
             <Sidebar 
@@ -64,18 +82,17 @@ function App() {
                 collapsed={collapsed} 
                 setCollapsed={setCollapsed}
                 user={user}
-                onLoginClick={() => setShowAuth(true)}
+                onLoginClick={() => {}}
             />
             <main className="app-main">
                 {tab === 'inicio' && <Inicio />}
                 {tab === 'libreta' && <Libreta />}
                 {tab === 'balance' && <Balance />}
-                {tab === 'ajustes' && <Ajustes user={user} onLoginClick={() => setShowAuth(true)} />}
+                {tab === 'ajustes' && <Ajustes user={user} onLoginClick={() => {}} />}
             </main>
             <BottomNav activo={tab} onChange={setTab} />
             <Toast />
             {showSetup && <ModalSetup onComplete={() => setShowSetup(false)} initialName={establecimiento === 'Mi Establecimiento' ? '' : establecimiento} />}
-            {showAuth && <AuthModal onSuccess={() => setShowAuth(false)} />}
         </div>
     );
 }
