@@ -105,15 +105,33 @@ export class SyncService {
             .maybeSingle();
 
         if (existing) {
-            this.updateLocalEstServerId(existing.id);
-            // Si el servidor tiene tipo_produccion, lo bajamos a local
+            this.updateLocalEstServerId(existing.id, existing.nombre);
+            // Sincronizar configuración local con el servidor
+            await db.config.put({ clave: 'nombreEstablecimiento', valor: existing.nombre });
             if (existing.tipo_produccion) {
                 await db.config.put({ clave: 'tipoProduccion', valor: existing.tipo_produccion });
             }
             return existing.id;
         }
 
-        // 3. Si no existe nada, crear nuevo
+        // 3. Si no hay por nombre, buscar el primer establecimiento que tenga el usuario en la nube
+        const { data: firstOne } = await supabase
+            .from('establecimientos')
+            .select('id, nombre, tipo_produccion')
+            .eq('user_id', userId)
+            .limit(1)
+            .maybeSingle();
+
+        if (firstOne) {
+            this.updateLocalEstServerId(firstOne.id, firstOne.nombre);
+            await db.config.put({ clave: 'nombreEstablecimiento', valor: firstOne.nombre });
+            if (firstOne.tipo_produccion) {
+                await db.config.put({ clave: 'tipoProduccion', valor: firstOne.tipo_produccion });
+            }
+            return firstOne.id;
+        }
+
+        // 4. Si no existe nada, crear nuevo
         const localTipo = await db.config.get('tipoProduccion');
         const { data: created, error } = await supabase
             .from('establecimientos')
@@ -126,21 +144,33 @@ export class SyncService {
             .single();
 
         if (error) throw error;
-        this.updateLocalEstServerId(created.id);
+        this.updateLocalEstServerId(created.id, created.nombre);
         return created.id;
     }
 
-    private updateLocalEstServerId(serverId: string) {
+    private updateLocalEstServerId(serverId: string, nombre: string) {
         const estabs = JSON.parse(localStorage.getItem('ruralit_establecimientos') || '[]');
         const activeDbName = localStorage.getItem('activeEstDB') || 'RuralitDB';
-        const updated = estabs.map((e: any) => e.id === activeDbName ? { ...e, server_id: serverId } : e);
-        localStorage.setItem('ruralit_establecimientos', JSON.stringify(updated));
+        
+        // Buscar si ya existe la entrada local
+        const index = estabs.findIndex((e: any) => e.id === activeDbName);
+        
+        if (index >= 0) {
+            estabs[index] = { ...estabs[index], server_id: serverId, nombre };
+        } else {
+            estabs.push({ id: activeDbName, nombre, server_id: serverId });
+        }
+        
+        localStorage.setItem('ruralit_establecimientos', JSON.stringify(estabs));
     }
 
     async updateEstablecimientoType(serverId: string, type: string) {
         const { error } = await supabase
             .from('establecimientos')
-            .update({ tipo_produccion: type })
+            .update({ 
+                tipo_produccion: type,
+                updated_at: new Date().toISOString() 
+            })
             .eq('id', serverId);
         if (error) throw error;
     }
@@ -260,7 +290,7 @@ export class SyncService {
                         moneda: r.moneda,
                         fecha: r.fecha,
                         nota: r.nota,
-                        tipo: r.monto >= 0 ? 'ingreso' : 'gasto', // Simplificación, el schema de Supabase debería tener 'tipo' si fuera necesario, pero lo derivamos
+                        tipo: catLocal.tipo,
                         categoriaId: catLocal.id!,
                         creado_en: r.creado_en,
                         server_id: r.id,
