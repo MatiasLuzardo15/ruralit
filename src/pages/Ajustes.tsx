@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 import { createPortal } from 'react-dom';
-import { Plus, Pencil, Trash2, Check, X, Settings2, Building2, Coins, LayoutGrid, AlertCircle, ChevronRight, ArrowLeft, User, HelpCircle, Moon, Sun } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, Settings2, Building2, Coins, LayoutGrid, AlertCircle, ChevronRight, ArrowLeft, User, HelpCircle, Moon, Sun, Cloud, CloudOff, LogOut } from 'lucide-react';
 import type { Categoria, TipoMovimiento, Moneda } from '../types';
 import db, { type TipoProduccion, inicializarCategorias } from '../db/database';
 import { showToast } from '../components/Toast';
@@ -127,7 +129,12 @@ function CurrencyModal({ current, onClose, onSave }: { current: Moneda[], onClos
 // ── Components ─────────────────────────────────────────────
 type TabKey = 'establecimiento' | 'divisas' | 'entradas' | 'salidas' | 'sistema';
 
-export function Ajustes() {
+interface AjustesProps {
+    user?: SupabaseUser | null;
+    onLoginClick?: () => void;
+}
+
+export function Ajustes({ user, onLoginClick }: AjustesProps) {
     const [cats, setCats] = useState<Categoria[]>([]);
     const [nombreEstab, setNombre] = useState('');
     const [nombreUsuario, setNombreUsuario] = useState('');
@@ -303,6 +310,49 @@ export function Ajustes() {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', width: '100%' }}>
                             <input type="text" value={nombreUsuario} onChange={e => setNombreUsuario(e.target.value)} placeholder="Tu Nombre (Ej: Matías)" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', background: 'var(--white)', color: 'var(--t1)' }} />
                             <input type="text" value={nombreEstab} onChange={e => setNombre(e.target.value)} placeholder="Nombre Comercial (Ej: La Esmeralda)" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', background: 'var(--white)', color: 'var(--t1)' }} />
+                        </div>
+                    </div>
+
+                    <div className="settings-grid-row">
+                        <div className="settings-row-info">
+                            <h3>Nube y Sincronización</h3>
+                            <p>Respalda tus datos automáticamente en Supabase.</p>
+                        </div>
+                        <div>
+                            {user ? (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--green-light)', padding: '16px 20px', borderRadius: '16px', border: '1px solid var(--green-main)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <Cloud color="var(--green-main)" size={20} />
+                                        <div>
+                                            <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--green-main)' }}>Sesión Activa</p>
+                                            <p style={{ fontSize: '12px', color: 'var(--green-main)', opacity: 0.8 }}>{user.email}</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => supabase.auth.signOut()}
+                                        style={{ background: 'white', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'var(--red-soft)', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                                    >
+                                        <LogOut size={14} /> Salir
+                                    </button>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg)', padding: '16px 20px', borderRadius: '16px', border: '1px solid var(--border)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <CloudOff color="var(--t3)" size={20} />
+                                        <div>
+                                            <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--t1)' }}>Sin Sincronizar</p>
+                                            <p style={{ fontSize: '12px', color: 'var(--t3)' }}>Crea una cuenta para no perder tus datos.</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        className="btn-primary" 
+                                        style={{ padding: '10px 16px', fontSize: '13px' }}
+                                        onClick={onLoginClick}
+                                    >
+                                        Conectar Nube
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
 

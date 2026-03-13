@@ -4,7 +4,11 @@ import { Home, BookOpen, BarChart2, Settings2, MoreVertical, ChevronDown, Check,
 export type Tab = 'inicio' | 'libreta' | 'balance' | 'ajustes';
 
 interface NavItem { id: Tab; label: string; Icon: typeof Home; }
-interface Props { activo: Tab; onChange: (t: Tab) => void; establecimiento?: string; collapsed?: boolean; setCollapsed?: (v: boolean) => void; }
+import logo from '../ruralit.png';
+import { supabase } from '../lib/supabase';
+import { User } from '@supabase/supabase-js';
+import { Cloud, CloudOff, LogOut, User as UserIcon } from 'lucide-react';
+
 interface EstItem { id: string; nombre: string; }
 
 const NAV_ITEMS: NavItem[] = [{ id: 'inicio', label: 'Dashboard', Icon: Home }];
@@ -13,9 +17,17 @@ const DATA_ITEMS: NavItem[] = [
     { id: 'balance', label: 'Balance', Icon: BarChart2 },
 ];
 
-import logo from '../ruralit.png';
+interface Props { 
+    activo: Tab; 
+    onChange: (t: Tab) => void; 
+    establecimiento?: string; 
+    collapsed?: boolean; 
+    setCollapsed?: (v: boolean) => void;
+    user?: User | null;
+    onLoginClick?: () => void;
+}
 
-export function Sidebar({ activo, onChange, establecimiento, collapsed, setCollapsed }: Props) {
+export function Sidebar({ activo, onChange, establecimiento, collapsed, setCollapsed, user, onLoginClick }: Props) {
     const [showSelector, setShowSelector] = useState(false);
     const [estabs, setEstabs] = useState<EstItem[]>([]);
     const selectorRef = useRef<HTMLDivElement>(null);
@@ -102,6 +114,37 @@ export function Sidebar({ activo, onChange, establecimiento, collapsed, setColla
                         <Settings2 className="sidebar-item-icon" size={18} strokeWidth={1.5} />
                         {!collapsed && "Ajustes"}
                     </button>
+
+                    <div style={{ marginTop: '12px', padding: collapsed ? '0' : '0 12px' }}>
+                        {user ? (
+                            <div style={{ 
+                                display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', 
+                                background: 'var(--green-light)', borderRadius: '12px', overflow: 'hidden' 
+                            }}>
+                                <div style={{ minWidth: '32px', height: '32px', borderRadius: '50%', background: 'var(--green-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                                    <Cloud size={16} />
+                                </div>
+                                {!collapsed && (
+                                    <div style={{ minWidth: 0, flex: 1 }}>
+                                        <p style={{ fontSize: '12px', fontWeight: 700, color: 'var(--green-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.email?.split('@')[0]}</p>
+                                        <p style={{ fontSize: '10px', color: 'var(--green-main)', opacity: 0.8 }}>Nube Activa</p>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <button 
+                                onClick={onLoginClick}
+                                style={{ 
+                                    width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', 
+                                    background: 'var(--gray-100)', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                                    justifyContent: collapsed ? 'center' : 'flex-start'
+                                }}
+                            >
+                                <CloudOff size={16} color="var(--t3)" />
+                                {!collapsed && <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--t2)' }}>Usar Nube</span>}
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
