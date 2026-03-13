@@ -103,7 +103,7 @@ function CurrencyModal({ current, onClose, onSave }: { current: Moneda[], onClos
                         return (
                             <div key={code} onClick={() => toggle(code)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', borderRadius: '16px', border: active ? '2px solid var(--green-main)' : '1px solid var(--border)', background: active ? 'var(--green-light)' : 'var(--white)', cursor: 'pointer', transition: 'all 0.2s', minWidth: '0' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '0' }}>
-                                    <span style={{ fontSize: '24px', flexShrink: 0 }}>{MONEDAS[code].flag}</span>
+                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800, flexShrink: 0, color: 'var(--t2)' }}>{code}</div>
                                     <div style={{ minWidth: '0', overflow: 'hidden' }}>
                                         <p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--t1)', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>{MONEDAS[code].label}</p>
                                         <p style={{ fontSize: '13px', color: 'var(--t3)', display: 'flex', gap: '6px' }}><strong>{code}</strong> <span>{MONEDAS[code].simbolo}</span></p>
@@ -366,8 +366,8 @@ export function Ajustes() {
                             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                                 {monedasActivas.map((code, index) => (
                                     <div key={code} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 16px', background: 'var(--white)', borderRadius: '8px', border: '1px solid var(--border-sm)', minWidth: '140px' }}>
-                                        <div style={{ fontSize: '20px', width: '28px', height: '28px', borderRadius: '50%', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            {MONEDAS[code].flag}
+                                        <div style={{ fontSize: '11px', fontWeight: 800, width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--t2)' }}>
+                                            {code}
                                         </div>
                                         <div>
                                             <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--t1)', lineHeight: 1.2 }}>{code}</p>

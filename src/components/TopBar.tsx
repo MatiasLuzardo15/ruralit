@@ -16,19 +16,19 @@ export function TopBar({ title, heading, badge, subtitle, actions, hideCurrencyT
     const { moneda, monedasActivas, changeMoneda } = useMonedas();
 
     const currencyToggle = (!hideCurrencyToggle && monedasActivas.length > 1) ? (
-        <div style={{ background: 'var(--bg-input)', borderRadius: '12px', border: '1px solid var(--border)', display: 'flex', padding: '4px', height: '42px', alignItems: 'center' }}>
+        <div style={{ background: 'var(--bg-input)', borderRadius: '10px', display: 'flex', padding: '3px', border: '1px solid var(--border-sm)', height: 'fit-content', alignItems: 'center' }}>
             {monedasActivas.map(m => (
                 <button 
                     key={m} 
                     onClick={() => changeMoneda(m)} 
                     style={{ 
-                        padding: '6px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
+                        padding: '4px 10px', borderRadius: '7px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
                         background: m === moneda ? 'var(--white)' : 'transparent',
                         color: m === moneda ? 'var(--t1)' : 'var(--t3)',
-                        border: m === moneda ? '1px solid var(--green-main)' : '1px solid transparent',
-                        display: 'flex', alignItems: 'center', gap: '6px', height: '100%'
+                        border: 'none',
+                        boxShadow: m === moneda ? 'var(--shadow-xs)' : 'none'
                     }}>
-                    <span>{MONEDAS[m].flag}</span> <span className="desktop-only">{m}</span>
+                    {m}
                 </button>
             ))}
         </div>

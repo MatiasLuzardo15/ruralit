@@ -388,20 +388,20 @@ export function Balance() {
     const { moneda, monedasActivas, changeMoneda } = useMonedas();
 
     const CurrencyTabs = () => (
-        <div style={{ display: 'flex', gap: '8px', background: 'var(--bg-input)', padding: '4px', borderRadius: '12px', width: 'fit-content' }}>
+        <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-input)', padding: '3px', borderRadius: '10px', border: '1px solid var(--border-sm)', width: 'fit-content' }}>
             {monedasActivas.map(mnd => (
                 <button
                     key={mnd}
                     onClick={() => changeMoneda(mnd)}
                     style={{
-                        padding: '6px 16px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px',
+                        padding: '4px 10px', borderRadius: '7px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
                         background: mnd === moneda ? 'var(--white)' : 'transparent',
                         color: mnd === moneda ? 'var(--t1)' : 'var(--t3)',
-                        fontWeight: mnd === moneda ? 700 : 500,
-                        border: mnd === moneda ? '1px solid var(--green-main)' : '1px solid transparent'
+                        border: 'none',
+                        boxShadow: mnd === moneda ? 'var(--shadow-xs)' : 'none'
                     }}
                 >
-                    {mnd === 'USD' ? '🇺🇸' : mnd === 'UYU' ? '🇺🇾' : '🇦🇷'} {mnd}
+                    {mnd}
                 </button>
             ))}
         </div>
@@ -545,20 +545,20 @@ export function Balance() {
         const sItems = buildCatItems('gasto', movsMesMoneda);
 
         const CurrencyTabs = () => (
-            <div className="no-print" style={{ display: 'flex', gap: '4px', background: 'var(--bg-input)', padding: '4px', borderRadius: '12px', width: 'fit-content' }}>
+            <div className="no-print" style={{ display: 'flex', gap: '4px', background: 'var(--bg-input)', padding: '3px', borderRadius: '10px', border: '1px solid var(--border-sm)', width: 'fit-content' }}>
                 {monedasActivas.map(mnd => (
                     <button
                         key={mnd}
                         onClick={() => changeMoneda(mnd)}
                         style={{
-                            padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px',
+                            padding: '4px 10px', borderRadius: '7px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
                             background: mnd === moneda ? 'var(--white)' : 'transparent',
                             color: mnd === moneda ? 'var(--t1)' : 'var(--t3)',
-                            fontWeight: mnd === moneda ? 700 : 500,
-                            border: mnd === moneda ? '1px solid var(--green-main)' : '1px solid transparent'
+                            border: 'none',
+                            boxShadow: mnd === moneda ? 'var(--shadow-xs)' : 'none'
                         }}
                     >
-                        {mnd === 'USD' ? '🇺🇸' : mnd === 'UYU' ? '🇺🇾' : '🇦🇷'} {mnd}
+                        {mnd}
                     </button>
                 ))}
             </div>
@@ -598,7 +598,7 @@ export function Balance() {
                                             </p>
                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
                                                 <p style={{ fontSize: '11px', color: '#999999' }}>
-                                                    <span style={{ fontWeight: 500 }}>{mnd === 'USD' ? '🇺🇸 USD' : mnd === 'UYU' ? '🇺🇾 UYU' : '🇦🇷 ARS'}</span> {dp !== 0 ? `(${dp >= 0 ? '+' : ''}${formatMonto(dp, mnd)})` : ''}
+                                                    <span style={{ fontWeight: 600 }}>{mnd}</span> {dp !== 0 ? `(${dp >= 0 ? '+' : ''}${formatMonto(dp, mnd)})` : ''}
                                                 </p>
                                                 <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--blue-main)', background: 'var(--blue-light)', padding: '3px 6px', borderRadius: '6px' }}>
                                                     {mgn}%
@@ -749,7 +749,7 @@ export function Balance() {
                                 const bld = calcularBalance(mvTr);
                                 return (
                                     <div key={mnd} style={{ borderBottom: idx < monedasActivas.length - 1 ? '1px solid var(--border-sm)' : 'none', paddingBottom: idx < monedasActivas.length - 1 ? '12px' : '0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t2)' }}>{mnd === 'USD' ? '🇺🇸' : mnd === 'UYU' ? '🇺🇾' : '🇦🇷'} {mnd}</span>
+                                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t2)' }}>{mnd}</span>
                                         <span style={{ fontSize: '24px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)', letterSpacing: '-1px' }}>{formatMonto(bld.neto, mnd)}</span>
                                     </div>
                                 );
@@ -865,7 +865,7 @@ export function Balance() {
                                 const bld = calcularBalance(mvAn);
                                 return (
                                     <div key={mnd} style={{ borderBottom: idx < monedasActivas.length - 1 ? '1px solid var(--border-sm)' : 'none', paddingBottom: idx < monedasActivas.length - 1 ? '12px' : '0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t2)' }}>{mnd === 'USD' ? '🇺🇸' : mnd === 'UYU' ? '🇺🇾' : '🇦🇷'} {mnd}</span>
+                                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t2)' }}>{mnd}</span>
                                         <span style={{ fontSize: '24px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)', letterSpacing: '-1px' }}>{formatMonto(bld.neto, mnd)}</span>
                                     </div>
                                 );
