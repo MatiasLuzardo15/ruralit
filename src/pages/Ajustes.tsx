@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, Pencil, Trash2, Check, X, Settings2, Building2, Coins, LayoutGrid, AlertCircle, ChevronRight, ArrowLeft, User, HelpCircle, Moon, Sun } from 'lucide-react';
 import type { Categoria, TipoMovimiento, Moneda } from '../types';
-import db from '../db/database';
+import db, { type TipoProduccion, inicializarCategorias } from '../db/database';
 import { showToast } from '../components/Toast';
 import { TopBar } from '../components/TopBar';
 import { MONEDAS } from '../utils/helpers';
@@ -132,6 +132,7 @@ export function Ajustes() {
     const [nombreEstab, setNombre] = useState('');
     const [nombreUsuario, setNombreUsuario] = useState('');
     const [monedasActivas, setMonedasActivas] = useState<Moneda[]>(['UYU']);
+    const [tipoProduccion, setTipoProduccion] = useState<TipoProduccion>('Ganadería');
     const [activeTab, setActiveTab] = useState<TabKey>('establecimiento');
 
     // Modals state
@@ -158,6 +159,8 @@ export function Ajustes() {
         if (u) setNombreUsuario(u.valor as string);
         const m = await db.config.get('monedasActivas');
         if (m && Array.isArray(m.valor)) setMonedasActivas(m.valor as Moneda[]);
+        const t = await db.config.get('tipoProduccion');
+        if (t) setTipoProduccion(t.valor as TipoProduccion);
     };
 
     useEffect(() => { void cargar(); }, []);
@@ -165,6 +168,7 @@ export function Ajustes() {
     const guardarNombre = async () => {
         await db.config.put({ clave: 'nombreEstablecimiento', valor: nombreEstab });
         await db.config.put({ clave: 'nombreUsuario', valor: nombreUsuario });
+        await db.config.put({ clave: 'tipoProduccion', valor: tipoProduccion });
         try {
             const activeId = localStorage.getItem('activeEstDB') || 'RuralitDB';
             const estabs = JSON.parse(localStorage.getItem('ruralit_establecimientos') || '[]');
@@ -299,6 +303,39 @@ export function Ajustes() {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', width: '100%' }}>
                             <input type="text" value={nombreUsuario} onChange={e => setNombreUsuario(e.target.value)} placeholder="Tu Nombre (Ej: Matías)" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', background: 'var(--white)', color: 'var(--t1)' }} />
                             <input type="text" value={nombreEstab} onChange={e => setNombre(e.target.value)} placeholder="Nombre Comercial (Ej: La Esmeralda)" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '14px', outline: 'none', background: 'var(--white)', color: 'var(--t1)' }} />
+                        </div>
+                    </div>
+
+                    <div className="settings-grid-row">
+                        <div className="settings-row-info">
+                            <h3>Tipo de Producción</h3>
+                            <p>Define el rubro principal para sugerir categorías apropiadas.</p>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px' }}>
+                                {(['Ganadería', 'Lechería', 'Agricultura', 'Mixto'] as TipoProduccion[]).map(t => (
+                                    <button
+                                        key={t}
+                                        onClick={() => setTipoProduccion(t)}
+                                        style={{ padding: '12px', borderRadius: '12px', border: tipoProduccion === t ? '2px solid var(--green-main)' : '1px solid var(--border)', background: tipoProduccion === t ? 'var(--green-light)' : 'var(--white)', color: 'var(--t1)', fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+                                    >
+                                        {t}
+                                    </button>
+                                ))}
+                            </div>
+                            <button 
+                                className="btn-secondary" 
+                                style={{ fontSize: '12px', alignSelf: 'flex-start' }}
+                                onClick={async () => {
+                                    if(confirm('¿Deseas cargar las categorías sugeridas para ' + tipoProduccion + '? Las existentes no se borrarán.')) {
+                                        await inicializarCategorias(tipoProduccion);
+                                        showToast('Categorías sincronizadas');
+                                        cargar();
+                                    }
+                                }}
+                            >
+                                Cargar categorías sugeridas
+                            </button>
                         </div>
                     </div>
 

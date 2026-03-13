@@ -7,6 +7,7 @@ import { Inicio } from './pages/Inicio';
 import { Libreta } from './pages/Libreta';
 import { Balance } from './pages/Balance';
 import { Ajustes } from './pages/Ajustes';
+import { ModalSetup } from './components/ModalSetup';
 
 function App() {
     const [tab, setTab] = useState<Tab>('inicio');
@@ -22,6 +23,16 @@ function App() {
             }
         });
     }, []);
+
+    // Verificar si falta configuración inicial
+    const tipoProduccion = useLiveQuery(() => db.config.get('tipoProduccion'), []);
+    const [showSetup, setShowSetup] = useState(false);
+
+    useEffect(() => {
+        if (tipoProduccion !== undefined && !tipoProduccion) {
+            setShowSetup(true);
+        }
+    }, [tipoProduccion]);
 
     const establecimiento = useLiveQuery(
         () => db.config.get('nombreEstablecimiento').then(r => r?.valor ?? 'Mi Establecimiento'),
@@ -39,6 +50,7 @@ function App() {
             </main>
             <BottomNav activo={tab} onChange={setTab} />
             <Toast />
+            {showSetup && <ModalSetup onComplete={() => setShowSetup(false)} initialName={establecimiento === 'Mi Establecimiento' ? '' : establecimiento} />}
         </div>
     );
 }
