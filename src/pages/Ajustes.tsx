@@ -182,23 +182,33 @@ export function Ajustes({ user }: AjustesProps) {
     useEffect(() => { void cargar(); }, []);
 
     const logout = async () => {
-        if (confirm('¿Cerrar sesión? Se borrarán los datos locales por seguridad para evitar mezclar cuentas.')) {
+        if (confirm('¿Cerrar sesión? Se sincronizarán tus últimos cambios y se limpiará la memoria local.')) {
+            setSaving(true);
             try {
+                // 1. FORZAR Sincronización final antes de borrar nada
+                showToast('Sincronizando cambios finales...');
+                await syncService.syncNow();
+                
+                // 2. Cerrar sesión en Supabase
                 await supabase.auth.signOut();
-                // 1. Limpiar base de datos local (Dexie)
+                
+                // 3. Limpiar base de datos local
                 await db.delete();
-                // 2. Limpiar localStorage
+                
+                // 4. Limpiar localStorage
                 localStorage.removeItem('ruralit_establecimientos');
                 localStorage.removeItem('activeEstDB');
                 localStorage.removeItem('ruralit_theme');
                 
-                showToast('Sesión cerrada y datos limpiados');
+                showToast('Sesión cerrada y datos protegidos');
                 setTimeout(() => {
                     window.location.href = '/';
                 }, 1000);
             } catch (error) {
                 console.error('Error al cerrar sesión:', error);
                 showToast('Error al cerrar sesión');
+            } finally {
+                setSaving(false);
             }
         }
     };

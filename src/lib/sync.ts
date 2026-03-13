@@ -14,8 +14,15 @@ export class SyncService {
 
     // --- Core Sync Logic ---
 
-    async syncEverything() {
-        if (this.isSyncing) return;
+    private syncTimeout: any = null;
+
+    /**
+     * Sincronización completa.
+     * @param force Si es true, ignora el bloqueo isSyncing (usar con precaución)
+     */
+    async syncEverything(force = false): Promise<void> {
+        if (this.isSyncing && !force) return;
+        
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         if (sessionError || !session) return;
 
@@ -24,17 +31,17 @@ export class SyncService {
         try {
             console.log('🔄 Iniciando sincronización absoluta...');
             
-            // 1. Sincronizar Configuración Base (Perfil y Establecimiento)
+            // 1. Perfil y Establecimiento
             const estabServerId = await this.syncConfigOnly();
             if (!estabServerId) {
-                console.log('ℹ️ No se encontró establecimiento previo, esperando setup...');
+                console.log('ℹ️ No se encontró establecimiento previo.');
                 return;
             }
 
-            // 2. Sincronizar Categorías (Bidireccional)
+            // 2. Categorías
             await this.syncCategorias(estabServerId);
 
-            // 3. Sincronizar Movimientos (Bidireccional)
+            // 3. Movimientos
             await this.syncMovimientos(estabServerId);
 
             console.log('✅ Sincronización completada.');
@@ -44,6 +51,15 @@ export class SyncService {
             this.isSyncing = false;
             this.suppressHooks = false;
         }
+    }
+
+    /**
+     * Fuerza una sincronización inmediata y espera a que termine.
+     * Ideal para llamar antes de cerrar sesión o refrescar.
+     */
+    async syncNow(): Promise<void> {
+        if (this.syncTimeout) clearTimeout(this.syncTimeout);
+        await this.syncEverything(true);
     }
 
     /**
@@ -61,13 +77,17 @@ export class SyncService {
     private async syncProfile(userId: string) {
         const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single();
         if (profile) {
-            await db.config.put({ clave: 'nombreUsuario', valor: profile.username });
-            await db.config.put({ clave: 'moneda', valor: profile.default_currency });
-            // Restaurar monedas activas si existen
+            // Solo sobrescribimos si el servidor tiene un dato válido (no nulo)
+            if (profile.username) {
+                await db.config.put({ clave: 'nombreUsuario', valor: profile.username });
+            }
             if (profile.default_currency) {
+                await db.config.put({ clave: 'moneda', valor: profile.default_currency });
                 await db.config.put({ clave: 'monedasActivas', valor: [profile.default_currency] });
             }
-            if (profile.avatar_url) await db.config.put({ clave: 'avatarUsuario', valor: profile.avatar_url });
+            if (profile.avatar_url) {
+                await db.config.put({ clave: 'avatarUsuario', valor: profile.avatar_url });
+            }
         }
     }
 
@@ -375,8 +395,12 @@ export class SyncService {
 
     private triggerBackgroundSync() {
         if (this.suppressHooks) return;
-        // Debounce para no saturar durante cargas iniciales
-        setTimeout(() => this.syncEverything(), 5000);
+        if (this.syncTimeout) clearTimeout(this.syncTimeout);
+        
+        // Debounce de 3 segundos para cambios rápidos
+        this.syncTimeout = setTimeout(() => {
+            this.syncEverything();
+        }, 3000);
     }
 }
 
