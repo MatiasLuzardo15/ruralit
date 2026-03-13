@@ -10,6 +10,7 @@ import { Ajustes } from './pages/Ajustes';
 
 function App() {
     const [tab, setTab] = useState<Tab>('inicio');
+    const [collapsed, setCollapsed] = useState(false);
 
     const establecimiento = useLiveQuery(
         () => db.config.get('nombreEstablecimiento').then(r => r?.valor ?? 'Mi Establecimiento'),
@@ -17,8 +18,8 @@ function App() {
     );
 
     return (
-        <div className="app-root">
-            <Sidebar activo={tab} onChange={setTab} establecimiento={establecimiento} />
+        <div className={`app-root ${collapsed ? 'sidebar-collapsed' : ''}`}>
+            <Sidebar activo={tab} onChange={setTab} establecimiento={establecimiento} collapsed={collapsed} setCollapsed={setCollapsed} />
             <main className="app-main">
                 {tab === 'inicio' && <Inicio />}
                 {tab === 'libreta' && <Libreta />}

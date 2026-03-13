@@ -492,7 +492,7 @@ export function Balance() {
                         }
                         const label = vista === 'mensual' ? formatMesLabel(anio, mes) : vista === 'trimestral' ? getTrimestreInfo(new Date(anio, mes, 1)).label : `Año ${anio}`;
                         import('../utils/exportUtils').then(mod => {
-                            mod.exportMovimientosCSV(currentMovs, catMap, label);
+                            mod.exportBalanceFullCSV(currentMovs, catMap, label);
                         });
                     }}
                     className="nav-arrow"
@@ -545,7 +545,7 @@ export function Balance() {
         const sItems = buildCatItems('gasto', movsMesMoneda);
 
         const CurrencyTabs = () => (
-            <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-input)', padding: '4px', borderRadius: '12px', width: 'fit-content' }}>
+            <div className="no-print" style={{ display: 'flex', gap: '4px', background: 'var(--bg-input)', padding: '4px', borderRadius: '12px', width: 'fit-content' }}>
                 {monedasActivas.map(mnd => (
                     <button
                         key={mnd}
@@ -575,8 +575,8 @@ export function Balance() {
                     itemsS={sItems}
                 />
                 {/* BIG HERO REPORT */}
-                <div style={{ background: 'var(--white)', borderRadius: '28px', padding: '24px 28px', boxShadow: 'var(--shadow-sm)' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '32px', alignItems: 'center' }}>
+                <div className="print-section" style={{ background: 'var(--white)', borderRadius: '28px', padding: '24px 28px', boxShadow: 'var(--shadow-sm)' }}>
+                    <div className="print-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '32px', alignItems: 'center' }}>
 
                         {/* Saldo Principal */}
                         <div style={{ display: 'flex', flexDirection: 'column', minWidth: '220px' }}>
@@ -660,25 +660,27 @@ export function Balance() {
                     </div>
                 </div>
 
-                <AnalysisSection
-                    bal={balMoneda}
-                    prevBal={balPrevMoneda}
-                    itemsE={eItems}
-                    itemsS={sItems}
-                    movs={movsMesMoneda}
-                    type="mensual"
-                    moneda={moneda}
-                    catMap={catMap}
-                    periodLabel={formatMesLabel(anio, mes)}
-                />
+                <div className="print-section">
+                    <AnalysisSection
+                        bal={balMoneda}
+                        prevBal={balPrevMoneda}
+                        itemsE={eItems}
+                        itemsS={sItems}
+                        movs={movsMesMoneda}
+                        type="mensual"
+                        moneda={moneda}
+                        catMap={catMap}
+                        periodLabel={formatMesLabel(anio, mes)}
+                    />
+                </div>
 
                 {/* LOWER SECTION GRID */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '16px' }}>
-                    <div style={{ background: 'var(--white)', borderRadius: '28px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
+                <div className="print-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '16px' }}>
+                    <div className="avoid-break" style={{ background: 'var(--white)', borderRadius: '28px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
                         <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', marginBottom: '20px', letterSpacing: '-0.3px' }}>Ingresos por Categoría</h3>
                         <HorzBars items={eItems} palette={PAL_E} onCatClick={(cat) => openCat(cat, movsMesMoneda)} />
                     </div>
-                    <div style={{ background: 'var(--white)', borderRadius: '28px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
+                    <div className="avoid-break" style={{ background: 'var(--white)', borderRadius: '28px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
                         <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', marginBottom: '20px', letterSpacing: '-0.3px' }}>Gastos por Categoría</h3>
                         <HorzBars items={sItems} palette={PAL_S} onCatClick={(cat) => openCat(cat, movsMesMoneda)} />
                     </div>
@@ -736,8 +738,8 @@ export function Balance() {
                     <CurrencyTabs />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
-                    <div style={{ background: 'var(--white)', borderRadius: '32px', padding: '32px', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column' }}>
+                <div className="print-section" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+                    <div className="avoid-break" style={{ background: 'var(--white)', borderRadius: '32px', padding: '32px', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column' }}>
                         <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <BarChart2 size={18} color="var(--t1)" /> Balance Neto Trimestral
                         </p>
@@ -755,21 +757,23 @@ export function Balance() {
                         </div>
                     </div>
 
-                    <KPICard title="Ingresos del Trimestre" value={formatMonto(balTrim.ingresos, moneda)} icon={<TrendingUp size={18} color="var(--green-main)" />} sub={`Periodo ${mesesLabels[mesIni - 1]} - ${mesesLabels[mesIni + 1]}`} />
-                    <KPICard title="Gastos del Trimestre" value={formatMonto(balTrim.gastos, moneda)} icon={<TrendingDown size={18} color="var(--red-soft)" />} sub="Salidas operativas" />
-                    <KPICard title="Margen Bruto" value={`${margenTrim}%`} icon={<Divide size={18} color="var(--blue-500)" />} trend={parseFloat(margenTrim) > 30 ? { up: true, label: 'Saludable' } : { up: false, label: 'Bajo' }} />
+                    <div className="avoid-break"><KPICard title="Ingresos del Trimestre" value={formatMonto(balTrim.ingresos, moneda)} icon={<TrendingUp size={18} color="var(--green-main)" />} sub={`Periodo ${mesesLabels[mesIni - 1]} - ${mesesLabels[mesIni + 1]}`} /></div>
+                    <div className="avoid-break"><KPICard title="Gastos del Trimestre" value={formatMonto(balTrim.gastos, moneda)} icon={<TrendingDown size={18} color="var(--red-soft)" />} sub="Salidas operativas" /></div>
+                    <div className="avoid-break"><KPICard title="Margen Bruto" value={`${margenTrim}%`} icon={<Divide size={18} color="var(--blue-500)" />} trend={parseFloat(margenTrim) > 30 ? { up: true, label: 'Saludable' } : { up: false, label: 'Bajo' }} /></div>
                 </div>
 
-                <AnalysisSection
-                    bal={balTrim}
-                    itemsE={eItems}
-                    itemsS={sItems}
-                    movs={tMovesMoneda}
-                    type="trimestral"
-                    moneda={moneda}
-                    catMap={catMap}
-                    periodLabel={getTrimestreInfo(new Date(anio, mes, 1)).label}
-                />
+                <div className="print-section">
+                    <AnalysisSection
+                        bal={balTrim}
+                        itemsE={eItems}
+                        itemsS={sItems}
+                        movs={tMovesMoneda}
+                        type="trimestral"
+                        moneda={moneda}
+                        catMap={catMap}
+                        periodLabel={getTrimestreInfo(new Date(anio, mes, 1)).label}
+                    />
+                </div>
 
                 <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
                     <div style={{ background: 'var(--white)', borderRadius: '32px', padding: '40px', boxShadow: 'var(--shadow-sm)', flex: '1 1 500px' }}>
@@ -793,12 +797,12 @@ export function Balance() {
                     </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
-                    <div style={{ background: 'var(--white)', borderRadius: '28px', padding: '28px', boxShadow: 'var(--shadow-sm)' }}>
+                <div className="print-section" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
+                    <div className="avoid-break" style={{ background: 'var(--white)', borderRadius: '28px', padding: '28px', boxShadow: 'var(--shadow-sm)' }}>
                         <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--t1)', marginBottom: '32px' }}>Mayores Ingresos</h3>
                         <HorzBars items={eItems} palette={PAL_E} onCatClick={(cat) => openCat(cat, tMovesMoneda)} />
                     </div>
-                    <div style={{ background: 'var(--white)', borderRadius: '28px', padding: '28px', boxShadow: 'var(--shadow-sm)' }}>
+                    <div className="avoid-break" style={{ background: 'var(--white)', borderRadius: '28px', padding: '28px', boxShadow: 'var(--shadow-sm)' }}>
                         <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--t1)', marginBottom: '32px' }}>Mayores Gastos</h3>
                         <HorzBars items={sItems} palette={PAL_S} onCatClick={(cat) => openCat(cat, tMovesMoneda)} />
                     </div>
@@ -849,9 +853,9 @@ export function Balance() {
                 </div>
 
                 {/* 1. KPIs */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+                <div className="print-section" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
 
-                    <div style={{ background: 'var(--white)', borderRadius: '32px', padding: '32px', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column' }}>
+                    <div className="avoid-break" style={{ background: 'var(--white)', borderRadius: '32px', padding: '32px', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column' }}>
                         <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <BarChart2 size={18} color="var(--t1)" /> Balance Neto Anual
                         </p>
@@ -869,9 +873,9 @@ export function Balance() {
                         </div>
                     </div>
 
-                    <KPICard title="Total Ingresos Anual" value={formatMonto(balAnual.ingresos, moneda)} icon={<TrendingUp size={18} color="var(--green-main)" />} trend={balAnual.ingresos > 0 ? { up: true, label: '+ Activo' } : undefined} sub={`Acumulado de ${anio}`} />
-                    <KPICard title="Total Gastos Anual" value={formatMonto(balAnual.gastos, moneda)} icon={<TrendingDown size={18} color="var(--red-soft)" />} sub="Salidas operativas" />
-                    <KPICard title="Margen Promedio" value={`${margenAnual}%`} icon={<Divide size={18} color="var(--blue-500)" />} trend={parseFloat(margenAnual) > 30 ? { up: true, label: 'Saludable' } : { up: false, label: 'Crítico' }} />
+                    <div className="avoid-break"><KPICard title="Total Ingresos Anual" value={formatMonto(balAnual.ingresos, moneda)} icon={<TrendingUp size={18} color="var(--green-main)" />} trend={balAnual.ingresos > 0 ? { up: true, label: '+ Activo' } : undefined} sub={`Acumulado de ${anio}`} /></div>
+                    <div className="avoid-break"><KPICard title="Total Gastos Anual" value={formatMonto(balAnual.gastos, moneda)} icon={<TrendingDown size={18} color="var(--red-soft)" />} sub="Salidas operativas" /></div>
+                    <div className="avoid-break"><KPICard title="Margen Promedio" value={`${margenAnual}%`} icon={<Divide size={18} color="var(--blue-500)" />} trend={parseFloat(margenAnual) > 30 ? { up: true, label: 'Saludable' } : { up: false, label: 'Crítico' }} /></div>
                 </div>
 
                 {/* 2. Charts */}
@@ -929,29 +933,30 @@ export function Balance() {
                         </ResponsiveContainer>
                     </div>
                 </div>
-                <AnalysisSection
-                    bal={balAnual}
-                    itemsE={eItemsAnual}
-                    itemsS={sItemsAnual}
-                    movs={aMovesMoneda}
-                    type="anual"
-                    moneda={moneda}
-                    catMap={catMap}
-                    periodLabel={anio.toString()}
-                />
+                <div className="print-section">
+                    <AnalysisSection
+                        bal={balAnual}
+                        itemsE={eItemsAnual}
+                        itemsS={sItemsAnual}
+                        movs={aMovesMoneda}
+                        type="anual"
+                        moneda={moneda}
+                        catMap={catMap}
+                        periodLabel={anio.toString()}
+                    />
+                </div>
 
                 {/* 3. Distribution Categories */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '16px' }}>
-                    <div style={{ background: 'var(--white)', borderRadius: '28px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
+                <div className="print-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '16px' }}>
+                    <div className="avoid-break" style={{ background: 'var(--white)', borderRadius: '28px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
                         <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', marginBottom: '20px', letterSpacing: '-0.3px' }}>Distribución de Ingresos {anio}</h3>
                         <HorzBars items={eItemsAnual} palette={PAL_E} onCatClick={(cat) => openCat(cat, aMovesMoneda)} />
                     </div>
-                    <div style={{ background: 'var(--white)', borderRadius: '28px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
+                    <div className="avoid-break" style={{ background: 'var(--white)', borderRadius: '28px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
                         <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--t1)', marginBottom: '20px', letterSpacing: '-0.3px' }}>Distribución de Gastos {anio}</h3>
                         <HorzBars items={sItemsAnual} palette={PAL_S} onCatClick={(cat) => openCat(cat, aMovesMoneda)} />
                     </div>
                 </div>
-
             </div>
         );
     };
