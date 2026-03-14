@@ -1,165 +1,402 @@
-import { formatFechaCorta } from './helpers';
+import { dataService } from '../lib/dataService';
+import { formatMonto, formatFechaCorta } from './helpers';
 import type { Movimiento, Categoria } from '../types';
 
-/**
- * Exporta un array de datos a un archivo CSV y gatilla la descarga en el navegador.
- */
-export const exportToCSV = (data: any[], headers: string[], fileName: string) => {
-    const csvRows = [];
+/** ─── SHARED CSV LOGIC ─── */
+async function internalGenerateCSV(movs: Movimiento[], catMap: Map<string, Categoria>, title: string, periodLabel: string) {
+    // Calculate Summary
+    const summary: Record<string, { ing: number, egr: number }> = {};
+    movs.forEach(m => {
+        const mon = m.moneda || 'UYU';
+        if (!summary[mon]) summary[mon] = { ing: 0, egr: 0 };
+        if (m.tipo === 'ingreso') summary[mon].ing += m.monto;
+        else summary[mon].egr += m.monto;
+    });
 
-    // Header
-    csvRows.push(headers.join(';'));
+    // Add UTF-8 BOM for Excel compatibility
+    let csv = '\uFEFF'; 
+    
+    // Title & Info
+    csv += `${title}\n`;
+    csv += `Periodo:;${periodLabel}\n`;
+    csv += `Generado el:;${new Date().toLocaleDateString()}\n\n`;
 
-    // Body
-    for (const row of data) {
-        const values = Object.values(row).map(value => {
-            const escaped = ('' + value).replace(/"/g, '\\"');
-            return `"${escaped}"`;
-        });
-        csvRows.push(values.join(';'));
-    }
+    // Summary Section
+    csv += 'RESUMEN FINANCIERO\n';
+    csv += 'Moneda;Ingresos;Egresos;Saldo Neto\n';
+    Object.entries(summary).forEach(([mon, vals]) => {
+        csv += `${mon};${vals.ing};${vals.egr};${vals.ing - vals.egr}\n`;
+    });
+    csv += '\n\n';
 
-    const csvContent = csvRows.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    // Transactions header
+    csv += 'DETALLE DE OPERACIONES\n';
+    csv += 'Fecha;Tipo;Categoria;Monto;Moneda;Nota\n';
+
+    // Rows
+    movs.forEach(m => {
+        const catName = catMap.get(String(m.categoriaId))?.nombre || 'Sin categoría';
+        const row = [
+            m.fecha,
+            m.tipo === 'ingreso' ? 'Entrada' : 'Salida',
+            catName,
+            m.monto,
+            m.moneda || 'UYU',
+            `"${(m.nota || '').replace(/"/g, '""')}"`
+        ].join(';');
+        csv += row + '\n';
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-
     const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `${fileName}.csv`);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `reporte_${title.toLowerCase().replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-};
+}
 
-/**
- * Prepara los movimientos para exportar a CSV
- */
-export const exportMovimientosCSV = (movimientos: Movimiento[], catMap: Map<number | string, Categoria>, periodLabel: string) => {
-    const headers = ['Fecha', 'Tipo', 'Categoría', 'Nota', 'Monto', 'Moneda'];
+export async function exportarACSV() {
+    const activeId = localStorage.getItem('activeEstDB_uuid');
+    if (!activeId) return;
+    try {
+        const [movs, cats, estab] = await Promise.all([
+            dataService.getMovimientos(activeId),
+            dataService.getCategorias(activeId),
+            dataService.getEstablecimientoActivo()
+        ]);
+        const catMap = new Map(cats.map(c => [String(c.id), c]));
+        await internalGenerateCSV(movs, catMap, `Ruralit - ${estab?.nombre || 'Completo'}`, 'Historial Completo');
+    } catch (e) {
+        console.error('Error al exportar Excel:', e);
+        alert('Error al exportar los datos');
+    }
+}
 
-    const data = movimientos.map(m => ({
-        fecha: formatFechaCorta(m.fecha),
-        tipo: m.tipo === 'ingreso' ? 'Venta/Ingreso' : 'Compra/Gasto',
-        categoria: catMap.get(m.categoriaId)?.nombre ?? 'Sin categoría',
-        nota: m.nota || '-',
-        monto: m.monto,
-        moneda: m.moneda || 'UYU'
-    }));
+export async function exportMovimientosCSV(movs: Movimiento[], catMap: Map<string, Categoria>, mesLabel: string) {
+    try {
+        await internalGenerateCSV(movs, catMap, 'Libreta de Movimientos', mesLabel);
+    } catch (e) {
+        console.error('Error al exportar Libreta CSV:', e);
+    }
+}
 
-    const fileName = `Reporte_Ruralit_${periodLabel.replace(/ /g, '_')}`;
-    exportToCSV(data, headers, fileName);
-};
+export async function exportBalanceFullCSV(movs: Movimiento[], catMap: Map<string, Categoria>, periodLabel: string) {
+    try {
+        await internalGenerateCSV(movs, catMap, 'Análisis de Balance', periodLabel);
+    } catch (e) {
+        console.error('Error al exportar Balance CSV:', e);
+    }
+}
 
-/**
- * Exporta un resumen del balance (Ingresos vs Gastos por categoría)
- */
-export const exportBalanceSummaryCSV = (
-    ingresosCat: any[],
-    gastosCat: any[],
-    periodLabel: string,
-    moneda: string
-) => {
-    const headers = ['Categoría', 'Tipo', 'Monto', 'Porcentaje', 'Moneda'];
+export async function exportarAPDF() {
+    const activeId = localStorage.getItem('activeEstDB_uuid');
+    if (!activeId) return;
 
-    const data = [
-        ...ingresosCat.map(item => ({
-            categoria: item.cat.nombre,
-            tipo: 'Ingreso',
-            monto: item.monto,
-            pct: `${item.pct.toFixed(2)}%`,
-            moneda
-        })),
-        ...gastosCat.map(item => ({
-            categoria: item.cat.nombre,
-            tipo: 'Gasto',
-            monto: item.monto,
-            pct: `${item.pct.toFixed(2)}%`,
-            moneda
-        }))
-    ];
+    try {
+        const [movs, cats, estab] = await Promise.all([
+            dataService.getMovimientos(activeId),
+            dataService.getCategorias(activeId),
+            dataService.getEstablecimientoActivo()
+        ]);
 
-    const fileName = `Resumen_Balance_${periodLabel.replace(/ /g, '_')}`;
-    exportToCSV(data, headers, fileName);
-};
+        const catMap = new Map(cats.map(c => [c.id, c]));
+        
+        // Calculate totals per currency properly
+        const totals: Record<string, { ing: number, egr: number }> = {};
+        movs.forEach(m => {
+            const mon = m.moneda || 'UYU';
+            if (!totals[mon]) totals[mon] = { ing: 0, egr: 0 };
+            if (m.tipo === 'ingreso') totals[mon].ing += m.monto;
+            else totals[mon].egr += m.monto;
+        });
+        const currencies = Object.keys(totals).sort();
 
-/**
- * Exportación completa de Balance que incluye detalle y resúmenes por moneda
- */
-export const exportBalanceFullCSV = (movimientos: Movimiento[], catMap: Map<number | string, Categoria>, periodLabel: string) => {
-    const csvRows = [];
-
-    // Título y Periodo
-    csvRows.push(`REPORTE DE BALANCE RURALIT - ${periodLabel.toUpperCase()}`);
-    csvRows.push('');
-
-    // --- SECCIÓN 1: RESUMEN POR MONEDA ---
-    const currencies = Array.from(new Set(movimientos.map(m => m.moneda || 'UYU')));
-
-    currencies.forEach(curr => {
-        const movsCurr = movimientos.filter(m => (m.moneda || 'UYU') === curr);
-        const totalI = movsCurr.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + m.monto, 0);
-        const totalG = movsCurr.filter(m => m.tipo === 'gasto').reduce((s, m) => s + m.monto, 0);
-
-        csvRows.push(`RESUMEN EN ${curr}`);
-        csvRows.push(`Total Ingresos;${totalI}`);
-        csvRows.push(`Total Gastos;${totalG}`);
-        csvRows.push(`Saldo Neto;${totalI - totalG}`);
-        csvRows.push('');
-
-        // Desglose por categoría en esta moneda
-        csvRows.push('Categoría;Tipo;Total');
-        const cats = new Map<number | string, { nombre: string, ingreso: number, gasto: number }>();
-
-        movsCurr.forEach(m => {
-            if (!cats.has(m.categoriaId)) {
-                cats.set(m.categoriaId, {
-                    nombre: catMap.get(m.categoriaId)?.nombre ?? 'Sin categoría',
-                    ingreso: 0,
-                    gasto: 0
-                });
-            }
-            const c = cats.get(m.categoriaId)!;
-            if (m.tipo === 'ingreso') c.ingreso += m.monto;
-            else c.gasto += m.monto;
+        // Calculate Trend Data (Monthly Margin)
+        const trendData: Record<string, { ing: number, egr: number }> = {};
+        movs.forEach(m => {
+            const date = new Date(m.fecha);
+            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            if (!trendData[key]) trendData[key] = { ing: 0, egr: 0 };
+            if (m.tipo === 'ingreso') trendData[key].ing += m.monto;
+            else trendData[key].egr += m.monto;
         });
 
-        const sortedCats = Array.from(cats.values()).sort((a, b) => (b.ingreso + b.gasto) - (a.ingreso + a.gasto));
-
-        sortedCats.forEach(c => {
-            if (c.ingreso > 0) csvRows.push(`${c.nombre};Ingreso;${c.ingreso}`);
-            if (c.gasto > 0) csvRows.push(`${c.nombre};Gasto;${c.gasto}`);
+        const sortedMonths = Object.keys(trendData).sort();
+        const marginTrend = sortedMonths.map(month => {
+            const data = trendData[month];
+            const margin = data.ing > 0 ? ((data.ing - data.egr) / data.ing) * 100 : (data.egr > 0 ? -100 : 0);
+            return { month, margin: Math.round(margin) };
         });
-        csvRows.push('');
-        csvRows.push('');
-    });
 
-    // --- SECCIÓN 2: DETALLE DE MOVIMIENTOS ---
-    csvRows.push('DETALLE DE MOVIMIENTOS (TODAS LAS MONEDAS)');
-    csvRows.push('Fecha;Tipo;Categoría;Nota;Monto;Moneda');
+        const currentMargin = marginTrend[marginTrend.length - 1]?.margin || 0;
+        const avgMargin = Math.round(marginTrend.reduce((s, m) => s + m.margin, 0) / (marginTrend.length || 1));
 
-    const sorted = [...movimientos].sort((a, b) => a.fecha.localeCompare(b.fecha));
+        // Data for doughnut
+        const gastosPorCat: Record<string, number> = {};
+        movs.filter(m => m.tipo === 'gasto').forEach(m => {
+            const name = catMap.get(m.categoriaId)?.nombre || 'Otros';
+            const label = `${name} (${m.moneda || 'UYU'})`;
+            gastosPorCat[label] = (gastosPorCat[label] || 0) + m.monto;
+        });
 
-    sorted.forEach(m => {
-        csvRows.push([
-            formatFechaCorta(m.fecha),
-            m.tipo === 'ingreso' ? 'Ingreso' : 'Gasto',
-            catMap.get(m.categoriaId)?.nombre ?? 'Sin categoría',
-            m.nota || '-',
-            m.monto,
-            m.moneda || 'UYU'
-        ].join(';'));
-    });
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) return;
 
-    const csvContent = csvRows.join('\n');
-    // Agregamos BOM para que Excel reconozca UTF-8 automáticamente
-    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
+        // Feedback Text based on all currencies and trend
+        let feedback = "Situación General: ";
+        currencies.forEach(mon => {
+            const bal = totals[mon].ing - totals[mon].egr;
+            feedback += `En ${mon}, saldo ${bal >= 0 ? 'positivo' : 'negativo'} (${formatMonto(bal, mon as any)}). `;
+        });
+        feedback += `Tu margen de beneficio promedio es del ${avgMargin}%. `;
+        if (currentMargin > avgMargin) feedback += "La tendencia de margen es ascendente, indicando una optimización de procesos o mejores precios de venta. ";
+        else if (currentMargin < avgMargin) feedback += "Se observa una ligera compresión del margen en el último periodo; sugerimos revisar costos fijos. ";
 
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `Balance_Ruralit_${periodLabel.replace(/ /g, '_')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-};
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Informe Ruralit - ${estab?.nombre}</title>
+                <link rel="preconnect" href="https://fonts.googleapis.com">
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+                <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+                <style>
+                    :root { --green: #2E7D32; --red: #C94A4A; --logo: #2B3D2B; --dot: #CCFF00; }
+                    @page { size: A4; margin: 12mm; }
+                    body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; color: #1a1a1a; line-height: 1.3; background: #fff; }
+                    .page-container { width: 185mm; margin: 0 auto; padding-top: 5mm; }
+                    .logo { font-family: 'Orbitron', sans-serif; font-size: 26px; color: var(--logo); letter-spacing: -1px; margin-bottom: 2px; }
+                    .logo span { color: var(--dot); font-weight: 900; }
+                    .header { border-bottom: 2px solid var(--green); padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: flex-end; }
+                    .estab-info p { margin: 0; color: #666; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+                    .header h1 { margin: 0; font-size: 22px; font-weight: 800; color: #111; letter-spacing: -0.5px; }
+                    
+                    .section-title { font-size: 11px; font-weight: 800; color: var(--green); text-transform: uppercase; margin: 15px 0 10px; border-left: 3px solid var(--green); padding-left: 8px; }
+                    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
+                    .card { padding: 10px; border: 1px solid #eee; border-radius: 10px; background: #fafafa; }
+                    .card label { font-size: 8px; font-weight: 800; text-transform: uppercase; color: #888; display: block; margin-bottom: 3px; }
+                    .card val { font-size: 15px; font-weight: 800; }
+
+                    .feedback-box { background: #f0f7f4; border-left: 4px solid var(--green); padding: 10px; border-radius: 8px; margin-bottom: 15px; }
+                    .feedback-box h3 { margin: 0 0 4px; font-size: 12px; color: var(--green); font-weight: 800; }
+                    .feedback-box p { margin: 0; font-size: 11px; color: #334e3e; }
+
+                    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; page-break-inside: avoid; }
+                    .chart-full { grid-column: span 2; margin-top: 10px; }
+                    .chart-wrapper { position: relative; height: 180px; width: 100%; }
+                    .chart-container h4 { margin-bottom: 5px; font-size: 10px; color: #333; text-transform: uppercase; font-weight: 800; text-align: center; }
+
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; table-layout: auto; }
+                    th { text-align: left; background: #f8f9fa; padding: 6px 8px; border-bottom: 2px solid #ddd; font-size: 8px; font-weight: 800; color: #666; }
+                    td { padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 9px; }
+                    .ing { color: var(--green); font-weight: 800; }
+                    .egr { color: var(--red); font-weight: 800; }
+
+                    .no-print { position: fixed; bottom: 20px; right: 20px; padding: 10px 20px; background: var(--green); color: #fff; border: none; border-radius: 50px; cursor: pointer; font-weight: 800; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 1000; font-size: 13px; }
+                    @media print { .no-print { display: none; } }
+                </style>
+            </head>
+            <body>
+                <button class="no-print" onclick="window.print()">Imprimir / Guardar Reporte</button>
+
+                <div class="page-container">
+                    <div class="logo">ruralit<span>.</span></div>
+                    <div class="header">
+                        <div class="estab-info">
+                             <p>Análisis de Desempeño y Margen</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <h1>${estab?.nombre}</h1>
+                            <div style="color: #888; font-size: 9px; font-weight: 600;">
+                                ${new Date().toLocaleDateString('es-UY', { day: '2-digit', month: 'long', year: 'numeric' })}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feedback-box">
+                        <h3>Análisis Estratégico</h3>
+                        <p>${feedback}</p>
+                    </div>
+
+                    <div class="grid">
+                        <div class="card" style="background: #111; color: #fff;">
+                            <label style="color: #aaa;">Margen Promedio</label>
+                            <val style="color: #ccff00;">${avgMargin}%</val>
+                        </div>
+                        <div class="card">
+                            <label>Margen Actual</label>
+                            <val class="${currentMargin >= avgMargin ? 'ing' : 'egr'}">${currentMargin}%</val>
+                        </div>
+                        <div class="card">
+                            <label>Estado de Tendencia</label>
+                            <val style="color: ${currentMargin >= avgMargin ? '#2E7D32' : '#C94A4A'}">${currentMargin >= avgMargin ? 'CRECIENTE ↑' : 'REDUCCIÓN ↓'}</val>
+                        </div>
+                    </div>
+
+                    ${currencies.map(mon => `
+                        <div class="section-title">Resumen Financiero en ${mon}</div>
+                        <div class="grid">
+                            <div class="card"><label>Ingresos</label><val class="ing">${formatMonto(totals[mon].ing, mon as any)}</val></div>
+                            <div class="card"><label>Gastos</label><val class="egr">${formatMonto(totals[mon].egr, mon as any)}</val></div>
+                            <div class="card"><label>Resultado</label><val style="color: ${totals[mon].ing - totals[mon].egr >= 0 ? 'var(--green)' : 'var(--red)'}">${formatMonto(totals[mon].ing - totals[mon].egr, mon as any)}</val></div>
+                        </div>
+                    `).join('')}
+
+                    <div class="charts-grid">
+                        <div class="chart-container">
+                            <h4>Proporción de Ingreso vs Gasto</h4>
+                            <div class="chart-wrapper"><canvas id="barChart"></canvas></div>
+                        </div>
+                        <div class="chart-container">
+                            <h4>Distribución de Egresos</h4>
+                            <div class="chart-wrapper"><canvas id="expenseChart"></canvas></div>
+                        </div>
+                        <div class="chart-container chart-full">
+                            <h4>Tendencia Histórica de Margen (%)</h4>
+                            <div class="chart-wrapper" style="height: 150px;"><canvas id="trendChart"></canvas></div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">Registro de Operaciones</div>
+                    <table>
+                        <thead>
+                            <tr><th>FECHA</th><th>TIPO</th><th>CATEGORÍA</th><th>CONCEPTO</th><th style="text-align: right;">MONTO</th></tr>
+                        </thead>
+                        <tbody>
+                            ${movs.slice(0, 30).map(m => `
+                                <tr>
+                                    <td>${formatFechaCorta(m.fecha)}</td>
+                                    <td class="${m.tipo === 'ingreso' ? 'ing' : 'egr'}">${m.tipo === 'ingreso' ? 'ENTRADA' : 'SALIDA'}</td>
+                                    <td style="font-weight: 600;">${catMap.get(m.categoriaId)?.nombre || 'Sin categoría'}</td>
+                                    <td>${m.nota || '-'}</td>
+                                    <td style="text-align: right; font-weight: 800;">${formatMonto(m.monto, m.moneda)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+
+                <script>
+                    Chart.register(ChartDataLabels);
+
+                    const commonOptions = {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            datalabels: { display: false } // Disabled by default to keep graphics clean
+                        }
+                    };
+
+                    // Donut Expense with values in labels
+                    new Chart(document.getElementById('expenseChart').getContext('2d'), {
+                        type: 'doughnut',
+                        data: {
+                            labels: ${JSON.stringify(Object.entries(gastosPorCat).map(([k, v]) => `${k}: $${v.toLocaleString()}`))},
+                            datasets: [{
+                                data: ${JSON.stringify(Object.values(gastosPorCat))},
+                                backgroundColor: ['#2E7D32', '#C94A4A', '#1565C0', '#F9A825', '#6A1B9A', '#00838F', '#AD1457'],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: { 
+                            ...commonOptions, 
+                            plugins: { 
+                                ...commonOptions.plugins, 
+                                legend: { 
+                                    position: 'bottom', 
+                                    labels: { boxWidth: 10, font: { size: 8, family: 'Inter', weight: '600' } } 
+                                } 
+                            } 
+                        }
+                    });
+
+                    // Bar Comparison with values in legend
+                    new Chart(document.getElementById('barChart').getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: ${JSON.stringify(currencies)},
+                            datasets: [
+                                { 
+                                    label: 'Ingresos', 
+                                    data: [${currencies.map(m => totals[m].ing).join(',')}], 
+                                    backgroundColor: '#2E7D32' 
+                                },
+                                { 
+                                    label: 'Gastos', 
+                                    data: [${currencies.map(m => totals[m].egr).join(',')}], 
+                                    backgroundColor: '#C94A4A' 
+                                }
+                            ]
+                        },
+                        options: { 
+                            ...commonOptions, 
+                            scales: { 
+                                y: { ticks: { font: { size: 7 } } }, 
+                                x: { ticks: { font: { size: 10, weight: 700 } } } 
+                            },
+                            plugins: { 
+                                ...commonOptions.plugins, 
+                                legend: { 
+                                    display: true, 
+                                    position: 'top',
+                                    labels: { 
+                                        boxWidth: 10, 
+                                        font: { size: 9, weight: 'bold' },
+                                        generateLabels: (chart) => {
+                                            const original = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                                            original.forEach(label => {
+                                                const dataset = chart.data.datasets[label.datasetIndex];
+                                                const total = dataset.data.reduce((a, b) => a + b, 0);
+                                                label.text += ' (Total: $' + total.toLocaleString() + ')';
+                                            });
+                                            return original;
+                                        }
+                                    } 
+                                }
+                            } 
+                        }
+                    });
+
+                    // Trend Line Margin (Keeping datalabels here as trend values are critical and line charts are less cluttered)
+                    new Chart(document.getElementById('trendChart').getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: ${JSON.stringify(marginTrend.map(t => t.month))},
+                            datasets: [{
+                                label: 'Margen %',
+                                data: [${marginTrend.map(t => t.margin).join(',')}],
+                                borderColor: '#2E7D32',
+                                backgroundColor: 'rgba(46, 125, 50, 0.1)',
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 4,
+                                pointBackgroundColor: '#2E7D32'
+                            }]
+                        },
+                        options: { 
+                            ...commonOptions,
+                            scales: { y: { beginAtZero: false, ticks: { font: { size: 8 } } }, x: { ticks: { font: { size: 8 } } } },
+                            plugins: { 
+                                ...commonOptions.plugins, 
+                                legend: { display: false },
+                                datalabels: { display: true, align: 'top', formatter: (v) => v + '%' }
+                            }
+                        }
+                    });
+                </script>
+            </body>
+            </html>
+        `;
+
+        printWindow.document.write(html);
+        printWindow.document.close();
+    } catch (e) {
+        console.error('Error al generar Reporte:', e);
+        alert('Error al generar el informe');
+    }
+}

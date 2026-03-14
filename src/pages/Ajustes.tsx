@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { createPortal } from 'react-dom';
-import { Plus, Pencil, Trash2, Check, X, Settings2, Building2, Coins, LayoutGrid, AlertCircle, ChevronRight, ArrowLeft, ArrowUpRight, ArrowDownLeft, User, HelpCircle, Moon, Sun, Cloud, CloudOff, LogOut, Loader2, TrendingUp, Milk, Sprout } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, Settings2, Building2, Coins, LayoutGrid, AlertCircle, ChevronRight, ArrowLeft, ArrowUpRight, ArrowDownLeft, User, HelpCircle, Moon, Sun, Cloud, CloudOff, LogOut, Loader2, TrendingUp, Milk, Sprout, Download, FileText } from 'lucide-react';
+import { exportarACSV, exportarAPDF } from '../utils/exportUtils';
 import type { Categoria, TipoMovimiento, Moneda, Establecimiento } from '../types';
 import { MONEDAS } from '../utils/helpers';
 import { dataService } from '../lib/dataService';
@@ -770,6 +771,31 @@ export function Ajustes({ user }: AjustesProps) {
 
                     <div className="settings-grid-row">
                         <div className="settings-row-info">
+                            <h3>Reportes y Exportación</h3>
+                            <p>Descargá tus datos para contabilidad o análisis externo.</p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                            <button
+                                onClick={exportarACSV}
+                                style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', borderRadius: '16px', background: 'var(--white)', border: '1px solid var(--border)', cursor: 'pointer', fontWeight: 700, color: 'var(--t1)', transition: 'all 0.2s' }}
+                                onMouseOver={e=>e.currentTarget.style.background='var(--bg)'}
+                                onMouseOut={e=>e.currentTarget.style.background='var(--white)'}
+                            >
+                                <Download size={18} color="var(--green-main)" /> Exportar CSV (Excel)
+                            </button>
+                            <button
+                                onClick={exportarAPDF}
+                                style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', borderRadius: '16px', background: 'var(--white)', border: '1px solid var(--border)', cursor: 'pointer', fontWeight: 700, color: 'var(--t1)', transition: 'all 0.2s' }}
+                                onMouseOver={e=>e.currentTarget.style.background='var(--bg)'}
+                                onMouseOut={e=>e.currentTarget.style.background='var(--white)'}
+                            >
+                                <FileText size={18} color="var(--red-soft)" /> Generar Informe PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="settings-grid-row">
+                        <div className="settings-row-info">
                             <h3>Configuración del Sistema</h3>
                             <p>Gestión avanzada y próximas funcionalidades del núcleo.</p>
                         </div>
@@ -777,9 +803,9 @@ export function Ajustes({ user }: AjustesProps) {
                             <h4 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--t1)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}><Settings2 size={16} /> RoadMap de Desarrollo</h4>
                             <p style={{ fontSize: '14px', color: 'var(--t3)', lineHeight: 1.6, marginBottom: '12px' }}>Ruralit utiliza el motor IndexedDB para ofrecer una experiencia offline fluida.</p>
                             <ul style={{ fontSize: '13px', color: 'var(--t3)', paddingLeft: '20px', lineHeight: 1.8 }}>
-                                <li>Nube y Sincronización Multi-dispositivo</li>
+                                <li>Sincronización Multi-dispositivo en tiempo real</li>
                                 <li>Adjuntos Fotográficos en Tickets</li>
-                                <li>Exportación de Reportes Tributarios</li>
+                                <li>Integración con API de Planillas Externas</li>
                             </ul>
                         </div>
                     </div>
