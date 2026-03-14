@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import {
     Wallet, TrendingUp, ArrowUpRight, ArrowDownRight, BookOpen, Plus, Minus, Send, Search,
-    Calculator, Clock, Printer
+    Calculator, Clock, Printer, ChevronRight
 } from 'lucide-react';
 import type { Movimiento, Categoria, TipoMovimiento } from '../types';
 import { formatMonto, formatFechaCorta, formatMesLabel, parseRegistroRapido, hoy, MONEDAS } from '../utils/helpers';
@@ -201,15 +201,17 @@ export function Inicio() {
                     <div className="premium-actions-row">
                         <button onClick={() => setTipo('ingreso')} className="action-card-premium action-card-premium--in">
                             <div className="action-card-icon-circle action-card-icon-circle--in">
-                                <Plus size={22} strokeWidth={2.5} />
+                                <Plus size={20} strokeWidth={3} />
                             </div>
                             <span className="action-card-text">Nueva Entrada</span>
+                            <ChevronRight size={14} style={{ marginLeft: 'auto', opacity: 0.4 }} />
                         </button>
                         <button onClick={() => setTipo('gasto')} className="action-card-premium action-card-premium--out">
                             <div className="action-card-icon-circle action-card-icon-circle--out">
-                                <Minus size={22} strokeWidth={2.5} />
+                                <Minus size={20} strokeWidth={3} />
                             </div>
                             <span className="action-card-text">Nueva Salida</span>
+                            <ChevronRight size={14} style={{ marginLeft: 'auto', opacity: 0.4 }} />
                         </button>
                     </div>
                 </div>

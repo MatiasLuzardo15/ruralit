@@ -1033,7 +1033,7 @@ input[type='number']::-webkit-inner-spin-button {
 .premium-actions-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 12px;
   margin-bottom: 24px;
 }
 
@@ -1044,47 +1044,44 @@ input[type='number']::-webkit-inner-spin-button {
 /* ACTION CARDS (NUEVA ENTRADA / SALIDA) */
 .action-card-premium {
   display: flex;
-  flex-direction: column;
+  flex-direction: row; /* Horizontal */
   align-items: center;
-  justify-content: center;
-  padding: 28px 16px;
-  border-radius: 24px;
+  padding: 16px 20px;
+  border-radius: 20px;
   background: var(--white);
-  border: 1px solid transparent;
-  gap: 12px;
+  border: 1px solid var(--border-sm);
+  gap: 14px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   width: 100%;
-}
-
-.action-card-premium--in {
-  border-color: var(--green-light);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
 .action-card-premium--in:hover {
   border-color: var(--green-main);
-  box-shadow: 0 10px 25px rgba(116, 167, 143, 0.12);
+  background: var(--green-light);
   transform: translateY(-2px);
-}
-
-.action-card-premium--out {
-  border-color: var(--red-light);
+  box-shadow: var(--shadow-md);
 }
 
 .action-card-premium--out:hover {
   border-color: var(--red-soft);
-  box-shadow: 0 10px 25px rgba(214, 140, 122, 0.12);
+  background: var(--red-light);
   transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .action-card-icon-circle {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
 }
 
 .action-card-premium:hover .action-card-icon-circle {
@@ -1102,11 +1099,11 @@ input[type='number']::-webkit-inner-spin-button {
 }
 
 .action-card-text {
-  font-weight: 600;
-  color: var(--charcoal);
-  /* Matches #101828 in light mode and lightens in dark */
-  font-size: 14px;
+  font-weight: 700;
+  color: var(--t1);
+  font-size: 13.5px;
   letter-spacing: -0.2px;
+  white-space: nowrap;
 }
 
 .premium-action-icon-wrap {
