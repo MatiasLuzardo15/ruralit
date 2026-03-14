@@ -82,9 +82,13 @@ export function Libreta() {
     useEffect(() => {
         void cargar();
 
-        const handleDataChange = () => void cargar(true);
-        window.addEventListener('ruralit_data_changed', handleDataChange);
-        return () => window.removeEventListener('ruralit_data_changed', handleDataChange);
+        const handleRefresh = () => void cargar(true);
+        window.addEventListener('ruralit_data_changed', handleRefresh);
+        window.addEventListener('ruralit_estab_changed', handleRefresh);
+        return () => {
+            window.removeEventListener('ruralit_data_changed', handleRefresh);
+            window.removeEventListener('ruralit_estab_changed', handleRefresh);
+        };
     }, [cargar]);
 
     const filtrados = movimientos.filter(mov => {
@@ -135,7 +139,7 @@ export function Libreta() {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', paddingBottom: '40px' }}>
             <TopBar
-                title="Libreta de Movimientos"
+                title="Movimientos"
                 heading="Reporte General"
                 subtitle="Visualizá y modificá todo el historial"
                 actions={topbarActions}

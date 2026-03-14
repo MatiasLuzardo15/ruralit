@@ -77,7 +77,7 @@ export async function exportarACSV() {
 
 export async function exportMovimientosCSV(movs: Movimiento[], catMap: Map<string, Categoria>, mesLabel: string) {
     try {
-        await internalGenerateCSV(movs, catMap, 'Libreta de Movimientos', mesLabel);
+        await internalGenerateCSV(movs, catMap, 'Movimientos', mesLabel);
     } catch (e) {
         console.error('Error al exportar Libreta CSV:', e);
     }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { createPortal } from 'react-dom';
@@ -156,6 +156,10 @@ export function Ajustes({ user }: AjustesProps) {
     const [activeEstId, setActiveEstId] = useState<string | null>(localStorage.getItem('activeEstDB_uuid'));
     const [estabsList, setEstabsList] = useState<Establecimiento[]>([]);
 
+    // Refs to track loaded data and avoid overwriting user input
+    const lastLoadedId = useRef<string | null>(null);
+    const lastLoadedProfile = useRef<string>('');
+
     // Modals state
     const [showCatModal, setShowCatModal] = useState<'add' | 'edit' | false>(false);
     const [editCatData, setEditCatData] = useState<Categoria | undefined>();
@@ -194,10 +198,6 @@ export function Ajustes({ user }: AjustesProps) {
         setActiveEstId(activeId);
 
         try {
-            // Limpiamos estados antes de cargar para evitar "fantasmas"
-            setNombre('');
-            setTipoProduccion('Ganadería');
-
             const [catsData, prof, estab, monedas, allEstabs] = await Promise.all([
                 dataService.getCategorias(activeId),
                 dataService.getProfile(),
@@ -208,15 +208,21 @@ export function Ajustes({ user }: AjustesProps) {
 
             setCats(catsData);
             setEstabsList(allEstabs);
-            if (prof) {
+
+            // Only update profile fields if they changed or we don't have them
+            const profileKey = JSON.stringify({ u: prof?.username, a: prof?.avatar_url });
+            if (prof && lastLoadedProfile.current !== profileKey) {
                 setNombreUsuario(prof.username || '');
                 setAvatarEmoji(prof.avatar_url || '👨‍🌾');
+                lastLoadedProfile.current = profileKey;
             }
-            if (estab) {
+
+            // Only update establishment fields if ID changed or we don't have them
+            if (estab && (lastLoadedId.current !== activeId || !nombreEstab)) {
                 setNombre(estab.nombre);
-                // Aseguramos que el tipo coincida exactamente con las opciones o sea Ganadería
                 const tipoValidado = (estab.tipo_produccion || 'Ganadería') as TipoProduccion;
                 setTipoProduccion(tipoValidado);
+                lastLoadedId.current = activeId;
             }
             if (monedas) {
                 setMonedasActivas(monedas);
@@ -231,11 +237,14 @@ export function Ajustes({ user }: AjustesProps) {
     useEffect(() => {
         void cargar();
 
-        const handleProfileUpdate = () => {
-            void cargar();
+        const handleUpdate = () => void cargar();
+        window.addEventListener('ruralit_profile_updated', handleUpdate);
+        window.addEventListener('ruralit_estab_changed', handleUpdate);
+        
+        return () => {
+            window.removeEventListener('ruralit_profile_updated', handleUpdate);
+            window.removeEventListener('ruralit_estab_changed', handleUpdate);
         };
-        window.addEventListener('ruralit_profile_updated', handleProfileUpdate);
-        return () => window.removeEventListener('ruralit_profile_updated', handleProfileUpdate);
     }, []);
 
     const logout = async () => {
@@ -347,6 +356,7 @@ export function Ajustes({ user }: AjustesProps) {
         dataService.clearCache();
         localStorage.setItem('activeEstDB_uuid', id);
         setActiveEstId(id);
+        window.dispatchEvent(new CustomEvent('ruralit_estab_changed'));
         void cargar();
     };
 

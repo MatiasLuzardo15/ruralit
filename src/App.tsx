@@ -43,40 +43,60 @@ function App() {
         return () => subscription.unsubscribe();
     }, []);
 
-    useEffect(() => {
-        if (user) {
-            // Sincronizar tema desde el perfil
-            dataService.getProfile().then(prof => {
-                if (prof?.theme) {
-                    const currentTheme = localStorage.getItem('ruralit_theme');
-                    if (currentTheme !== prof.theme) {
-                        localStorage.setItem('ruralit_theme', prof.theme);
-                        document.documentElement.setAttribute('data-theme', prof.theme);
-                    }
+    const refreshData = (force: boolean = false) => {
+        if (!user) return;
+        
+        // Sincronizar tema desde el perfil
+        dataService.getProfile(force).then(prof => {
+            if (prof?.theme) {
+                const currentTheme = localStorage.getItem('ruralit_theme');
+                if (currentTheme !== prof.theme) {
+                    localStorage.setItem('ruralit_theme', prof.theme);
+                    document.documentElement.setAttribute('data-theme', prof.theme);
                 }
-            });
+            }
+        });
 
-            dataService.getEstablecimientoActivo().then(estab => {
-                setActiveEstab(estab);
-                if (!estab || !estab.tipo_produccion) {
-                    setShowSetup(true);
-                } else {
-                    setShowSetup(false);
-                }
-            });
+        dataService.getEstablecimientoActivo(force).then(estab => {
+            setActiveEstab(estab);
+            if (!estab || !estab.tipo_produccion) {
+                setShowSetup(true);
+            } else {
+                setShowSetup(false);
+            }
+        });
+    };
+
+    useEffect(() => {
+        refreshData();
+        
+        const handleEstabChange = () => refreshData(true);
+        window.addEventListener('ruralit_estab_changed', handleEstabChange);
+        window.addEventListener('ruralit_profile_updated', () => refreshData(false));
+        
+        return () => {
+            window.removeEventListener('ruralit_estab_changed', handleEstabChange);
+            window.removeEventListener('ruralit_profile_updated', () => refreshData(false));
+        };
+    }, [user]);
+
+    // También refrescar cuando cambie el tab si es necesario
+    useEffect(() => {
+        if (tab === 'inicio') {
+            refreshData();
         }
-    }, [user, tab]); 
+    }, [tab]);
 
     if (loading) return null;
     if (!user) return <Login />;
 
     return (
         <div className={`app-root ${collapsed ? 'sidebar-collapsed' : ''}`}>
-            <Sidebar 
-                activo={tab} 
-                onChange={setTab} 
-                establecimiento={activeEstab?.nombre || 'Mi Establecimiento'} 
-                collapsed={collapsed} 
+            <Sidebar
+                activo={tab}
+                onChange={setTab}
+                establecimiento={activeEstab?.nombre || 'Mi Establecimiento'}
+                collapsed={collapsed}
                 setCollapsed={setCollapsed}
                 user={user}
             />

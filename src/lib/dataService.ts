@@ -134,8 +134,8 @@ export class DataService {
 
     private activeEstabCache: any = null;
 
-    async getEstablecimientoActivo(): Promise<any | null> {
-        if (this.activeEstabCache) return this.activeEstabCache;
+    async getEstablecimientoActivo(forceRefresh: boolean = false): Promise<any | null> {
+        if (!forceRefresh && this.activeEstabCache) return this.activeEstabCache;
 
         let activeId = localStorage.getItem('activeEstDB_uuid');
         
@@ -167,21 +167,27 @@ export class DataService {
                 localStorage.setItem('activeEstDB_uuid', newId);
                 const { data: retryData } = await supabase.from('establecimientos').select('*').eq('id', newId).maybeSingle();
                 this.activeEstabCache = retryData;
+                window.dispatchEvent(new CustomEvent('ruralit_estab_changed'));
                 return retryData;
             }
             return null;
         }
+        const isNew = !this.activeEstabCache || this.activeEstabCache.id !== data.id;
         this.activeEstabCache = data;
+        if (isNew) {
+            window.dispatchEvent(new CustomEvent('ruralit_estab_changed'));
+        }
         return data;
     }
 
     // --- Perfil ---
 
-    async getProfile(): Promise<any> {
+    async getProfile(forceRefresh: boolean = false): Promise<any> {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return null;
 
-        const cached = this.getCache(`profile_${session.user.id}`);
+        const cacheKey = `profile_${session.user.id}`;
+        const cached = !forceRefresh ? this.getCache(cacheKey) : null;
         
         const fetchPromise = supabase
             .from('profiles')
@@ -190,12 +196,16 @@ export class DataService {
             .maybeSingle()
             .then(({ data, error }) => {
                 if (!error && data) {
-                    this.setCache(`profile_${session.user.id}`, data);
+                    this.setCache(cacheKey, data);
                 }
                 return data;
             });
 
-        return cached || await fetchPromise;
+        const profile = cached || await fetchPromise;
+        if (forceRefresh && profile) {
+            window.dispatchEvent(new CustomEvent('ruralit_profile_updated'));
+        }
+        return profile;
     }
 
     async updateProfile(username: string, avatarUrl: string) {

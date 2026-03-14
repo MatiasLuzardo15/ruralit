@@ -340,7 +340,7 @@ input[type='number']::-webkit-inner-spin-button {
 }
 
 .sidebar-context {
-  padding: 0 12px 16px;
+  padding: 0 0 2px;
   position: relative;
 }
 
@@ -348,38 +348,43 @@ input[type='number']::-webkit-inner-spin-button {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px;
-  background: var(--bg-card);
-  border: none;
-  border-radius: 12px;
-  color: var(--t1);
-  cursor: pointer;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--t2);
   transition: all 0.2s;
+  background: transparent;
+  border: none;
+  cursor: pointer;
   text-align: left;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 .sidebar-selector:hover,
 .sidebar-selector.open {
-  background: var(--gray-50);
-  border-color: rgba(0, 0, 0, 0.15);
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--t1);
+}
+
+[data-theme='dark'] .sidebar-selector:hover,
+[data-theme='dark'] .sidebar-selector.open {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .sidebar-selector-dropdown {
   position: absolute;
-  top: calc(100% - 8px);
-  left: 12px;
-  right: 12px;
+  left: 0;
+  right: 0;
   background: var(--bg-card);
   border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   border: 1px solid var(--border-rgba);
-  padding: 8px;
+  padding: 8px 6px;
   z-index: 200;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .dropdown-label {
@@ -387,7 +392,7 @@ input[type='number']::-webkit-inner-spin-button {
   font-weight: 700;
   color: var(--t2);
   text-transform: uppercase;
-  padding: 8px 12px;
+  padding: 6px 12px 4px;
   letter-spacing: 0.5px;
 }
 
@@ -395,7 +400,7 @@ input[type='number']::-webkit-inner-spin-button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: 10px 14px;
   border-radius: 8px;
   border: none;
   background: transparent;
@@ -418,15 +423,15 @@ input[type='number']::-webkit-inner-spin-button {
 }
 
 .dropdown-item-name {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--t1);
 }
 
 .selector-label {
   flex: 1;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -480,8 +485,12 @@ input[type='number']::-webkit-inner-spin-button {
 }
 
 .sidebar-item:hover {
-  background: rgba(0, 0, 0, 0.03);
+  background: rgba(0, 0, 0, 0.04);
   color: var(--t1);
+}
+
+[data-theme='dark'] .sidebar-item:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .sidebar-item.active {
@@ -3535,6 +3544,9 @@ textarea.field-input {
   .topbar {
     padding-bottom: 0 !important;
     border-bottom: 2px solid var(--green-main) !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 
   .card,

@@ -438,7 +438,20 @@ export function Balance() {
         }
     }, [anio, mes, vista, key, categorias.length]);
 
-    useEffect(() => { void cargarData(); }, [cargarData]);
+    useEffect(() => { 
+        void cargarData(); 
+
+        const handleRefresh = () => {
+            setKey(k => k + 1); // Trigger re-load through dependency
+        };
+        window.addEventListener('ruralit_data_changed', handleRefresh);
+        window.addEventListener('ruralit_estab_changed', handleRefresh);
+        
+        return () => {
+            window.removeEventListener('ruralit_data_changed', handleRefresh);
+            window.removeEventListener('ruralit_estab_changed', handleRefresh);
+        };
+    }, [cargarData]);
 
     const navMes = (d: -1 | 1) => { let m = mes + d, a = anio; if (m < 0) { m = 11; a--; } if (m > 11) { m = 0; a++; } setMes(m); setAnio(a); };
     const navTrim = (d: -1 | 1) => { let m = mes + (d * 3), a = anio; if (m < 0) { m = 9; a--; } if (m > 11) { m = 0; a++; } setMes(m); setAnio(a); };

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Home, BookOpen, BarChart2, Settings2, MoreVertical, ChevronDown, Check, ChevronLeft, ChevronRight, LayoutPanelLeft } from 'lucide-react';
+import { Home, BookOpen, BarChart2, Settings2, MoreVertical, ChevronDown, Check, ChevronLeft, ChevronRight, LayoutPanelLeft, Building2 } from 'lucide-react';
 
 export type Tab = 'inicio' | 'libreta' | 'balance' | 'ajustes';
 
@@ -12,9 +12,9 @@ import { dataService } from '../lib/dataService';
 
 interface EstItem { id: string; nombre: string; }
 
-const NAV_ITEMS: NavItem[] = [{ id: 'inicio', label: 'Dashboard', Icon: Home }];
+const NAV_ITEMS: NavItem[] = [{ id: 'inicio', label: 'Inicio', Icon: Home }];
 const DATA_ITEMS: NavItem[] = [
-    { id: 'libreta', label: 'Libreta', Icon: BookOpen },
+    { id: 'libreta', label: 'Movimientos', Icon: BookOpen },
     { id: 'balance', label: 'Balance', Icon: BarChart2 },
 ];
 
@@ -68,8 +68,10 @@ export function Sidebar({ activo, onChange, establecimiento, collapsed, setColla
     }, []);
 
     const switchEstab = (e: EstItem) => {
+        dataService.clearCache();
         localStorage.setItem('activeEstDB_uuid', e.id);
-        window.location.reload();
+        window.dispatchEvent(new CustomEvent('ruralit_estab_changed'));
+        setShowSelector(false);
     };
 
     return (
@@ -82,27 +84,6 @@ export function Sidebar({ activo, onChange, establecimiento, collapsed, setColla
                 </button>
             </div>
             
-            {!collapsed && (
-                <div className="sidebar-context" ref={selectorRef}>
-                    <button className={`sidebar-selector ${showSelector ? 'open' : ''}`} onClick={() => setShowSelector(!showSelector)}>
-                        <Home size={16} strokeWidth={2} />
-                        <span className="selector-label">{establecimiento || 'Mi Establecimiento'}</span>
-                        <ChevronDown size={14} strokeWidth={2} className={`selector-arrow ${showSelector ? 'up' : ''}`} />
-                    </button>
-                    
-                    {showSelector && (
-                        <div className="sidebar-selector-dropdown">
-                            <div className="dropdown-label">Cambiar Establecimiento</div>
-                            {estabs.map(e => (
-                                <button key={e.id} className={`dropdown-item ${e.nombre === establecimiento ? 'current' : ''}`} onClick={() => switchEstab(e)}>
-                                    <span className="dropdown-item-name">{e.nombre}</span>
-                                    {e.nombre === establecimiento && <Check size={14} strokeWidth={3} className="current-check" />}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            )}
 
             <div className="sidebar-scrollable">
                 <div className="sidebar-group">
@@ -126,6 +107,27 @@ export function Sidebar({ activo, onChange, establecimiento, collapsed, setColla
                 </div>
 
                 <div className="sidebar-footer-nav">
+                    {!collapsed && (
+                        <div className="sidebar-context" ref={selectorRef} style={{ padding: '0 0 2px' }}>
+                            <button className={`sidebar-selector ${showSelector ? 'open' : ''}`} onClick={() => setShowSelector(!showSelector)}>
+                                <Building2 className="sidebar-item-icon" size={18} strokeWidth={1.5} />
+                                <span className="selector-label">{establecimiento || 'Mi Establecimiento'}</span>
+                                <ChevronDown size={14} strokeWidth={1.5} className={`selector-arrow ${showSelector ? 'up' : ''}`} />
+                            </button>
+                            
+                            {showSelector && (
+                                <div className="sidebar-selector-dropdown" style={{ bottom: '100%', top: 'auto', marginBottom: '8px' }}>
+                                    <div className="dropdown-label">Cambiar Establecimiento</div>
+                                    {estabs.map(e => (
+                                        <button key={e.id} className={`dropdown-item ${e.nombre === establecimiento ? 'current' : ''}`} onClick={() => switchEstab(e)}>
+                                            <span className="dropdown-item-name">{e.nombre}</span>
+                                            {e.nombre === establecimiento && <Check size={14} strokeWidth={3} className="current-check" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
                     <button className={`sidebar-item ${activo === 'ajustes' ? 'active' : ''}`} onClick={() => onChange('ajustes')} title={collapsed ? "Ajustes" : undefined}>
                         <Settings2 className="sidebar-item-icon" size={18} strokeWidth={1.5} />
                         {!collapsed && "Ajustes"}

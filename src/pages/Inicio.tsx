@@ -61,10 +61,13 @@ export function Inicio() {
 
     useEffect(() => { 
         void cargarData(); 
-
-        const handleDataChange = () => void cargarData(true);
-        window.addEventListener('ruralit_data_changed', handleDataChange);
-        return () => window.removeEventListener('ruralit_data_changed', handleDataChange);
+        const handleRefresh = () => void cargarData(true);
+        window.addEventListener('ruralit_data_changed', handleRefresh);
+        window.addEventListener('ruralit_estab_changed', handleRefresh);
+        return () => {
+            window.removeEventListener('ruralit_data_changed', handleRefresh);
+            window.removeEventListener('ruralit_estab_changed', handleRefresh);
+        };
     }, [cargarData]);
 
     const cerrar = () => { setTipo(null); setMovEd(undefined); };
