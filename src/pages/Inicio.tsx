@@ -236,12 +236,12 @@ export function Inicio() {
                         )}
                         <div className="balance-grid">
                             {/* SALDO TOTAL */}
-                            <div className="res-mobile-stack balance-item-main">
+                            <div className="res-mobile-stack balance-item-main" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                                 <p className="premium-legend" style={{ marginBottom: 12, textTransform: 'uppercase', fontSize: '10px' }}>Cierre Actual</p>
-                                <h4 className="premium-amount" style={{ fontSize: 36, color: saldo < 0 ? 'var(--red-soft)' : 'var(--charcoal)', marginBottom: 4, lineHeight: 1 }}>
+                                <h4 className="premium-amount" style={{ fontSize: 42, color: saldo < 0 ? 'var(--red-soft)' : 'var(--charcoal)', marginBottom: 4, lineHeight: 1 }}>
                                     {saldo >= 0 ? '+' : ''}{formatMonto(saldo, moneda)}
                                 </h4>
-                                <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
                                     <div style={{ width: 8, height: 8, borderRadius: '50%', background: saldo >= 0 ? 'var(--green-main)' : 'var(--red-soft)', flexShrink: 0 }}></div>
                                     <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--t2)', lineHeight: 1.3 }}>{mensajeEstado}</p>
                                 </div>
@@ -263,7 +263,7 @@ export function Inicio() {
                             </div>
 
                             {/* GASTOS */}
-                            <div className="res-mobile-stack metric-divider">
+                            <div className="res-mobile-stack metric-divider balance-item-expense">
                                 <p className="premium-legend" style={{ marginBottom: 12, textTransform: 'uppercase', color: 'var(--red-soft)', fontSize: '10px' }}>Salidas</p>
                                 <h4 className="premium-amount" style={{ fontSize: 28, marginBottom: 4 }}>
                                     {formatMonto(salidas, moneda)}

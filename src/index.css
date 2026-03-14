@@ -3457,9 +3457,6 @@ textarea.field-input {
   .metric-divider {
     border-left: none;
     padding-left: 0;
-    border-top: 1px solid var(--border-sm);
-    padding-top: 24px;
-    padding-bottom: 8px;
   }
 }
 
@@ -3483,20 +3480,24 @@ textarea.field-input {
 @media (max-width: 767px) {
   .balance-grid {
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    padding: 20px;
+    padding: 0;
   }
 
   .balance-item-main {
     grid-column: span 2;
     border-bottom: 1px solid var(--border-sm);
-    padding-bottom: 16px;
-    margin-bottom: 4px;
+    padding: 24px 20px 20px;
+    margin-bottom: 0;
+  }
+
+  .balance-item-income, .balance-item-expense {
+    padding: 16px 12px 20px;
+    text-align: center;
+    align-items: center;
   }
 
   .balance-item-income {
     border-right: 1px solid var(--border-sm);
-    padding-right: 16px;
   }
 }
 
