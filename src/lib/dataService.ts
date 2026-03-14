@@ -29,7 +29,7 @@ export class DataService {
 
     // --- Establecimientos ---
 
-    async addEstablecimiento(nombre: string, tipoProduccion: string = 'Ganadería') {
+    async addEstablecimiento(nombre: string, tipoProduccion: string = 'Ganadería', monedasActivas: string[] = ['UYU']) {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) throw new Error('No session');
 
@@ -39,7 +39,7 @@ export class DataService {
                 user_id: session.user.id,
                 nombre,
                 tipo_produccion: tipoProduccion,
-                monedas_activas: ['UYU']
+                monedas_activas: monedasActivas
             })
             .select()
             .single();

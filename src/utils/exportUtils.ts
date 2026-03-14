@@ -14,8 +14,8 @@ async function internalGenerateCSV(movs: Movimiento[], catMap: Map<string, Categ
     });
 
     // Add UTF-8 BOM for Excel compatibility
-    let csv = '\uFEFF'; 
-    
+    let csv = '\uFEFF';
+
     // Title & Info
     csv += `${title}\n`;
     csv += `Periodo:;${periodLabel}\n`;
@@ -103,7 +103,7 @@ export async function exportarAPDF() {
         ]);
 
         const catMap = new Map(cats.map(c => [c.id, c]));
-        
+
         // Calculate totals per currency properly
         const totals: Record<string, { ing: number, egr: number }> = {};
         movs.forEach(m => {

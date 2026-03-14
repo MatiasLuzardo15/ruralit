@@ -79,8 +79,8 @@ export function Libreta() {
         }
     }, [anio, mes, moneda]);
 
-    useEffect(() => { 
-        void cargar(); 
+    useEffect(() => {
+        void cargar();
 
         const handleDataChange = () => void cargar(true);
         window.addEventListener('ruralit_data_changed', handleDataChange);
@@ -162,7 +162,7 @@ export function Libreta() {
                                 if (isMobile) {
                                     /* ─── DISEÑO MÓVIL: RURAL COMPACT ─── */
                                     return (
-                                        <div key={t.moneda} style={{ 
+                                        <div key={t.moneda} style={{
                                             display: 'flex', flexDirection: 'column', gap: '12px',
                                             paddingTop: idx > 0 ? '16px' : '0',
                                             borderTop: idx > 0 ? '1px solid var(--border)' : 'none'
@@ -192,7 +192,7 @@ export function Libreta() {
 
                                 /* ─── DISEÑO DESKTOP: PRO DASHBOARD (ANCHO) ─── */
                                 return (
-                                    <div key={t.moneda} style={{ 
+                                    <div key={t.moneda} style={{
                                         display: 'grid', gridTemplateColumns: '120px repeat(3, 1fr)', gap: '24px', alignItems: 'center',
                                         paddingTop: idx > 0 ? '20px' : '0',
                                         borderTop: idx > 0 ? '1px solid var(--border)' : 'none'
@@ -223,12 +223,12 @@ export function Libreta() {
                     </div>
 
                     {/* SISTEMA DE FILTROS MODERNOS ADAPTATIVO */}
-                    <div className="no-print" style={{ 
-                        display: 'flex', 
-                        flexDirection: isMobile ? 'column' : 'row', 
-                        gap: isMobile ? '12px' : '16px', 
-                        background: 'var(--bg-card)', 
-                        marginTop: '8px' 
+                    <div className="no-print" style={{
+                        display: 'flex',
+                        flexDirection: isMobile ? 'column' : 'row',
+                        gap: isMobile ? '12px' : '16px',
+                        background: 'var(--bg-card)',
+                        marginTop: '8px'
                     }}>
                         {/* BÚSQUEDA: Full width en móvil, flexible en desktop */}
                         <div style={{ position: 'relative', flex: isMobile ? 'none' : 1.5 }}>
@@ -374,13 +374,13 @@ export function Libreta() {
                                     const isCtxOpen = ctxOpen === mov.id;
 
                                     return (
-                                        <div 
-                                            key={mov.id} 
+                                        <div
+                                            key={mov.id}
                                             onClick={() => !isCtxOpen && setCtxOpen(null)}
-                                            style={{ 
-                                                background: 'var(--white)', 
-                                                borderRadius: '20px', 
-                                                border: '1px solid var(--border-sm)', 
+                                            style={{
+                                                background: 'var(--white)',
+                                                borderRadius: '20px',
+                                                border: '1px solid var(--border-sm)',
                                                 padding: '20px',
                                                 display: 'flex',
                                                 flexDirection: 'column',
@@ -398,7 +398,7 @@ export function Libreta() {
                                                         <p style={{ fontSize: '13px', color: 'var(--t3)', fontWeight: 600 }}>{formatFechaCorta(mov.fecha)}</p>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                                                     <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '18px', color: ing ? 'var(--green-main)' : 'var(--t1)', letterSpacing: '-0.5px' }}>
                                                         {ing ? '+' : '-'}{formatMonto(mov.monto, mov.moneda)}

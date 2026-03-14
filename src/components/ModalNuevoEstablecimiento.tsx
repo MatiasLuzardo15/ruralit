@@ -4,6 +4,9 @@ import { Building2, ArrowRight, TrendingUp, Milk, Sprout, LayoutGrid, Settings2,
 import { type TipoProduccion, inicializarCategorias } from '../db/database';
 import { showToast } from './Toast';
 import { dataService } from '../lib/dataService';
+import { MONEDAS } from '../utils/helpers';
+import type { Moneda } from '../types';
+import { Check, Coins } from 'lucide-react';
 
 interface Props {
     onClose: () => void;
@@ -13,6 +16,7 @@ interface Props {
 export function ModalNuevoEstablecimiento({ onClose, onSuccess }: Props) {
     const [nombre, setNombre] = useState('');
     const [tipo, setTipo] = useState<TipoProduccion | null>(null);
+    const [monedas, setMonedas] = useState<Moneda[]>(['UYU']);
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
 
@@ -28,11 +32,12 @@ export function ModalNuevoEstablecimiento({ onClose, onSuccess }: Props) {
     const finalizar = async () => {
         if (!nombre.trim()) return showToast('Ingresá el nombre');
         if (!tipo) return showToast('Seleccioná el rubro');
+        if (monedas.length === 0) return showToast('Seleccioná al menos una moneda');
         
         setLoading(true);
         try {
             // 1. Crear el establecimiento en Supabase
-            const nuevo = await dataService.addEstablecimiento(nombre.trim(), tipo);
+            const nuevo = await dataService.addEstablecimiento(nombre.trim(), tipo, monedas);
             const id = String(nuevo.id);
 
             // 2. Limpiar caché para forzar recarga de datos del nuevo establecimiento
@@ -83,6 +88,7 @@ export function ModalNuevoEstablecimiento({ onClose, onSuccess }: Props) {
                 <div style={{ display: 'flex', gap: '6px', marginBottom: '32px' }}>
                     <div style={{ flex: 1, height: '4px', borderRadius: '2px', background: step >= 1 ? 'var(--green-main)' : 'var(--gray-100)', transition: 'all 0.3s' }} />
                     <div style={{ flex: 1, height: '4px', borderRadius: '2px', background: step >= 2 ? 'var(--green-main)' : 'var(--gray-100)', transition: 'all 0.3s' }} />
+                    <div style={{ flex: 1, height: '4px', borderRadius: '2px', background: step >= 3 ? 'var(--green-main)' : 'var(--gray-100)', transition: 'all 0.3s' }} />
                 </div>
                 
                 {step === 1 ? (
@@ -129,7 +135,7 @@ export function ModalNuevoEstablecimiento({ onClose, onSuccess }: Props) {
                             Siguiente paso <ArrowRight size={20} />
                         </button>
                     </div>
-                ) : (
+                ) : step === 2 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
                         <div>
                             <h2 style={{ fontSize: '22px', fontWeight: 800, marginBottom: '8px', color: 'var(--t1)' }}>¿Cuál es el rubro?</h2>
@@ -190,8 +196,8 @@ export function ModalNuevoEstablecimiento({ onClose, onSuccess }: Props) {
                                 Atrás
                             </button>
                             <button 
-                                onClick={finalizar}
-                                disabled={loading || !tipo}
+                                onClick={() => setStep(3)}
+                                disabled={!tipo}
                                 style={{ 
                                     flex: 2, padding: '16px', borderRadius: '16px', 
                                     background: tipo ? 'var(--green-main)' : 'var(--gray-200)', 
@@ -200,6 +206,84 @@ export function ModalNuevoEstablecimiento({ onClose, onSuccess }: Props) {
                                     cursor: tipo ? 'pointer' : 'not-allowed',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                                     boxShadow: tipo ? 'var(--shadow-entrada)' : 'none'
+                                }}
+                            >
+                                Siguiente <ArrowRight size={20} />
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+                        <div>
+                            <h2 style={{ fontSize: '22px', fontWeight: 800, marginBottom: '8px', color: 'var(--t1)' }}>¿Qué monedas utilizas?</h2>
+                            <p style={{ fontSize: '14px', color: 'var(--t2)', lineHeight: 1.5 }}>Selecciona las divisas que estarán disponibles para registrar operaciones.</p>
+                        </div>
+
+                        <div className="custom-scroll" style={{ 
+                            display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', 
+                            gap: '10px', maxHeight: '350px', overflowY: 'auto', 
+                            paddingRight: '4px' 
+                        }}>
+                            {(Object.keys(MONEDAS) as Moneda[]).map(m => {
+                                const info = MONEDAS[m];
+                                const selected = monedas.includes(m);
+                                return (
+                                    <button 
+                                        key={m}
+                                        onClick={() => {
+                                            if (selected) {
+                                                if (monedas.length > 1) setMonedas(monedas.filter(curr => curr !== m));
+                                                else showToast('Al menos una moneda activa');
+                                            } else {
+                                                setMonedas([...monedas, m]);
+                                            }
+                                        }}
+                                        style={{ 
+                                            padding: '16px 12px', borderRadius: '20px', 
+                                            border: '2px solid',
+                                            borderColor: selected ? 'var(--green-main)' : 'var(--border)', 
+                                            background: selected ? 'var(--green-light)' : 'rgba(255,255,255,0.05)', 
+                                            display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', 
+                                            transition: 'all 0.2s', textAlign: 'left', position: 'relative' 
+                                        }}
+                                    >
+                                        <div style={{ fontSize: '20px', filter: selected ? 'none' : 'grayscale(0.5) opacity(0.8)' }}>{info.flag}</div>
+                                        <div style={{ flex: 1 }}>
+                                            <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--t1)' }}>{m}</p>
+                                            <p style={{ fontSize: '10px', color: selected ? 'var(--green-main)' : 'var(--t2)', fontWeight: 600 }}>{info.label}</p>
+                                        </div>
+                                        {selected && (
+                                            <div style={{ color: 'var(--green-main)' }}>
+                                                <Check size={16} strokeWidth={3} />
+                                            </div>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button 
+                                onClick={() => setStep(2)}
+                                style={{ 
+                                    flex: 1, padding: '16px', borderRadius: '16px', 
+                                    background: 'var(--gray-100)', color: 'var(--t2)', 
+                                    fontSize: '15px', fontWeight: 700, border: 'none', cursor: 'pointer' 
+                                }}
+                            >
+                                Atrás
+                            </button>
+                            <button 
+                                onClick={finalizar}
+                                disabled={loading || monedas.length === 0}
+                                style={{ 
+                                    flex: 2, padding: '16px', borderRadius: '16px', 
+                                    background: monedas.length > 0 ? 'var(--green-main)' : 'var(--gray-200)', 
+                                    color: 'white', 
+                                    fontSize: '16px', fontWeight: 800, border: 'none', 
+                                    cursor: monedas.length > 0 ? 'pointer' : 'not-allowed',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                    boxShadow: monedas.length > 0 ? 'var(--shadow-entrada)' : 'none'
                                 }}
                             >
                                 {loading ? <Loader2 className="spinning" size={20} /> : (

@@ -3490,7 +3490,8 @@ textarea.field-input {
     margin-bottom: 0;
   }
 
-  .balance-item-income, .balance-item-expense {
+  .balance-item-income,
+  .balance-item-expense {
     padding: 16px 12px 20px;
     text-align: center;
     align-items: center;

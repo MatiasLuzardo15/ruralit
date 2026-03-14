@@ -1068,7 +1068,17 @@ export function Ajustes({ user }: AjustesProps) {
                                                     <Building2 size={20} color={est.id === activeEstId ? 'var(--green-main)' : 'var(--t3)'} />
                                                     <span style={{ fontWeight: 700, color: 'var(--t1)' }}>{est.nombre}</span>
                                                 </div>
-                                                {String(est.id) === activeEstId && <Check size={16} color="var(--green-main)" />}
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    {est.id !== activeEstId && (
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); eliminarEstablecimiento(String(est.id), est.nombre); }}
+                                                            style={{ background: 'var(--red-light)', color: 'var(--red-soft)', border: 'none', borderRadius: '50%', padding: '8px', cursor: 'pointer', display: 'flex' }}
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    )}
+                                                    {String(est.id) === activeEstId && <Check size={16} color="var(--green-main)" />}
+                                                </div>
                                             </div>
                                         ))}
                                         <button onClick={crearNuevoEstablecimiento} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '16px', borderRadius: '16px', border: '1px dashed var(--t3)', background: 'transparent', color: 'var(--t2)', fontWeight: 600, justifyContent: 'center' }}>
