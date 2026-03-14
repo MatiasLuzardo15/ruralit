@@ -49,7 +49,7 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
     const [nota, setNota] = useState('');
     const [fecha, setFecha] = useState(hoy());
     const [cats, setCats] = useState<Categoria[]>([]);
-    
+
     const [saving, setSaving] = useState(false);
     const [showExtras, setShowExtras] = useState(false);
     const [creatingCat, setCreatingCat] = useState(false);
@@ -99,7 +99,7 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
         };
 
         // Cerramos el modal primero para dar sensación de velocidad instantánea
-        onGuardado?.(); 
+        onGuardado?.();
         onClose();
         showToast(esEdit ? 'Actualizando...' : 'Registrando...');
 
@@ -149,7 +149,7 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
     return createPortal(
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0, 0, 0, 0.4)', backdropFilter: 'blur(8px)', padding: '16px' }} onClick={e => e.target === e.currentTarget && onClose()}>
             <div className="modal-content-wide" style={{ background: 'var(--white)', borderRadius: '32px', width: '100%', maxWidth: '800px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-lg)', overflow: 'hidden' }}>
-                
+
                 {/* ── HEADER ── */}
                 <div style={{ padding: '24px 32px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg)', padding: '6px 14px', borderRadius: '16px' }}>
@@ -158,7 +158,7 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
                             {esEdit ? 'Editar ' : 'Nueva '}{ing ? 'Entrada' : 'Salida'}
                         </span>
                     </div>
-                    <button onClick={onClose} style={{ background: 'var(--gray-100)', borderRadius: '50%', padding: '8px', display: 'flex', border: 'none', cursor: 'pointer', color: 'var(--t2)', transition: 'background 0.2s' }} onMouseOver={e=>e.currentTarget.style.background='var(--gray-200)'} onMouseOut={e=>e.currentTarget.style.background='var(--gray-100)'}>
+                    <button onClick={onClose} style={{ background: 'var(--gray-100)', borderRadius: '50%', padding: '8px', display: 'flex', border: 'none', cursor: 'pointer', color: 'var(--t2)', transition: 'background 0.2s' }} onMouseOver={e => e.currentTarget.style.background = 'var(--gray-200)'} onMouseOut={e => e.currentTarget.style.background = 'var(--gray-100)'}>
                         <X size={16} strokeWidth={2.5} />
                     </button>
                 </div>
@@ -172,23 +172,23 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
                                 <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Monto Operación</p>
                                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', borderBottom: '2px solid var(--border-sm)', paddingBottom: '8px', transition: 'border 0.2s' }}>
                                     <CurSelector value={moneda} onChange={setMoneda} allowed={monedasActivas} />
-                                    <input 
-                                        type="number" 
+                                    <input
+                                        type="number"
                                         autoFocus
-                                        value={monto} 
-                                        onChange={e => setMonto(e.target.value)} 
-                                        placeholder="0.00" 
-                                        style={{ flex: 1, background: 'transparent', border: 'none', fontSize: '48px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)', outline: 'none', width: '100%', letterSpacing: '-2px', padding: 0 }} 
+                                        value={monto}
+                                        onChange={e => setMonto(e.target.value)}
+                                        placeholder="0.00"
+                                        style={{ flex: 1, background: 'transparent', border: 'none', fontSize: '48px', fontWeight: 800, color: 'var(--t1)', fontFamily: 'var(--font-mono)', outline: 'none', width: '100%', letterSpacing: '-2px', padding: 0 }}
                                     />
                                 </div>
                             </div>
 
                             {/* ── NOTA & FECHA FLOTANTE ── */}
                             {showExtras ? (
-                                <div style={{ 
-                                    background: 'var(--gray-50)', 
-                                    borderRadius: '24px', 
-                                    padding: '24px', 
+                                <div style={{
+                                    background: 'var(--gray-50)',
+                                    borderRadius: '24px',
+                                    padding: '24px',
                                     marginBottom: '16px',
                                     border: '1px solid var(--border-sm)',
                                     display: 'flex',
@@ -201,17 +201,17 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
                                             <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Fecha de Operación</label>
                                         </div>
                                         <div style={{ position: 'relative' }}>
-                                            <div 
+                                            <div
                                                 onClick={() => dateInputRef.current?.showPicker()}
-                                                style={{ 
-                                                    width: '100%', 
-                                                    border: '1px solid var(--border-sm)', 
-                                                    background: 'var(--white)', 
-                                                    borderRadius: '14px', 
-                                                    padding: '12px 16px', 
-                                                    fontSize: '15px', 
-                                                    fontWeight: 700, 
-                                                    color: 'var(--t1)', 
+                                                style={{
+                                                    width: '100%',
+                                                    border: '1px solid var(--border-sm)',
+                                                    background: 'var(--white)',
+                                                    borderRadius: '14px',
+                                                    padding: '12px 16px',
+                                                    fontSize: '15px',
+                                                    fontWeight: 700,
+                                                    color: 'var(--t1)',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
@@ -222,12 +222,12 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
                                             >
                                                 {formatFechaMediana(fecha)}
                                             </div>
-                                            <input 
-                                                type="date" 
+                                            <input
+                                                type="date"
                                                 ref={dateInputRef}
-                                                value={fecha} 
-                                                onChange={e=>setFecha(e.target.value)} 
-                                                style={{ 
+                                                value={fecha}
+                                                onChange={e => setFecha(e.target.value)}
+                                                style={{
                                                     position: 'absolute',
                                                     top: 0,
                                                     left: 0,
@@ -235,7 +235,7 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
                                                     height: 0,
                                                     opacity: 0,
                                                     pointerEvents: 'none'
-                                                }} 
+                                                }}
                                             />
                                         </div>
                                     </div>
@@ -244,45 +244,45 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
                                             <Edit3 size={14} color="var(--green-main)" strokeWidth={3} />
                                             <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Observaciones</label>
                                         </div>
-                                        <textarea 
-                                            value={nota} 
-                                            onChange={e=>setNota(e.target.value)} 
-                                            rows={2} 
-                                            placeholder="Detalles adicionales..." 
-                                            style={{ 
-                                                width: '100%', 
-                                                border: '1px solid var(--border-sm)', 
-                                                background: 'var(--white)', 
-                                                borderRadius: '14px', 
-                                                padding: '12px 16px', 
-                                                fontSize: '14px', 
-                                                fontFamily: 'var(--font)', 
+                                        <textarea
+                                            value={nota}
+                                            onChange={e => setNota(e.target.value)}
+                                            rows={2}
+                                            placeholder="Detalles adicionales..."
+                                            style={{
+                                                width: '100%',
+                                                border: '1px solid var(--border-sm)',
+                                                background: 'var(--white)',
+                                                borderRadius: '14px',
+                                                padding: '12px 16px',
+                                                fontSize: '14px',
+                                                fontFamily: 'var(--font)',
                                                 fontWeight: 500,
-                                                color: 'var(--t1)', 
-                                                outline: 'none', 
+                                                color: 'var(--t1)',
+                                                outline: 'none',
                                                 resize: 'none',
-                                                boxShadow: 'var(--shadow-xs)' 
-                                            }} 
+                                                boxShadow: 'var(--shadow-xs)'
+                                            }}
                                         />
                                     </div>
                                 </div>
                             ) : (
-                                <button 
-                                    onClick={() => setShowExtras(true)} 
-                                    style={{ 
-                                        width: '100%', 
-                                        padding: '14px', 
-                                        borderRadius: '16px', 
-                                        border: '1px solid var(--border-sm)', 
-                                        background: 'var(--gray-50)', 
-                                        color: 'var(--t2)', 
-                                        fontSize: '12px', 
-                                        fontWeight: 700, 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
-                                        justifyContent: 'center', 
-                                        gap: '10px', 
-                                        cursor: 'pointer', 
+                                <button
+                                    onClick={() => setShowExtras(true)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '14px',
+                                        borderRadius: '16px',
+                                        border: '1px solid var(--border-sm)',
+                                        background: 'var(--gray-50)',
+                                        color: 'var(--t2)',
+                                        fontSize: '12px',
+                                        fontWeight: 700,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '10px',
+                                        cursor: 'pointer',
                                         marginBottom: '32px',
                                         transition: 'all 0.2s'
                                     }}
@@ -297,16 +297,17 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
 
                         {/* ── PANEL DERECHO: Cuadrícula de categorías ── */}
                         <div style={{ marginBottom: '32px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Clasificación</p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                                <Plus size={14} color="var(--green-main)" strokeWidth={3} />
+                                <p style={{ fontSize: '11px', fontWeight: 800, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>Clasificación</p>
                             </div>
-                            
+
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: '8px' }}>
                                 {cats.map(cat => {
                                     const selected = String(catId) === String(cat.id);
                                     return (
-                                        <button 
-                                            key={cat.id} 
+                                        <button
+                                            key={cat.id}
                                             onClick={() => setCatId(cat.id!)}
                                             style={{ padding: '12px 8px', borderRadius: '16px', border: selected ? `2px solid ${colorPrimario}` : '1px solid var(--border-sm)', background: selected ? (ing ? 'var(--green-light)' : 'var(--bg)') : 'var(--white)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.15s' }}>
                                             <span style={{ fontSize: '20px', filter: 'grayscale(100%)', opacity: selected ? 1 : 0.6 }}>{cat.icono}</span>
@@ -314,12 +315,19 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
                                         </button>
                                     );
                                 })}
-                                
+
                                 {creatingCat ? (
-                                    <div style={{ gridColumn: '1 / -1', padding: '16px', borderRadius: '20px', background: 'var(--bg)', display: 'flex', flexDirection: 'column', gap: '12px', border: '1px solid var(--border)' }}>
+                                    <div style={{ gridColumn: '1 / -1', padding: '20px', borderRadius: '24px', background: 'var(--gray-50)', display: 'flex', flexDirection: 'column', gap: '12px', border: '1px solid var(--border-sm)' }}>
                                         <div style={{ display: 'flex', gap: '8px' }}>
-                                            <input type="text" autoFocus value={newCatName} onChange={e=>setNewCatName(e.target.value)} placeholder="Nombre categoría..." style={{ flex: 1, padding: '10px 14px', borderRadius: '12px', border: '1px solid var(--border-sm)', fontSize: '14px', outline: 'none' }} />
-                                            <button onClick={handleCreateCat} style={{ padding: '0 20px', background: 'var(--t1)', color: 'white', borderRadius: '12px', border: 'none', fontWeight: 700, cursor: 'pointer' }}>Crear</button>
+                                            <input
+                                                type="text"
+                                                autoFocus
+                                                value={newCatName}
+                                                onChange={e => setNewCatName(e.target.value)}
+                                                placeholder="Nombre categoría..."
+                                                style={{ flex: 1, padding: '12px 16px', borderRadius: '14px', border: '1px solid var(--border-sm)', background: 'var(--white)', color: 'var(--t1)', fontSize: '14px', outline: 'none', boxShadow: 'var(--shadow-xs)' }}
+                                            />
+                                            <button onClick={handleCreateCat} style={{ padding: '0 24px', background: 'var(--green-main)', color: 'white', borderRadius: '14px', border: 'none', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}>Crear</button>
                                         </div>
                                         <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
                                             {EMOJIS_RURALES.map(em => (
@@ -330,7 +338,7 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
                                         </div>
                                     </div>
                                 ) : (
-                                    <button onClick={() => setCreatingCat(true)} style={{ padding: '12px 8px', borderRadius: '16px', border: '1px dashed var(--border)', background: 'transparent', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'background 0.15s' }} onMouseOver={e=>e.currentTarget.style.background='var(--gray-50)'} onMouseOut={e=>e.currentTarget.style.background='transparent'}>
+                                    <button onClick={() => setCreatingCat(true)} style={{ padding: '12px 8px', borderRadius: '16px', border: '1px dashed var(--border)', background: 'transparent', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'background 0.15s' }} onMouseOver={e => e.currentTarget.style.background = 'var(--gray-50)'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
                                         <Plus size={20} color="var(--t3)" />
                                         <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--t3)' }}>Nueva</span>
                                     </button>
@@ -343,12 +351,12 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
                 {/* ── FOOTER DE ACCIONES ── */}
                 <div style={{ padding: '24px 32px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-sm)' }}>
                     {esEdit ? (
-                        <button onClick={async () => { if(confirm('¿Seguro que deseas eliminar el registro?')){ await dataService.deleteMovimiento(String(movimientoEditar.id!)); onGuardado?.(); onClose(); } }} style={{ padding: '12px', borderRadius: '12px', background: 'var(--red-light)', color: 'var(--red-soft)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <button onClick={async () => { if (confirm('¿Seguro que deseas eliminar el registro?')) { await dataService.deleteMovimiento(String(movimientoEditar.id!)); onGuardado?.(); onClose(); } }} style={{ padding: '12px', borderRadius: '12px', background: 'var(--red-light)', color: 'var(--red-soft)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <Trash2 size={18} />
                         </button>
-                    ) : <div/>}
+                    ) : <div />}
 
-                    <button onClick={guardar} disabled={saving || !monto || catId === null} style={{ padding: '18px 40px', borderRadius: '20px', background: colorPrimario, color: 'white', fontSize: '15px', fontWeight: 800, border: 'none', cursor: (!monto || catId===null) ? 'not-allowed' : 'pointer', boxShadow: 'var(--shadow-md)', opacity: (!monto || catId===null) ? 0.5 : 1, transition: 'all 0.2s', width: esEdit ? 'auto' : '100%' }}>
+                    <button onClick={guardar} disabled={saving || !monto || catId === null} style={{ padding: '18px 40px', borderRadius: '20px', background: colorPrimario, color: 'white', fontSize: '15px', fontWeight: 800, border: 'none', cursor: (!monto || catId === null) ? 'not-allowed' : 'pointer', boxShadow: 'var(--shadow-md)', opacity: (!monto || catId === null) ? 0.5 : 1, transition: 'all 0.2s', width: esEdit ? 'auto' : '100%' }}>
                         {saving ? 'Procesando...' : (esEdit ? 'Guardar Cambios' : 'Confirmar Registro')}
                     </button>
                 </div>
