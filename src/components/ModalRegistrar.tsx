@@ -58,6 +58,7 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
 
     const ing = tipoInicial === 'ingreso';
     const esEdit = !!movimientoEditar;
+    const dateInputRef = useRef<HTMLInputElement>(null);
     const colorPrimario = ing ? 'var(--green-main)' : 'var(--red-soft)';
 
     useEffect(() => {
@@ -200,36 +201,40 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
                                             <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Fecha de Operación</label>
                                         </div>
                                         <div style={{ position: 'relative' }}>
-                                            <div style={{ 
-                                                width: '100%', 
-                                                border: '1px solid var(--border-sm)', 
-                                                background: 'var(--white)', 
-                                                borderRadius: '14px', 
-                                                padding: '12px 16px', 
-                                                fontSize: '15px', 
-                                                fontWeight: 700, 
-                                                color: 'var(--t1)', 
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                minHeight: '48px',
-                                                boxShadow: 'var(--shadow-xs)' 
-                                            }}>
+                                            <div 
+                                                onClick={() => dateInputRef.current?.showPicker()}
+                                                style={{ 
+                                                    width: '100%', 
+                                                    border: '1px solid var(--border-sm)', 
+                                                    background: 'var(--white)', 
+                                                    borderRadius: '14px', 
+                                                    padding: '12px 16px', 
+                                                    fontSize: '15px', 
+                                                    fontWeight: 700, 
+                                                    color: 'var(--t1)', 
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    minHeight: '48px',
+                                                    boxShadow: 'var(--shadow-xs)',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
                                                 {formatFechaMediana(fecha)}
                                             </div>
                                             <input 
                                                 type="date" 
+                                                ref={dateInputRef}
                                                 value={fecha} 
                                                 onChange={e=>setFecha(e.target.value)} 
                                                 style={{ 
                                                     position: 'absolute',
-                                                    inset: 0,
+                                                    top: 0,
+                                                    left: 0,
+                                                    width: 0,
+                                                    height: 0,
                                                     opacity: 0,
-                                                    width: '100%',
-                                                    height: '100%',
-                                                    cursor: 'pointer',
-                                                    appearance: 'none',
-                                                    WebkitAppearance: 'none'
+                                                    pointerEvents: 'none'
                                                 }} 
                                             />
                                         </div>
