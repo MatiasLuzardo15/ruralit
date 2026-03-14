@@ -7,7 +7,7 @@ import db from '../db/database';
 
 export const MONEDAS = {
     ARS: { simbolo: '$', label: 'Peso Arg.', flag: '🇦🇷' },
-    UYU: { simbolo: 'UYU', label: 'Peso Uru.', flag: '🇺🇾' },
+    UYU: { simbolo: '$', label: 'Peso Uru.', flag: '🇺🇾' },
     CLP: { simbolo: '$', label: 'Peso Chi.', flag: '🇨🇱' },
     COP: { simbolo: '$', label: 'Peso Col.', flag: '🇨🇴' },
     PYG: { simbolo: '₲', label: 'Guaraní', flag: '🇵🇾' },
@@ -39,6 +39,16 @@ export const formatFechaCorta = (fecha: string | Date): string => {
     try {
         const date = typeof fecha === 'string' ? parseISO(fecha) : fecha;
         return format(date, 'dd/MM/yyyy', { locale: es });
+    } catch {
+        return String(fecha);
+    }
+};
+
+export const formatFechaMediana = (fecha: string | Date): string => {
+    if (!fecha) return '';
+    try {
+        const date = typeof fecha === 'string' ? parseISO(fecha + 'T12:00:00') : fecha;
+        return format(date, "d MMM yyyy", { locale: es });
     } catch {
         return String(fecha);
     }

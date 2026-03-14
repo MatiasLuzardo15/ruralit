@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { ArrowUpRight, ArrowDownRight, X, Calendar, Edit3, Trash2, ChevronDown, Check, Plus } from 'lucide-react';
 import type { Movimiento, Categoria, TipoMovimiento, Moneda } from '../types';
 import { dataService } from '../lib/dataService';
-import { hoy, MONEDAS } from '../utils/helpers';
+import { hoy, MONEDAS, formatFechaMediana } from '../utils/helpers';
 import { showToast } from './Toast';
 import { useMonedas } from '../utils/useMoneda';
 
@@ -199,23 +199,40 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
                                             <Calendar size={14} color="var(--green-main)" strokeWidth={3} />
                                             <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Fecha de Operación</label>
                                         </div>
-                                        <input 
-                                            type="date" 
-                                            value={fecha} 
-                                            onChange={e=>setFecha(e.target.value)} 
-                                            style={{ 
+                                        <div style={{ position: 'relative' }}>
+                                            <div style={{ 
                                                 width: '100%', 
                                                 border: '1px solid var(--border-sm)', 
                                                 background: 'var(--white)', 
                                                 borderRadius: '14px', 
                                                 padding: '12px 16px', 
-                                                fontSize: '14px', 
-                                                fontWeight: 600, 
+                                                fontSize: '15px', 
+                                                fontWeight: 700, 
                                                 color: 'var(--t1)', 
-                                                outline: 'none',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                minHeight: '48px',
                                                 boxShadow: 'var(--shadow-xs)' 
-                                            }} 
-                                        />
+                                            }}>
+                                                {formatFechaMediana(fecha)}
+                                            </div>
+                                            <input 
+                                                type="date" 
+                                                value={fecha} 
+                                                onChange={e=>setFecha(e.target.value)} 
+                                                style={{ 
+                                                    position: 'absolute',
+                                                    inset: 0,
+                                                    opacity: 0,
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    cursor: 'pointer',
+                                                    appearance: 'none',
+                                                    WebkitAppearance: 'none'
+                                                }} 
+                                            />
+                                        </div>
                                     </div>
                                     <div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
