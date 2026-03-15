@@ -31,9 +31,9 @@ export function ModalNuevoEstablecimiento({ onClose, onSuccess }: Props) {
     ];
 
     const finalizar = async () => {
-        if (!nombre.trim()) return showToast('Ingresá el nombre');
-        if (!tipo) return showToast('Seleccioná el rubro');
-        if (monedas.length === 0) return showToast('Seleccioná al menos una moneda');
+        if (!nombre.trim()) return showToast('Ingresá el nombre', 'warning');
+        if (!tipo) return showToast('Seleccioná el rubro', 'warning');
+        if (monedas.length === 0) return showToast('Seleccioná al menos una moneda', 'warning');
         
         setLoading(true);
         try {
@@ -52,11 +52,11 @@ export function ModalNuevoEstablecimiento({ onClose, onSuccess }: Props) {
             // 4. Inicializar categorías sugeridas según el rubro
             await inicializarCategorias(tipo, true);
             
-            showToast('¡Establecimiento creado!');
+            showToast('¡Establecimiento creado!', 'success');
             onSuccess(id);
         } catch (e) {
             console.error(e);
-            showToast('Error al crear establecimiento');
+            showToast('Error al crear establecimiento', 'error');
         } finally {
             setLoading(false);
         }
@@ -234,7 +234,7 @@ export function ModalNuevoEstablecimiento({ onClose, onSuccess }: Props) {
                                         onClick={() => {
                                             if (selected) {
                                                 if (monedas.length > 1) setMonedas(monedas.filter(curr => curr !== m));
-                                                else showToast('Al menos una moneda activa');
+                                                else showToast('Al menos una moneda activa', 'warning');
                                             } else {
                                                 setMonedas([...monedas, m]);
                                             }

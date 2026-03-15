@@ -3,6 +3,7 @@ import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { showToast } from '../components/Toast';
 import { LoadingScreen } from '../components/LoadingScreen';
+import loginBg from '../assets/login-bg.png';
 
 export function Login() {
     const [view, setView] = useState<'login' | 'signup'>('login');
@@ -19,21 +20,21 @@ export function Login() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!email || !password) return showToast('Completa todos los campos');
+        if (!email || !password) return showToast('Completa todos los campos', 'warning');
 
         setLoading(true);
         try {
             if (view === 'login') {
                 const { error } = await supabase.auth.signInWithPassword({ email, password });
                 if (error) throw error;
-                showToast('¡Bienvenido de nuevo!');
+                showToast('¡Bienvenido de nuevo!', 'success');
             } else {
                 const { error } = await supabase.auth.signUp({ email, password });
                 if (error) throw error;
-                showToast('Cuenta creada. Revisa tu email.');
+                showToast('Cuenta creada. Revisa tu email.', 'info');
             }
         } catch (error: any) {
-            showToast(error.message || 'Ocurrió un error');
+            showToast(error.message || 'Ocurrió un error', 'error');
         } finally {
             setLoading(false);
         }
@@ -41,214 +42,78 @@ export function Login() {
 
     if (loading) return <LoadingScreen splash message={view === 'login' ? 'Iniciando sesión…' : 'Creando cuenta…'} />;
 
-    if (isMobile) {
-        return (
-            <div style={{
-                minHeight: '100vh',
-                display: 'flex',
-                flexDirection: 'column',
-                background: '#162b16',
-                padding: '40px 24px',
-                position: 'relative'
-            }}>
-                <div style={{ marginBottom: '40px' }}>
-                    <span style={{ 
-                        fontFamily: '"Orbitron", sans-serif', fontSize: '28px', 
-                        fontWeight: 700, color: 'white', letterSpacing: '-1px'
-                    }}>
-                        ruralit<span style={{ color: 'var(--logo-dot)' }}>.</span>
-                    </span>
-                </div>
-
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <h1 style={{ fontSize: '32px', fontWeight: 800, color: 'white', marginBottom: '16px', lineHeight: 1.1 }}>
-                        Gestiona tu establecimiento profesionalmente.
-                    </h1>
-                    <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.6)', marginBottom: '40px' }}>
-                        Toda tu información en un solo lugar, segura y accesible.
-                    </p>
-
-                    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <input
-                            type="email" value={email} onChange={e => setEmail(e.target.value)}
-                            placeholder="Email"
-                            style={{
-                                width: '100%', padding: '18px 20px', borderRadius: '12px',
-                                border: '1px solid rgba(255, 255, 255, 0.1)', 
-                                background: 'rgba(255, 255, 255, 0.05)', color: 'white',
-                                fontSize: '16px', outline: 'none'
-                            }}
-                        />
-                        <input
-                            type="password" value={password} onChange={e => setPassword(e.target.value)}
-                            placeholder="Contraseña"
-                            style={{
-                                width: '100%', padding: '18px 20px', borderRadius: '12px',
-                                border: '1px solid rgba(255, 255, 255, 0.1)', 
-                                background: 'rgba(255, 255, 255, 0.05)', color: 'white',
-                                fontSize: '16px', outline: 'none'
-                            }}
-                        />
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            style={{
-                                width: '100%', padding: '18px', borderRadius: '12px', 
-                                background: 'var(--logo-dot)', color: '#162b16', 
-                                fontWeight: 800, border: 'none', cursor: 'pointer',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                                marginTop: '12px', fontSize: '16px'
-                            }}
-                        >
-                            {view === 'login' ? 'Entrar ahora' : 'Registrarse'}
-                            <ArrowRight size={18} />
-                        </button>
-                    </form>
-
-                    <div style={{ marginTop: '32px', textAlign: 'center' }}>
-                        <button
-                            onClick={() => setView(view === 'login' ? 'signup' : 'login')}
-                            style={{
-                                background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)',
-                                fontSize: '14px', fontWeight: 600, cursor: 'pointer'
-                            }}
-                        >
-                            {view === 'login' ? '¿No tienes cuenta? Registrate' : '¿Ya tienes cuenta? Entrar'}
-                        </button>
-                    </div>
-                </div>
-
-                <p style={{ marginTop: 'auto', color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 700, letterSpacing: '1px' }}>
-                    RURALIT V1 BETA
-                </p>
-            </div>
-        );
-    }
-
     return (
-        <div style={{
-            height: '100vh',
-            display: 'flex',
-            background: '#162b16',
-            overflow: 'hidden'
-        }}>
-            {/* Form Section */}
-            <div style={{
-                width: '480px',
-                padding: '40px 60px',
-                display: 'flex',
-                flexDirection: 'column',
-                position: 'relative',
-                zIndex: 2,
-                boxShadow: '20px 0 60px rgba(0,0,0,0.3)',
-                flexShrink: 0
-            }}>
-                <div style={{ marginBottom: '60px' }}>
-                    <span style={{ 
-                        fontFamily: '"Orbitron", sans-serif', fontSize: '28px', 
-                        fontWeight: 700, color: 'white', letterSpacing: '-1.2px'
-                    }}>
-                        ruralit<span style={{ color: 'var(--logo-dot)' }}>.</span>
+        <div className="ruralit-login-container">
+            {/* Background Decorations */}
+            <div className="ruralit-login-blob blob-1" />
+            <div className="ruralit-login-blob blob-2" />
+            
+            {/* Sidebar Form */}
+            <div className="ruralit-login-sidebar">
+                <div className="ruralit-login-brand">
+                    <span className="ruralit-login-brand-text">
+                        ruralit<span className="ruralit-login-brand-dot">.</span>
                     </span>
                 </div>
 
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <h1 style={{ 
-                        fontSize: '42px', fontWeight: 900, color: 'white', 
-                        marginBottom: '20px', lineHeight: 1.1, letterSpacing: '-1.5px' 
-                    }}>
-                        Gestiona tu establecimiento profesionalmente.
+                <div className="ruralit-login-form-wrap">
+                    <h1 className="ruralit-login-title">
+                        Gestiona tu establecimiento con Ruralit.
                     </h1>
-                    <p style={{ 
-                        fontSize: '16px', color: 'rgba(255,255,255,0.5)', 
-                        marginBottom: '40px', lineHeight: 1.6, maxWidth: '320px' 
-                    }}>
-                        Administra tus entradas, salidas y categorías con la herramienta definitiva para el campo.
+                    <p className="ruralit-login-subtitle">
+                        La herramienta definitiva para el control total de tus entradas, salidas y métricas.
                     </p>
 
-                    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <form onSubmit={handleSubmit} className="ruralit-login-input-group">
                         <input
-                            type="email" value={email} onChange={e => setEmail(e.target.value)}
+                            type="email"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
                             placeholder="Email"
-                            onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(e); }}
-                            style={{
-                                width: '100%', padding: '18px 24px', borderRadius: '12px',
-                                border: '1px solid rgba(255, 255, 255, 0.1)', 
-                                background: 'rgba(255, 255, 255, 0.05)', color: 'white',
-                                fontSize: '15px', outline: 'none'
-                            }}
+                            className="ruralit-login-input"
+                            autoComplete="email"
                         />
                         <input
-                            type="password" value={password} onChange={e => setPassword(e.target.value)}
+                            type="password"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
                             placeholder="Contraseña"
-                            onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(e); }}
-                            style={{
-                                width: '100%', padding: '18px 24px', borderRadius: '12px',
-                                border: '1px solid rgba(255, 255, 255, 0.1)', 
-                                background: 'rgba(255, 255, 255, 0.05)', color: 'white',
-                                fontSize: '15px', outline: 'none'
-                            }}
+                            className="ruralit-login-input"
+                            autoComplete="current-password"
                         />
                         <button
                             type="submit"
                             disabled={loading}
-                            style={{
-                                width: '100%', padding: '18px', borderRadius: '12px', 
-                                background: 'var(--logo-dot)', color: '#162b16', 
-                                fontWeight: 900, border: 'none', cursor: 'pointer',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                                marginTop: '10px', fontSize: '16px'
-                            }}
+                            className="ruralit-login-button"
                         >
                             {view === 'login' ? 'Entrar ahora' : 'Registrarse'}
                             <ArrowRight size={20} />
                         </button>
                     </form>
 
-                    <div style={{ marginTop: '32px' }}>
-                        <button
-                            onClick={() => setView(view === 'login' ? 'signup' : 'login')}
-                            style={{
-                                background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)',
-                                fontSize: '14px', fontWeight: 600, cursor: 'pointer'
-                            }}
-                        >
-                            {view === 'login' ? '¿No tienes una cuenta? Regístrate' : '¿Ya eres miembro? Inicia sesión'}
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => setView(view === 'login' ? 'signup' : 'login')}
+                        className="ruralit-login-switch"
+                    >
+                        {view === 'login' ? '¿No tienes una cuenta? Regístrate' : '¿Ya eres miembro? Inicia sesión'}
+                    </button>
                 </div>
 
-                <div style={{ marginTop: '60px' }}>
-                    <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px', fontWeight: 800, letterSpacing: '2px' }}>
-                        RURALIT V1 BETA
-                    </span>
+                <div className="ruralit-login-v-tag">
+                    RURALIT V1 BETA
                 </div>
             </div>
 
-            {/* Image Section */}
-            <div style={{
-                flex: 1,
-                position: 'relative',
-                background: '#162b16'
-            }}>
-                <img 
-                    src="/rural_login_real.png"
-                    alt="Rural Life"
-                    style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        display: 'block'
-                    }}
-                    onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                    }}
-                />
-                <div style={{
-                    position: 'absolute', inset: 0,
-                    background: 'linear-gradient(to right, #162b16 0%, rgba(22, 43, 22, 0.2) 20%, transparent 40%)'
-                }} />
-            </div>
+            {/* Cinematic Background Section */}
+            {!isMobile && (
+                <div 
+                    className="ruralit-login-bg"
+                    style={{ backgroundImage: `url(${loginBg})` }}
+                >
+                    <div className="ruralit-login-overlay" />
+                </div>
+            )}
         </div>
     );
 }
+

@@ -13,6 +13,7 @@ import { showToast } from '../components/Toast';
 import { TopBar } from '../components/TopBar';
 import { ModalNuevoEstablecimiento } from '../components/ModalNuevoEstablecimiento';
 import { LoadingScreen } from '../components/LoadingScreen';
+import { ConfirmModal } from '../components/ConfirmModal';
 
 const CATEGORY_ICONS = [
     '🐄', '🌾', '🚜', '💰', '📉', '📈', '📦', '🛒', '🔧', '⛽',
@@ -129,7 +130,7 @@ function CurrencyModal({ current, onClose, onSave }: { current: Moneda[], onClos
                     })}
                 </div>
 
-                <button onClick={() => onSave(selected)} style={{ width: '100%', padding: '16px', borderRadius: '16px', background: 'var(--green-main)', color: 'var(--white)', fontSize: '15px', fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: 'var(--shadow-md)' }}>Aplicar Cambios</button>
+                <button onClick={() => onSave(selected)} style={{ width: '100%', padding: '16px', borderRadius: '16px', background: 'var(--green-main)', color: '#FFFFFF', fontSize: '15px', fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: 'var(--shadow-md)' }}>Aplicar Cambios</button>
             </div>
         </div>,
         document.body
@@ -172,6 +173,25 @@ export function Ajustes({ user }: AjustesProps) {
     const [mobileDetailType, setMobileDetailType] = useState<string | null>(null);
 
     const [showNewEstabModal, setShowNewEstabModal] = useState(false);
+
+    // Confirm Modal state
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        type?: 'danger' | 'warning' | 'info' | 'success';
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => {},
+    });
+
+    const closeConfirm = () => setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    const triggerConfirm = (title: string, message: string, onConfirm: () => void, type: 'danger' | 'warning' | 'info' | 'success' = 'info') => {
+        setConfirmModal({ isOpen: true, title, message, onConfirm, type });
+    };
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -253,28 +273,34 @@ export function Ajustes({ user }: AjustesProps) {
     }, []);
 
     const logout = async () => {
-        if (confirm('¿Cerrar sesión? Se limpiará la memoria local.')) {
-            setSaving(true);
-            try {
-                await supabase.auth.signOut();
-                localStorage.removeItem('activeEstDB_uuid');
-                showToast('Sesión cerrada');
-                setTimeout(() => { window.location.href = '/'; }, 1000);
-            } catch (error) {
-                showToast('Error al cerrar sesión');
-            } finally {
-                setSaving(false);
-            }
-        }
+        triggerConfirm(
+            'Cerrar Sesión',
+            '¿Deseas cerrar tu sesión actual? Se limpiará la memoria temporal de este navegador.',
+            async () => {
+                closeConfirm();
+                setSaving(true);
+                try {
+                    await supabase.auth.signOut();
+                    localStorage.removeItem('activeEstDB_uuid');
+                    showToast('Sesión cerrada', 'info');
+                    setTimeout(() => { window.location.href = '/'; }, 1000);
+                } catch (error) {
+                    showToast('Error al cerrar sesión', 'error');
+                } finally {
+                    setSaving(false);
+                }
+            },
+            'warning'
+        );
     };
 
     const guardarPerfil = async () => {
         setSaving(true);
         try {
             await dataService.updateProfile(nombreUsuario, avatarEmoji);
-            showToast('Perfil actualizado');
+            showToast('Perfil actualizado', 'success');
         } catch (e) {
-            showToast('Error al guardar perfil');
+            showToast('Error al guardar perfil', 'error');
         } finally {
             setSaving(false);
         }
@@ -290,18 +316,18 @@ export function Ajustes({ user }: AjustesProps) {
                 nombre: nombreEstab,
                 tipo_produccion: tipoProduccion
             });
-            showToast('Establecimiento actualizado');
+            showToast('Establecimiento actualizado', 'success');
             // Recargamos los datos para asegurar sincronía
             void cargar();
         } catch (e) {
-            showToast('Error al guardar');
+            showToast('Error al guardar', 'error');
         } finally {
             setSaving(false);
         }
     };
 
     const handleSaveCat = async (data: CatForm) => {
-        if (!data.nombre.trim()) return showToast('Escribí un nombre');
+        if (!data.nombre.trim()) return showToast('Escribí un nombre', 'warning');
         const activeId = localStorage.getItem('activeEstDB_uuid');
         if (!activeId) return;
 
@@ -310,7 +336,7 @@ export function Ajustes({ user }: AjustesProps) {
                 nombre: data.nombre.trim(),
                 icono: data.icono
             });
-            showToast('Categoría actualizada');
+            showToast('Categoría actualizada', 'success');
         } else {
             await dataService.addCategoria(activeId, {
                 nombre: data.nombre.trim(),
@@ -319,7 +345,7 @@ export function Ajustes({ user }: AjustesProps) {
                 color: data.tipo === 'ingreso' ? '#16a34a' : '#dc2626',
                 esPredefinida: false
             });
-            showToast('Categoría creada');
+            showToast('Categoría creada', 'success');
         }
         setShowCatModal(false);
         void cargar();
@@ -333,7 +359,7 @@ export function Ajustes({ user }: AjustesProps) {
         try {
             await dataService.updateMonedasActivas(activeId, selected);
             setMonedasActivas(selected);
-            showToast('Divisas actualizadas');
+            showToast('Divisas actualizadas', 'success');
             setShowCurModal(false);
 
             const currentView = localStorage.getItem('ruralia_moneda_view') as Moneda;
@@ -342,18 +368,24 @@ export function Ajustes({ user }: AjustesProps) {
                 window.dispatchEvent(new CustomEvent('moneda_changed', { detail: selected[0] }));
             }
         } catch (e) {
-            showToast('Error al actualizar divisas');
+            showToast('Error al actualizar divisas', 'error');
         } finally {
             setSaving(false);
         }
     };
 
     const eliminarCat = async (cat: Categoria) => {
-        if (confirm('¿Deseas eliminar esta categoría?')) {
-            await dataService.deleteCategoria(String(cat.id || ''));
-            showToast('Eliminada');
-            void cargar();
-        }
+        triggerConfirm(
+            'Eliminar Categoría',
+            `¿Deseas eliminar "${cat.nombre}"? Los movimientos que usen esta categoría no se borrarán, pero perderán su clasificación visual.`,
+            async () => {
+                closeConfirm();
+                await dataService.deleteCategoria(String(cat.id || ''));
+                showToast('Eliminada', 'success');
+                void cargar();
+            },
+            'danger'
+        );
     };
 
     const cambiarEstablecimiento = (id: string) => {
@@ -377,19 +409,26 @@ export function Ajustes({ user }: AjustesProps) {
     };
 
     const eliminarEstablecimiento = async (id: string, nombre: string) => {
-        if (id === activeEstId) return showToast('No puedes eliminar el activo');
-        if (!confirm(`¿Seguro que deseas eliminar "${nombre}"? Esta acción no se puede deshacer.`)) return;
-
-        setSaving(true);
-        try {
-            await dataService.deleteEstablecimiento(id);
-            showToast('Eliminado');
-            void cargar();
-        } catch (error) {
-            showToast('Error al eliminar');
-        } finally {
-            setSaving(false);
-        }
+        if (id === activeEstId) return showToast('No puedes eliminar el activo', 'warning');
+        
+        triggerConfirm(
+            'Eliminar Establecimiento',
+            `¿Seguro que deseas eliminar "${nombre}"? Esta acción borrará permanentemente todos los registros asociados y no se puede deshacer.`,
+            async () => {
+                closeConfirm();
+                setSaving(true);
+                try {
+                    await dataService.deleteEstablecimiento(id);
+                    showToast('Eliminado', 'success');
+                    void cargar();
+                } catch (error) {
+                    showToast('Error al eliminar', 'error');
+                } finally {
+                    setSaving(false);
+                }
+            },
+            'danger'
+        );
     };
 
     const toggleTema = () => {
@@ -913,12 +952,30 @@ export function Ajustes({ user }: AjustesProps) {
                 {/* Modals */}
                 {showCatModal && <CatModal mode={showCatModal} initData={editCatData as CatForm} onClose={() => setShowCatModal(false)} onSave={handleSaveCat} />}
                 {showCurModal && <CurrencyModal current={monedasActivas} onClose={() => setShowCurModal(false)} onSave={handleSaveCur} />}
+                <ConfirmModal 
+                    isOpen={confirmModal.isOpen}
+                    title={confirmModal.title}
+                    message={confirmModal.message}
+                    onConfirm={confirmModal.onConfirm}
+                    onCancel={closeConfirm}
+                    type={confirmModal.type}
+                    confirmText={confirmModal.type === 'danger' ? 'Eliminar' : 'Aceptar'}
+                />
             </div>
         );
     }
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', paddingBottom: '40px', background: isMobile ? 'var(--beige-bg)' : 'transparent' }}>
+            <ConfirmModal 
+                isOpen={confirmModal.isOpen}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                onConfirm={confirmModal.onConfirm}
+                onCancel={closeConfirm}
+                type={confirmModal.type}
+                confirmText={confirmModal.type === 'danger' ? 'Eliminar' : 'Aceptar'}
+            />
             {isMobile ? (
                 <div style={{ padding: '24px 24px 0', display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--beige-bg)' }}>
                     <button onClick={() => setMobileView('menu')} style={{ background: 'var(--bg-card)', borderRadius: '50%', padding: '8px', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

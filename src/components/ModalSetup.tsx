@@ -16,6 +16,7 @@ interface Props {
 }
 
 export function ModalSetup({ onComplete, initialName = '' }: Props) {
+    const [userNombre, setUserNombre] = useState('');
     const [nombre, setNombre] = useState(initialName);
     const [tipo, setTipo] = useState<TipoProduccion | null>(null);
     const [monedas, setMonedas] = useState<Moneda[]>(['UYU']);
@@ -32,11 +33,15 @@ export function ModalSetup({ onComplete, initialName = '' }: Props) {
     ];
 
     const finalizar = async () => {
-        if (!nombre.trim()) return showToast('Ingresá el nombre');
-        if (!tipo) return showToast('Seleccioná el rubro');
-        if (monedas.length === 0) return showToast('Seleccioná al menos una moneda');
+        if (!userNombre.trim()) return showToast('Ingresá tu nombre', 'warning');
+        if (!nombre.trim()) return showToast('Ingresá el nombre del establecimiento', 'warning');
+        if (!tipo) return showToast('Seleccioná el rubro', 'warning');
+        if (monedas.length === 0) return showToast('Seleccioná al menos una moneda', 'warning');
         setLoading(true);
         try {
+            // 0. Actualizar perfil del usuario
+            await dataService.updateProfile(userNombre.trim(), '👨‍🌾');
+
             let id = localStorage.getItem('activeEstDB_uuid');
             
             if (id) {
@@ -58,11 +63,11 @@ export function ModalSetup({ onComplete, initialName = '' }: Props) {
                 await inicializarCategorias(tipo, true);
             }
             
-            showToast('¡Configuración lista!');
+            showToast('¡Configuración completa!', 'success');
             onComplete();
         } catch (e) {
             console.error(e);
-            showToast('Error al configurar');
+            showToast('Error al guardar configuración', 'error');
         } finally {
             setLoading(false);
         }
@@ -98,6 +103,7 @@ export function ModalSetup({ onComplete, initialName = '' }: Props) {
                     <div style={{ width: '32px', height: '4px', borderRadius: '2px', background: step >= 1 ? 'var(--logo-dot)' : 'rgba(255,255,255,0.1)', transition: 'all 0.3s' }} />
                     <div style={{ width: '32px', height: '4px', borderRadius: '2px', background: step >= 2 ? 'var(--logo-dot)' : 'rgba(255,255,255,0.1)', transition: 'all 0.3s' }} />
                     <div style={{ width: '32px', height: '4px', borderRadius: '2px', background: step >= 3 ? 'var(--logo-dot)' : 'rgba(255,255,255,0.1)', transition: 'all 0.3s' }} />
+                    <div style={{ width: '32px', height: '4px', borderRadius: '2px', background: step >= 4 ? 'var(--logo-dot)' : 'rgba(255,255,255,0.1)', transition: 'all 0.3s' }} />
                 </div>
                 
                 {step === 1 ? (
@@ -109,14 +115,59 @@ export function ModalSetup({ onComplete, initialName = '' }: Props) {
                                 alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px',
                                 border: '1px solid rgba(255,255,255,0.1)'
                             }}>
-                                <Building2 size={36} color="var(--logo-dot)" />
+                                <User size={36} color="var(--logo-dot)" />
                             </div>
                             <h2 style={{ fontSize: '32px', fontWeight: 900, marginBottom: '12px', letterSpacing: '-1px' }}>¡Bienvenido!</h2>
-                            <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>Empecemos configurando el nombre de tu establecimiento principal.</p>
+                            <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>Para empezar, dinos cómo quieres que te llamemos.</p>
                         </div>
 
                         <div>
-                            <label style={{ fontSize: '12px', fontWeight: 800, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '2px' }}>NOMBRE</label>
+                            <label style={{ fontSize: '12px', fontWeight: 800, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '2px' }}>TU NOMBRE</label>
+                            <input 
+                                type="text" 
+                                value={userNombre} 
+                                onChange={e => setUserNombre(e.target.value)} 
+                                placeholder="Ej: Matias" 
+                                autoFocus
+                                style={{ 
+                                    width: '100%', padding: '20px 24px', borderRadius: '20px', 
+                                    border: '1px solid rgba(255, 255, 255, 0.1)', fontSize: '18px', 
+                                    outline: 'none', background: 'rgba(255,255,255,0.05)', color: 'white', 
+                                    transition: 'all 0.2s' 
+                                }} 
+                            />
+                        </div>
+
+                        <button 
+                            onClick={() => userNombre.trim() ? setStep(2) : showToast('Ingresá tu nombre', 'warning')}
+                            style={{ 
+                                width: '100%', padding: '20px', borderRadius: '20px', 
+                                background: 'white', color: '#0c0e10', fontSize: '17px', 
+                                fontWeight: 800, border: 'none', cursor: 'pointer', 
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                                gap: '12px', transition: 'all 0.2s' 
+                            }}
+                        >
+                            Continuar <ArrowRight size={20} />
+                        </button>
+                    </div>
+                ) : step === 2 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                        <div style={{ textAlign: 'center' }}>
+                            <div style={{ 
+                                width: '80px', height: '80px', borderRadius: '28px', 
+                                background: 'rgba(255,255,255,0.05)', display: 'flex', 
+                                alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px',
+                                border: '1px solid rgba(255,255,255,0.1)'
+                            }}>
+                                <Building2 size={36} color="var(--logo-dot)" />
+                            </div>
+                            <h2 style={{ fontSize: '28px', fontWeight: 900, marginBottom: '12px', letterSpacing: '-1px' }}>Tu Establecimiento</h2>
+                            <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>Perfecto {userNombre}, ahora configura el nombre de tu campo principal.</p>
+                        </div>
+
+                        <div>
+                            <label style={{ fontSize: '12px', fontWeight: 800, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '2px' }}>NOMBRE DEL CAMPO</label>
                             <input 
                                 type="text" 
                                 value={nombre} 
@@ -132,20 +183,32 @@ export function ModalSetup({ onComplete, initialName = '' }: Props) {
                             />
                         </div>
 
-                        <button 
-                            onClick={() => nombre.trim() ? setStep(2) : showToast('Ingresá un nombre')}
-                            style={{ 
-                                width: '100%', padding: '20px', borderRadius: '20px', 
-                                background: 'white', color: '#0c0e10', fontSize: '17px', 
-                                fontWeight: 800, border: 'none', cursor: 'pointer', 
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                                gap: '12px', transition: 'all 0.2s' 
-                            }}
-                        >
-                            Continuar <ArrowRight size={20} />
-                        </button>
+                        <div style={{ display: 'flex', gap: '16px' }}>
+                            <button 
+                                onClick={() => setStep(1)}
+                                style={{ 
+                                    flex: 1, padding: '20px', borderRadius: '20px', 
+                                    background: 'rgba(255,255,255,0.05)', color: 'white', 
+                                    fontSize: '16px', fontWeight: 800, border: 'none', cursor: 'pointer' 
+                                }}
+                            >
+                                Atrás
+                            </button>
+                            <button 
+                                onClick={() => nombre.trim() ? setStep(3) : showToast('Ingresá un nombre', 'warning')}
+                                style={{ 
+                                    flex: 2, padding: '20px', borderRadius: '20px', 
+                                    background: 'white', color: '#0c0e10', fontSize: '17px', 
+                                    fontWeight: 800, border: 'none', cursor: 'pointer', 
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                                    gap: '12px', transition: 'all 0.2s' 
+                                }}
+                            >
+                                Continuar <ArrowRight size={20} />
+                            </button>
+                        </div>
                     </div>
-                ) : step === 2 ? (
+                ) : step === 3 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                         <div style={{ textAlign: 'center' }}>
                             <h2 style={{ fontSize: '28px', fontWeight: 900, marginBottom: '12px', letterSpacing: '-1px' }}>Tipo de Rubro</h2>
@@ -196,7 +259,7 @@ export function ModalSetup({ onComplete, initialName = '' }: Props) {
 
                         <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
                             <button 
-                                onClick={() => setStep(1)}
+                                onClick={() => setStep(2)}
                                 style={{ 
                                     flex: 1, padding: '20px', borderRadius: '20px', 
                                     background: 'rgba(255,255,255,0.05)', color: 'white', 
@@ -206,7 +269,7 @@ export function ModalSetup({ onComplete, initialName = '' }: Props) {
                                 Atrás
                             </button>
                             <button 
-                                onClick={() => setStep(3)}
+                                onClick={() => setStep(4)}
                                 disabled={!tipo}
                                 style={{ 
                                     flex: 2, padding: '20px', borderRadius: '20px', 
@@ -242,7 +305,7 @@ export function ModalSetup({ onComplete, initialName = '' }: Props) {
                                         onClick={() => {
                                             if (selected) {
                                                 if (monedas.length > 1) setMonedas(monedas.filter(curr => curr !== m));
-                                                else showToast('Al menos una moneda activa');
+                                                else showToast('Al menos una moneda activa', 'warning');
                                             } else {
                                                 setMonedas([...monedas, m]);
                                             }
@@ -273,7 +336,7 @@ export function ModalSetup({ onComplete, initialName = '' }: Props) {
 
                         <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
                             <button 
-                                onClick={() => setStep(2)}
+                                onClick={() => setStep(3)}
                                 style={{ 
                                     flex: 1, padding: '20px', borderRadius: '20px', 
                                     background: 'rgba(255,255,255,0.05)', color: 'white', 

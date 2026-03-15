@@ -2171,25 +2171,57 @@ textarea.field-input {
 /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    TOAST
 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-.toast {
+.ruralit-toast-wrapper {
   position: fixed;
-  top: 16px;
+  top: 24px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--gray-900);
-  color: white;
-  padding: 10px 18px;
-  border-radius: var(--r-full);
-  font-size: 13px;
-  font-weight: 600;
-  z-index: 500;
-  white-space: nowrap;
-  box-shadow: var(--shadow-lg);
-  animation: toastIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  background: rgba(15, 26, 15, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  z-index: 10000;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  animation: ruralit-toast-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: none;
 }
 
-.toast.saliendo {
-  animation: toastOut 0.2s ease forwards;
+.ruralit-toast-wrapper.saliendo {
+  animation: ruralit-toast-out 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.ruralit-toast-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+}
+
+.ruralit-toast-message {
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #FFFFFF;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+}
+
+@keyframes ruralit-toast-in {
+  from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+@keyframes ruralit-toast-out {
+  from { transform: translateX(-50%) translateY(0); opacity: 1; }
+  to { transform: translateX(-50%) translateY(-10px); opacity: 0; }
 }
 
 /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -2434,28 +2466,9 @@ textarea.field-input {
   }
 }
 
-@keyframes toastIn {
-  from {
-    transform: translateX(-50%) translateY(-14px);
-    opacity: 0;
-  }
 
-  to {
-    transform: translateX(-50%) translateY(0);
-    opacity: 1;
-  }
-}
 
-@keyframes toastOut {
-  from {
-    opacity: 1;
-  }
 
-  to {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-10px);
-  }
-}
 
 @keyframes fadeSlide {
   from {
@@ -3801,5 +3814,213 @@ textarea.field-input {
 @media (max-width: 480px) {
   .ruralit-brand-anim {
     font-size: 26px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RURALIT – Premium Login UI
+═══════════════════════════════════════════════════════════════ */
+
+.ruralit-login-container {
+  min-height: 100vh;
+  display: flex;
+  background-color: #0F1A0F;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Background Grids and Blobs (Mobile & Desktop) */
+.ruralit-login-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(204, 255, 0, 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.5;
+  z-index: 1;
+}
+
+.ruralit-login-blob {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(204, 255, 0, 0.05) 0%, transparent 70%);
+  border-radius: 50%;
+  z-index: 1;
+  filter: blur(60px);
+}
+
+.blob-1 { top: -200px; left: -100px; }
+.blob-2 { bottom: -200px; right: -100px; background: radial-gradient(circle, rgba(204, 255, 0, 0.03) 0%, transparent 70%); }
+
+
+.ruralit-login-sidebar {
+  width: 480px;
+  padding: 60px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 26, 15, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  position: relative;
+  z-index: 10;
+  box-shadow: 40px 0 80px rgba(0, 0, 0, 0.3);
+}
+
+.ruralit-login-brand {
+  margin-bottom: 60px;
+}
+
+.ruralit-login-brand-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: -1.2px;
+}
+
+.ruralit-login-brand-dot {
+  color: #CCFF00;
+}
+
+.ruralit-login-form-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.ruralit-login-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 52px;
+  font-weight: 800;
+  color: #FFFFFF;
+  line-height: 1.0;
+  letter-spacing: -2.5px;
+  margin-bottom: 20px;
+}
+
+.ruralit-login-subtitle {
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.4);
+  line-height: 1.6;
+  margin-bottom: 40px;
+  max-width: 320px;
+  letter-spacing: -0.2px;
+}
+
+.ruralit-login-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ruralit-login-input {
+  width: 100%;
+  padding: 18px 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  color: #FFFFFF;
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 15px;
+  outline: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ruralit-login-input:focus {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(204, 255, 0, 0.3);
+  box-shadow: 0 0 0 4px rgba(204, 255, 0, 0.05);
+}
+
+.ruralit-login-button {
+  width: 100%;
+  padding: 18px;
+  background: #CCFF00;
+  color: #0F1A0F;
+  border-radius: 16px;
+  border: none;
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-top: 10px;
+}
+
+.ruralit-login-button:hover {
+  transform: translateY(-2px);
+  background: #D9FF33;
+  box-shadow: 0 10px 40px rgba(204, 255, 0, 0.2);
+}
+
+.ruralit-login-button:active {
+  transform: translateY(0);
+}
+
+.ruralit-login-switch {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 32px;
+  transition: color 0.2s;
+  text-align: left;
+}
+
+.ruralit-login-switch:hover {
+  color: #CCFF00;
+}
+
+.ruralit-login-bg {
+  flex: 1;
+  position: relative;
+  background-size: cover;
+  background-position: center;
+}
+
+.ruralit-login-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, #0F1A0F 0%, rgba(15, 26, 15, 0.4) 30%, transparent 100%);
+}
+
+.ruralit-login-v-tag {
+  margin-top: 60px;
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.15);
+}
+
+@media (max-width: 1023px) {
+  .ruralit-login-sidebar {
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at top left, #162B16 0%, #0F1A0F 100%);
+    box-shadow: none;
+    padding: 60px 28px;
+    justify-content: center;
+    border-right: none;
+  }
+  .ruralit-login-brand {
+    margin-bottom: 40px;
+  }
+  .ruralit-login-title {
+    font-size: 34px;
+  }
+  .ruralit-login-bg {
+    display: none;
   }
 }

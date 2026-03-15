@@ -1,0 +1,17 @@
+{
+  "name": "Ruralit – Libreta del Campo",
+  "short_name": "Ruralit",
+  "description": "Tu libreta digital para el campo. Registra gastos, ingresos y lleva el balance de tu establecimiento.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0C0E10",
+  "theme_color": "#4A7C59",
+  "icons": [
+    {
+      "src": "/ruralit.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

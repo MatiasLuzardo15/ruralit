@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowUpRight, ArrowDownRight, X, Calendar, Edit3, Trash2, ChevronDown, Check, Plus } from 'lucide-react';
+import { ConfirmModal } from './ConfirmModal';
 import type { Movimiento, Categoria, TipoMovimiento, Moneda } from '../types';
 import { dataService } from '../lib/dataService';
 import { hoy, MONEDAS, formatFechaMediana } from '../utils/helpers';
@@ -56,6 +57,8 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
     const [newCatName, setNewCatName] = useState('');
     const [newCatIcon, setNewCatIcon] = useState('📦');
 
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
     const ing = tipoInicial === 'ingreso';
     const esEdit = !!movimientoEditar;
     const dateInputRef = useRef<HTMLInputElement>(null);
@@ -101,23 +104,23 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
         // Cerramos el modal primero para dar sensación de velocidad instantánea
         onGuardado?.();
         onClose();
-        showToast(esEdit ? 'Actualizando...' : 'Registrando...');
+        showToast(esEdit ? 'Actualizando...' : 'Registrando...', 'info');
 
         // Ejecutamos la promesa en segundo plano
         (async () => {
             try {
                 if (esEdit && movimientoEditar?.id !== undefined) {
                     await dataService.updateMovimiento(String(movimientoEditar.id), data);
-                    showToast('¡Listo! Actualizado');
+                    showToast('¡Listo! Actualizado', 'success');
                 } else {
                     await dataService.addMovimiento(activeId, data);
-                    showToast('¡Listo! Registrado');
+                    showToast('¡Listo! Registrado', 'success');
                 }
                 // Notificamos de nuevo por si se necesita refrescar datos frescos
                 onGuardado?.();
             } catch (e) {
                 console.error(e);
-                showToast('Error al guardar en la nube');
+                showToast('Error al guardar en la nube', 'error');
             }
         })();
     };
@@ -141,8 +144,9 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
             setCatId(newCat.id!);
             setCreatingCat(false);
             setNewCatName('');
+            showToast('Categoría creada', 'success');
         } catch (e) {
-            showToast('Error al crear categoría');
+            showToast('Error al crear categoría', 'error');
         } finally { setSaving(false); }
     };
 
@@ -351,7 +355,7 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
                 {/* ── FOOTER DE ACCIONES ── */}
                 <div style={{ padding: '24px 32px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-sm)' }}>
                     {esEdit ? (
-                        <button onClick={async () => { if (confirm('¿Seguro que deseas eliminar el registro?')) { await dataService.deleteMovimiento(String(movimientoEditar.id!)); onGuardado?.(); onClose(); } }} style={{ padding: '12px', borderRadius: '12px', background: 'var(--red-light)', color: 'var(--red-soft)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <button onClick={() => setShowDeleteConfirm(true)} style={{ padding: '12px', borderRadius: '12px', background: 'var(--red-light)', color: 'var(--red-soft)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <Trash2 size={18} />
                         </button>
                     ) : <div />}
@@ -360,6 +364,22 @@ export function ModalRegistrar({ tipoInicial, onClose, movimientoEditar, onGuard
                         {saving ? 'Procesando...' : (esEdit ? 'Guardar Cambios' : 'Confirmar Registro')}
                     </button>
                 </div>
+
+                <ConfirmModal 
+                    isOpen={showDeleteConfirm}
+                    title="Eliminar Registro"
+                    message="¿Deseas eliminar permanentemente este movimiento? Esta acción no se puede deshacer."
+                    onConfirm={async () => {
+                        setShowDeleteConfirm(false);
+                        await dataService.deleteMovimiento(String(movimientoEditar!.id!));
+                        showToast('Movimiento eliminado', 'success');
+                        onGuardado?.();
+                        onClose();
+                    }}
+                    onCancel={() => setShowDeleteConfirm(false)}
+                    type="danger"
+                    confirmText="Eliminar"
+                />
 
             </div>
         </div>,
