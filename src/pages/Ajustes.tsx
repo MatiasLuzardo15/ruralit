@@ -12,6 +12,7 @@ import { type TipoProduccion, inicializarCategorias } from '../db/database';
 import { showToast } from '../components/Toast';
 import { TopBar } from '../components/TopBar';
 import { ModalNuevoEstablecimiento } from '../components/ModalNuevoEstablecimiento';
+import { LoadingScreen } from '../components/LoadingScreen';
 
 const CATEGORY_ICONS = [
     '🐄', '🌾', '🚜', '💰', '📉', '📈', '📦', '🛒', '🔧', '⛽',
@@ -179,9 +180,12 @@ export function Ajustes({ user }: AjustesProps) {
     }, []);
 
     const [loadingData, setLoadingData] = useState(true);
+    const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
     const cargar = async () => {
         let activeId = localStorage.getItem('activeEstDB_uuid');
+
+        if (!hasLoadedOnce) setLoadingData(true);
 
         // Si no hay ID en localStorage, intentamos obtenerlo de Supabase
         if (!activeId) {
@@ -227,6 +231,7 @@ export function Ajustes({ user }: AjustesProps) {
             if (monedas) {
                 setMonedasActivas(monedas);
             }
+            setHasLoadedOnce(true);
         } catch (e) {
             console.error('Error cargando ajustes:', e);
         } finally {
@@ -897,12 +902,8 @@ export function Ajustes({ user }: AjustesProps) {
         );
     };
 
-    if (loadingData) {
-        return (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg)' }}>
-                <Loader2 className="spinning" size={32} color="var(--green-main)" />
-            </div>
-        );
+    if (loadingData && !hasLoadedOnce) {
+        return <LoadingScreen message="Cargando ajustes…" />;
     }
 
     if (isMobile && mobileView === 'menu') {

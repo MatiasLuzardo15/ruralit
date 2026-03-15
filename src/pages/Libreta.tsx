@@ -7,6 +7,7 @@ import { TopBar } from '../components/TopBar';
 import { showToast } from '../components/Toast';
 import { dataService } from '../lib/dataService';
 import { useMonedas } from '../utils/useMoneda';
+import { LoadingScreen } from '../components/LoadingScreen';
 
 /* ─── Context menu ⋮ ─────────────────────────────────────── */
 interface CtxMenuProps { onEditar: () => void; onEliminar: () => void; onClose: () => void; }
@@ -55,9 +56,10 @@ export function Libreta() {
     const [categorias, setCats] = useState<Categoria[]>([]);
     const catMap = new Map<string, Categoria>(categorias.map(c => [String(c.id), c]));
     const [loading, setLoading] = useState(true);
+    const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
     const cargar = useCallback(async (force: boolean = false) => {
-        setLoading(true);
+        if (!hasLoadedOnce) setLoading(true);
         try {
             const activeId = localStorage.getItem('activeEstDB_uuid');
             if (!activeId) return;
@@ -71,13 +73,14 @@ export function Libreta() {
             ]);
 
             setCats(catsData);
-            setMov(movsData); // No filtramos por moneda, queremos ver TODO
+            setMov(movsData);
+            setHasLoadedOnce(true);
         } catch (e) {
             console.error('Error cargando Libreta:', e);
         } finally {
             setLoading(false);
         }
-    }, [anio, mes, moneda]);
+    }, [anio, mes, moneda, hasLoadedOnce]);
 
     useEffect(() => {
         void cargar();
@@ -135,6 +138,10 @@ export function Libreta() {
             <button style={{ padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--t2)' }} onClick={() => navMes(1)}><ChevronRight size={16} /></button>
         </div>
     );
+
+    if (loading && !hasLoadedOnce) {
+        return <LoadingScreen message="Cargando movimientos…" />;
+    }
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', paddingBottom: '40px' }}>

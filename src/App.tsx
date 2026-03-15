@@ -7,13 +7,21 @@ import { Balance } from './pages/Balance';
 import { Ajustes } from './pages/Ajustes';
 import { ModalSetup } from './components/ModalSetup';
 import { Login } from './pages/Login';
+import { LoadingScreen } from './components/LoadingScreen';
 import { User } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
 import { dataService } from './lib/dataService';
 import { Establecimiento } from './types';
 
 function App() {
-    const [tab, setTab] = useState<Tab>('inicio');
+    const [tab, setTab] = useState<Tab>(() => {
+        const saved = localStorage.getItem('ruralit_active_tab') as Tab;
+        return saved || 'inicio';
+    });
+
+    useEffect(() => {
+        localStorage.setItem('ruralit_active_tab', tab);
+    }, [tab]);
     const [collapsed, setCollapsed] = useState(false);
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
@@ -87,7 +95,7 @@ function App() {
         }
     }, [tab]);
 
-    if (loading) return null;
+    if (loading) return <LoadingScreen splash />;
     if (!user) return <Login />;
 
     return (

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Mail, Lock, Loader2, ArrowRight } from 'lucide-react';
+import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { showToast } from '../components/Toast';
+import { LoadingScreen } from '../components/LoadingScreen';
 
 export function Login() {
     const [view, setView] = useState<'login' | 'signup'>('login');
@@ -37,6 +38,8 @@ export function Login() {
             setLoading(false);
         }
     };
+
+    if (loading) return <LoadingScreen splash message={view === 'login' ? 'Iniciando sesión…' : 'Creando cuenta…'} />;
 
     if (isMobile) {
         return (
@@ -97,12 +100,8 @@ export function Login() {
                                 marginTop: '12px', fontSize: '16px'
                             }}
                         >
-                            {loading ? <Loader2 className="spinning" size={20} /> : (
-                                <>
-                                    {view === 'login' ? 'Entrar ahora' : 'Registrarse'}
-                                    <ArrowRight size={18} />
-                                </>
-                            )}
+                            {view === 'login' ? 'Entrar ahora' : 'Registrarse'}
+                            <ArrowRight size={18} />
                         </button>
                     </form>
 
@@ -201,12 +200,8 @@ export function Login() {
                                 marginTop: '10px', fontSize: '16px'
                             }}
                         >
-                            {loading ? <Loader2 className="spinning" size={24} /> : (
-                                <>
-                                    {view === 'login' ? 'Entrar ahora' : 'Registrarse'}
-                                    <ArrowRight size={20} />
-                                </>
-                            )}
+                            {view === 'login' ? 'Entrar ahora' : 'Registrarse'}
+                            <ArrowRight size={20} />
                         </button>
                     </form>
 

@@ -77,8 +77,11 @@ export function Sidebar({ activo, onChange, establecimiento, collapsed, setColla
     return (
         <aside className="app-sidebar">
             <div className="sidebar-brand">
-                <img src={logo} alt="Ruralit" className="sidebar-logo-img" />
-                {!collapsed && <span className="sidebar-brand-name">ruralit<span className="dot">.</span></span>}
+                {collapsed ? (
+                    <img src={logo} alt="Ruralit" className="sidebar-logo-img" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
+                ) : (
+                    <span className="sidebar-brand-name">ruralit<span className="dot">.</span></span>
+                )}
                 <button className="sidebar-toggle-btn" onClick={() => setCollapsed?.(!collapsed)} title={collapsed ? "Expandir" : "Contraer"}>
                     {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
                 </button>

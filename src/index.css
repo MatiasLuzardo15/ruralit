@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@700&family=Outfit:wght@300;400;500;600&display=swap');
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    RURALIT â€” Design System v5 (Agro Professional)
@@ -3665,5 +3665,141 @@ textarea.field-input {
   .modal-side-panel {
     position: sticky;
     top: 0;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RURALIT – Ultra-Minimal Loading (Orbit Animation)
+═══════════════════════════════════════════════════════════════ */
+
+@keyframes ruralit-r-shimmer {
+  0% { opacity: 0.7; transform: scale(0.98); }
+  50% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0.7; transform: scale(0.98); }
+}
+
+@keyframes ruralit-dot-orbit {
+  from { transform: rotate(0deg) translateX(28px) rotate(0deg); }
+  to { transform: rotate(360deg) translateX(28px) rotate(-360deg); }
+}
+
+@keyframes ruralit-minimal-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ruralit-loading-minimal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.4s ease;
+  animation: ruralit-minimal-fade-in 0.6s ease forwards;
+}
+
+.ruralit-loading-minimal.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: #0F1A0F;
+}
+
+.ruralit-loading-minimal.page {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.ruralit-loading-minimal.inline {
+  padding: 80px 24px;
+  background: transparent;
+}
+
+.ruralit-loading-minimal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.ruralit-loader-minimal-wrap {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ruralit-r-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--t1);
+  line-height: 1;
+  animation: ruralit-r-shimmer 2s ease-in-out infinite;
+  user-select: none;
+}
+
+.splash .ruralit-r-text {
+  color: #FFFFFF;
+}
+
+.ruralit-dot-spin {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #CCFF00;
+  border-radius: 2px; /* Un cuadrado pequeño redondeado para el punto */
+  animation: ruralit-dot-orbit 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  box-shadow: 0 0 10px rgba(204, 255, 0, 0.4);
+}
+
+.ruralit-feedback-text {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--t3);
+  letter-spacing: 1.5px;
+  opacity: 0.5;
+  text-transform: uppercase;
+}
+
+.splash .ruralit-feedback-text {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.ruralit-version-tag {
+  position: absolute;
+  bottom: 40px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: rgba(255, 255, 255, 0.1);
+  text-transform: uppercase;
+}
+
+@media (max-width: 480px) {
+  .ruralit-r-text {
+    font-size: 40px;
+  }
+}
+
+.splash .ruralit-feedback-text {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.ruralit-version-tag {
+  position: absolute;
+  bottom: 40px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: rgba(255, 255, 255, 0.1);
+  text-transform: uppercase;
+}
+
+@media (max-width: 480px) {
+  .ruralit-brand-anim {
+    font-size: 26px;
   }
 }

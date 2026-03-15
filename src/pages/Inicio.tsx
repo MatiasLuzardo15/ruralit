@@ -10,6 +10,7 @@ import { ModalRegistrar } from '../components/ModalRegistrar';
 import { TopBar } from '../components/TopBar';
 import { useMonedas } from '../utils/useMoneda';
 import { showToast } from '../components/Toast';
+import { LoadingScreen } from '../components/LoadingScreen';
 
 export function Inicio() {
     const [tipoModal, setTipo] = useState<TipoMovimiento | null>(null);
@@ -23,6 +24,7 @@ export function Inicio() {
     const [nombreUsuario, setNombreUsuario] = useState('Usuario');
     const [estabNombre, setEstabNombre] = useState('Mi Establecimiento');
     const [loadingData, setLoadingData] = useState(true);
+    const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
     const catMap = new Map<string, Categoria>(categorias.map(c => [String(c.id), c]));
 
     const now = new Date();
@@ -33,7 +35,7 @@ export function Inicio() {
     const [mesActual, setMesActual] = useState<Movimiento[]>([]);
 
     const cargarData = useCallback(async (force: boolean = false) => {
-        setLoadingData(true);
+        if (!hasLoadedOnce) setLoadingData(true);
         try {
             const activeId = localStorage.getItem('activeEstDB_uuid');
             if (!activeId) return;
@@ -52,12 +54,13 @@ export function Inicio() {
             const filtered = movs.filter(m => (m.moneda || 'UYU') === moneda);
             setMesActual(filtered);
             setUltimos(movs.filter(m => (m.moneda || 'UYU') === moneda).slice(0, 6));
+            setHasLoadedOnce(true);
         } catch (e) {
             console.error('Error cargando Inicio:', e);
         } finally {
             setLoadingData(false);
         }
-    }, [moneda, iniMes, finMes]);
+    }, [moneda, iniMes, finMes, hasLoadedOnce]);
 
     useEffect(() => { 
         void cargarData(); 
@@ -167,6 +170,10 @@ export function Inicio() {
     else saludo = 'Buenas noches';
 
     const pctGastos = entradas > 0 ? Math.min((salidas / entradas) * 100, 100) : 0;
+
+    if (loadingData && !hasLoadedOnce) {
+        return <LoadingScreen message="Cargando resumen…" />;
+    }
 
     return (
         <div className="page-in">

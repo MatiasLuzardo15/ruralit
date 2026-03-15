@@ -139,6 +139,12 @@ export class DataService {
 
         let activeId = localStorage.getItem('activeEstDB_uuid');
         
+        // Validar que el ID sea un UUID válido o al menos no sea "undefined"/"null" string
+        if (activeId === 'undefined' || activeId === 'null' || activeId === '') {
+            activeId = null;
+            localStorage.removeItem('activeEstDB_uuid');
+        }
+
         if (!activeId) {
             try {
                 const list = await this.getEstablecimientos();
@@ -153,31 +159,44 @@ export class DataService {
             }
         }
 
-        const { data, error } = await supabase
-            .from('establecimientos')
-            .select('*')
-            .eq('id', activeId)
-            .maybeSingle();
+        try {
+            const { data, error } = await supabase
+                .from('establecimientos')
+                .select('*')
+                .eq('id', activeId)
+                .maybeSingle();
 
-        if (error || !data) {
-            localStorage.removeItem('activeEstDB_uuid');
-            const list = await this.getEstablecimientos();
-            if (list.length > 0) {
-                const newId = String(list[0].id);
-                localStorage.setItem('activeEstDB_uuid', newId);
-                const { data: retryData } = await supabase.from('establecimientos').select('*').eq('id', newId).maybeSingle();
-                this.activeEstabCache = retryData;
-                window.dispatchEvent(new CustomEvent('ruralit_estab_changed'));
-                return retryData;
+            // Si hay un error de red o sesión, NO borramos el ID, simplemente retornamos nulo o caché
+            if (error) {
+                console.warn('Error fetching active establishment:', error);
+                return this.activeEstabCache; 
             }
-            return null;
+
+            // Solo si explícitamente no existe el registro (data es null y no hay error)
+            if (!data) {
+                console.warn('Establishment not found, searching for fallback...');
+                localStorage.removeItem('activeEstDB_uuid');
+                const list = await this.getEstablecimientos();
+                if (list.length > 0) {
+                    const newId = String(list[0].id);
+                    localStorage.setItem('activeEstDB_uuid', newId);
+                    const { data: retryData } = await supabase.from('establecimientos').select('*').eq('id', newId).maybeSingle();
+                    this.activeEstabCache = retryData;
+                    window.dispatchEvent(new CustomEvent('ruralit_estab_changed'));
+                    return retryData;
+                }
+                return null;
+            }
+
+            const isNew = !this.activeEstabCache || this.activeEstabCache.id !== data.id;
+            this.activeEstabCache = data;
+            if (isNew) {
+                window.dispatchEvent(new CustomEvent('ruralit_estab_changed'));
+            }
+            return data;
+        } catch (err) {
+            return this.activeEstabCache;
         }
-        const isNew = !this.activeEstabCache || this.activeEstabCache.id !== data.id;
-        this.activeEstabCache = data;
-        if (isNew) {
-            window.dispatchEvent(new CustomEvent('ruralit_estab_changed'));
-        }
-        return data;
     }
 
     // --- Perfil ---

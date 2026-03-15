@@ -8,6 +8,7 @@ import { TopBar } from '../components/TopBar';
 import { ModalRegistrar } from '../components/ModalRegistrar';
 import { dataService } from '../lib/dataService';
 import { useMonedas } from '../utils/useMoneda';
+import { LoadingScreen } from '../components/LoadingScreen';
 
 const PAL_E = ['#cddc39', '#8bc34a', '#4caf50', '#009688'];
 const PAL_S = ['#f44336', '#ff9800', '#ff5722', '#795548'];
@@ -379,6 +380,8 @@ export function Balance() {
     const [catModal, setCatModal] = useState<{ cat: Categoria; movs: Movimiento[] } | null>(null);
     const [editMov, setEditMov] = useState<{ mov: Movimiento; tipo: TipoMovimiento } | null>(null);
     const [key, setKey] = useState(0);
+    const [loadingBalance, setLoadingBalance] = useState(true);
+    const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
     const [categorias, setCats] = useState<Categoria[]>([]);
     const catMap = new Map<string, Categoria>(categorias.map(c => [String(c.id), c]));
@@ -405,38 +408,44 @@ export function Balance() {
     );
 
     const cargarData = useCallback(async () => {
-        const activeId = localStorage.getItem('activeEstDB_uuid');
-        if (!activeId) return;
+        if (!hasLoadedOnce) setLoadingBalance(true);
+        try {
+            const activeId = localStorage.getItem('activeEstDB_uuid');
+            if (!activeId) return;
 
-        // Load categories if not loaded
-        if (categorias.length === 0) {
-            const c = await dataService.getCategorias(activeId);
-            setCats(c);
+            // Load categories if not loaded
+            if (categorias.length === 0) {
+                const c = await dataService.getCategorias(activeId);
+                setCats(c);
+            }
+
+            if (vista === 'mensual') {
+                const ini = new Date(anio, mes, 1).toISOString().split('T')[0];
+                const fin = new Date(anio, mes + 1, 0).toISOString().split('T')[0];
+                const mesRows = await dataService.getMovimientos(activeId, { from: ini, to: fin });
+                setMovsMes(mesRows);
+
+                let pm = mes - 1, pa = anio;
+                if (pm < 0) { pm = 11; pa--; }
+                const pIni = new Date(pa, pm, 1).toISOString().split('T')[0];
+                const pFin = new Date(pa, pm + 1, 0).toISOString().split('T')[0];
+                const prevRows = await dataService.getMovimientos(activeId, { from: pIni, to: pFin });
+                setMovsPrev(prevRows);
+            } else if (vista === 'trimestral') {
+                const { inicio, fin } = getTrimestreInfo(new Date(anio, mes, 1));
+                const trimRows = await dataService.getMovimientos(activeId, { from: inicio, to: fin });
+                setMovsTrim(trimRows);
+            } else {
+                const ini = new Date(anio, 0, 1).toISOString().split('T')[0];
+                const fin = new Date(anio, 11, 31).toISOString().split('T')[0];
+                const anioRows = await dataService.getMovimientos(activeId, { from: ini, to: fin });
+                setMovsAnio(anioRows);
+            }
+            setHasLoadedOnce(true);
+        } finally {
+            setLoadingBalance(false);
         }
-
-        if (vista === 'mensual') {
-            const ini = new Date(anio, mes, 1).toISOString().split('T')[0];
-            const fin = new Date(anio, mes + 1, 0).toISOString().split('T')[0];
-            const mesRows = await dataService.getMovimientos(activeId, { from: ini, to: fin });
-            setMovsMes(mesRows);
-
-            let pm = mes - 1, pa = anio;
-            if (pm < 0) { pm = 11; pa--; }
-            const pIni = new Date(pa, pm, 1).toISOString().split('T')[0];
-            const pFin = new Date(pa, pm + 1, 0).toISOString().split('T')[0];
-            const prevRows = await dataService.getMovimientos(activeId, { from: pIni, to: pFin });
-            setMovsPrev(prevRows);
-        } else if (vista === 'trimestral') {
-            const { inicio, fin } = getTrimestreInfo(new Date(anio, mes, 1));
-            const trimRows = await dataService.getMovimientos(activeId, { from: inicio, to: fin });
-            setMovsTrim(trimRows);
-        } else {
-            const ini = new Date(anio, 0, 1).toISOString().split('T')[0];
-            const fin = new Date(anio, 11, 31).toISOString().split('T')[0];
-            const anioRows = await dataService.getMovimientos(activeId, { from: ini, to: fin });
-            setMovsAnio(anioRows);
-        }
-    }, [anio, mes, vista, key, categorias.length]);
+    }, [anio, mes, vista, key, categorias.length, hasLoadedOnce]);
 
     useEffect(() => { 
         void cargarData(); 
@@ -979,6 +988,10 @@ export function Balance() {
             </div>
         );
     };
+
+    if (loadingBalance && !hasLoadedOnce) {
+        return <LoadingScreen message="Procesando balance…" />;
+    }
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', paddingBottom: '40px' }}>

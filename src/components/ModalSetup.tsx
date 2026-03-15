@@ -8,6 +8,7 @@ import { dataService } from '../lib/dataService';
 import { MONEDAS } from '../utils/helpers';
 import type { Moneda } from '../types';
 import { Check, Coins } from 'lucide-react';
+import { LoadingScreen } from './LoadingScreen';
 
 interface Props {
     onComplete: () => void;
@@ -293,13 +294,21 @@ export function ModalSetup({ onComplete, initialName = '' }: Props) {
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
                                 }}
                             >
-                                {loading ? <Loader2 className="spinning" size={20} /> : (
-                                    <>
-                                        ¡Empieza ahora! <Sparkles size={18} />
-                                    </>
-                                )}
+                                ¡Empieza ahora! <Sparkles size={18} />
                             </button>
                         </div>
+                    </div>
+                )}
+
+                {loading && (
+                    <div style={{ 
+                        position: 'absolute', inset: 0, zIndex: 10,
+                        background: 'rgba(12, 14, 16, 0.95)',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                        borderRadius: '40px', gap: '16px'
+                    }}>
+                        <Loader2 className="spinning" size={32} color="var(--logo-dot)" />
+                        <p style={{ color: 'white', fontSize: '14px', fontWeight: 600, opacity: 0.8 }}>Personalizando tu experiencia…</p>
                     </div>
                 )}
             </div>

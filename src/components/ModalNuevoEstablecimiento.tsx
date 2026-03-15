@@ -7,6 +7,7 @@ import { dataService } from '../lib/dataService';
 import { MONEDAS } from '../utils/helpers';
 import type { Moneda } from '../types';
 import { Check, Coins } from 'lucide-react';
+import { LoadingScreen } from './LoadingScreen';
 
 interface Props {
     onClose: () => void;
@@ -286,13 +287,21 @@ export function ModalNuevoEstablecimiento({ onClose, onSuccess }: Props) {
                                     boxShadow: monedas.length > 0 ? 'var(--shadow-entrada)' : 'none'
                                 }}
                             >
-                                {loading ? <Loader2 className="spinning" size={20} /> : (
-                                    <>
-                                        Crear proyecto <Sparkles size={18} />
-                                    </>
-                                )}
+                                Crear proyecto <Sparkles size={18} />
                             </button>
                         </div>
+                    </div>
+                )}
+
+                {loading && (
+                    <div style={{ 
+                        position: 'absolute', inset: 0, zIndex: 10,
+                        background: 'var(--bg-card)',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                        borderRadius: '32px', gap: '16px'
+                    }}>
+                        <Loader2 className="spinning" size={28} color="var(--green-main)" />
+                        <p style={{ color: 'var(--t2)', fontSize: '13px', fontWeight: 600 }}>Preparando tu campo…</p>
                     </div>
                 )}
             </div>

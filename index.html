@@ -11,7 +11,43 @@
     <title>Ruralit – Libreta del Campo</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Pre-React splash (replaced when React mounts) -->
+      <div id="pre-splash" style="
+        position: fixed; inset: 0; z-index: 99999;
+        background: #0F1A0F;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        font-family: 'Inter Tight', -apple-system, sans-serif;
+      ">
+        <style>
+          @keyframes pre-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+          @keyframes pre-sweep { 0% { left: -40%; width: 30%; } 50% { left: 35%; width: 40%; } 100% { left: 100%; width: 30%; } }
+          @keyframes pre-fade { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+          @keyframes pre-glow { 0%,100% { opacity: 0.15; } 50% { opacity: 0.3; } }
+        </style>
+        <div style="
+          position: absolute; width: 400px; height: 400px; border-radius: 50%;
+          background: radial-gradient(circle, rgba(204,255,0,0.1) 0%, transparent 70%);
+          top: 40%; left: 50%; transform: translate(-50%,-50%);
+          animation: pre-glow 3.5s ease-in-out infinite;
+        "></div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:24px; animation: pre-fade 0.8s ease forwards; z-index:1;">
+          <img src="/ruralit.png" alt="" style="
+            width:72px; height:72px; border-radius:22px;
+            box-shadow: 0 8px 40px rgba(204,255,0,0.12), 0 2px 8px rgba(0,0,0,0.5);
+            animation: pre-float 3s ease-in-out infinite;
+          " />
+          <div style="width:180px; height:3px; background:rgba(255,255,255,0.06); border-radius:8px; position:relative; overflow:hidden;">
+            <div style="
+              position:absolute; top:0; height:100%; border-radius:8px;
+              background:linear-gradient(90deg, transparent, #CCFF00, transparent);
+              animation: pre-sweep 1.8s cubic-bezier(0.4,0,0.2,1) infinite;
+            "></div>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
