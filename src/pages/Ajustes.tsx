@@ -281,7 +281,6 @@ export function Ajustes({ user }: AjustesProps) {
                 setSaving(true);
                 try {
                     await supabase.auth.signOut();
-                    localStorage.removeItem('activeEstDB_uuid');
                     showToast('Sesión cerrada', 'info');
                     setTimeout(() => { window.location.href = '/'; }, 1000);
                 } catch (error) {

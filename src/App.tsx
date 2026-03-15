@@ -31,7 +31,9 @@ function App() {
     // Cargar tema y sesión al iniciar la app
     useEffect(() => {
         const savedTheme = localStorage.getItem('ruralit_theme');
-        if (savedTheme === 'dark') {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
             document.documentElement.setAttribute('data-theme', 'dark');
         } else {
             document.documentElement.setAttribute('data-theme', 'light');
@@ -43,7 +45,10 @@ function App() {
             setLoading(false);
         });
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+                dataService.clearCache();
+            }
             setUser(session?.user ?? null);
             setLoading(false);
         });
@@ -76,11 +81,12 @@ function App() {
     };
 
     useEffect(() => {
-        refreshData();
+        // Al detectar un usuario nuevo (login), forzamos refresh
+        refreshData(true);
         
         const handleEstabChange = () => refreshData(true);
         window.addEventListener('ruralit_estab_changed', handleEstabChange);
-        window.addEventListener('ruralit_profile_updated', () => refreshData(false));
+        window.addEventListener('ruralit_profile_updated', () => refreshData(true));
         
         return () => {
             window.removeEventListener('ruralit_estab_changed', handleEstabChange);
